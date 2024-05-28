@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <utility>
 
-#include "base_json_reader.h"
+#include "base_json_parse.h"
 
 
 WORD32 CJsonValue::InitValue()

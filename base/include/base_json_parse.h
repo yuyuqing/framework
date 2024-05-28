@@ -1,7 +1,7 @@
 
 
-#ifndef _BASE_JSON_READER_H_
-#define _BASE_JSON_READER_H_
+#ifndef _BASE_JSON_PARSE_H_
+#define _BASE_JSON_PARSE_H_
 
 
 #include <cstddef>
