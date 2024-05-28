@@ -12,24 +12,16 @@
 #include <pthread.h>
 #include <fstream>
 
-#include "base_json_parse.h"
+#include "base_config_file.h"
 
 
 int main(int argc, char **argv)
 {
-    std::ifstream cFile;
-    cFile.open("base.json");
+    CBaseConfigFile *pConfig = CBaseConfigFile::GetInstance();
 
-    CJsonReader  *pReader = new CJsonReader();
-    CJsonValue    cRoot;
+    pConfig->ParseFile();
 
-    if (!pReader->Parse(cFile, cRoot))
-    {
-        cFile.close();
-        return FAIL;
-    }
-
-    cFile.close();
+    CBaseConfigFile::Destroy();
 
     return SUCCESS;
 }

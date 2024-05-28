@@ -106,6 +106,13 @@ CHAR * CZString::Data()
 }
 
 
+CJsonValue const & CJsonValue::NullSingleton()
+{
+    static CJsonValue const s_cNullStatic;
+    return s_cNullStatic;
+}
+
+
 WORD32 CJsonValue::InitValue()
 {
     switch (m_eValueType)
@@ -333,7 +340,8 @@ CJsonValue & CJsonValue::operator[] (WORD32 dwIndex)
     CObjectValues::iterator it = m_tValue.pMap->find(cKey);
     if (it == m_tValue.pMap->end())
     {
-        return *(CJsonValue *)NULL;
+        CObjectValues::value_type defaultValue(cKey, NullSingleton());
+        it = m_tValue.pMap->insert(it, defaultValue);
     }
 
     return it->second;
@@ -351,7 +359,8 @@ CJsonValue & CJsonValue::operator[] (const CHAR *pName)
     CObjectValues::iterator it = m_tValue.pMap->find(cKey);
     if (it == m_tValue.pMap->end())
     {
-        return *(CJsonValue *)NULL;
+        CObjectValues::value_type defaultValue(cKey, NullSingleton());
+        it = m_tValue.pMap->insert(it, defaultValue);
     }
 
     return it->second;
@@ -369,7 +378,8 @@ CJsonValue & CJsonValue::operator[] (CJsonString &rStr)
     CObjectValues::iterator it = m_tValue.pMap->find(cKey);
     if (it == m_tValue.pMap->end())
     {
-        return *(CJsonValue *)NULL;
+        CObjectValues::value_type defaultValue(cKey, NullSingleton());
+        it = m_tValue.pMap->insert(it, defaultValue);
     }
 
     return it->second;

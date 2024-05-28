@@ -14,10 +14,6 @@ extern "C"{
 #include "pub_global_def.h"
 
 
-#define MAX_LOG_LEVEL_NUM                           ((BYTE)(8))
-#define MAX_CELL_PER_GNB                            ((WORD32)(4))
-
-
 typedef struct tagT_LogSetGlobalSwitch
 {
     WORD32   dwProcID;    /* 进程ID, 进程级粒度 */

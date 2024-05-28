@@ -70,6 +70,8 @@ public :
         CObjectValues *pMap;
     }T_ValueHolder;
 
+    static CJsonValue const & NullSingleton();
+
 protected :
     WORD32 InitValue();
 

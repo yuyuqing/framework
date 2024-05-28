@@ -12,6 +12,19 @@ extern "C" {
 #include "pub_typedef.h"
 
 
+#define MAX_LOG_LEVEL_NUM                           ((BYTE)(8))
+#define MAX_CELL_PER_GNB                            ((WORD32)(4))
+
+#define LOG_MODULE_LEN                              ((BYTE)(32))
+#define LOG_FILE_NAME_LEN                           ((WORD32)(80))
+
+#define BIT_NUM_PER_BYTE                            ((WORD32)(8))
+#define BYTE_NUM_PER_MB                             ((WORD64)(1024 * 1024))
+
+#define BITMAP_BYTE_NUM_02                          ((BYTE)(2))
+#define BITMAP_BYTE_NUM_32                          ((BYTE)(32))
+
+
 typedef enum tagE_PROC
 {
     E_PROC_SCS = 0,
