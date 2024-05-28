@@ -83,6 +83,8 @@ public :
 
     virtual ~CJsonValue();
 
+    CJsonValue & operator=(CJsonValue &rOther);
+
     VOID SwapPayload(CJsonValue &rOther);
 
     VOID SetOffsetStart(std::ptrdiff_t lwStart);

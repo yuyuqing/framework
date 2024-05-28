@@ -215,6 +215,22 @@ CJsonValue::~CJsonValue()
 }
 
 
+CJsonValue & CJsonValue::operator=(CJsonValue &rOther)
+{
+    CHAR  aucData[INTEGER_TO_STR_LEN];
+    memcpy(aucData, rOther.m_aucData, INTEGER_TO_STR_LEN);
+    memcpy(rOther.m_aucData, m_aucData, INTEGER_TO_STR_LEN);
+    memcpy(m_aucData, aucData, INTEGER_TO_STR_LEN);
+
+    std::swap(m_eValueType, rOther.m_eValueType);
+    std::swap(m_tValue, rOther.m_tValue);
+    std::swap(m_lwStart, rOther.m_lwStart);
+    std::swap(m_lwLimit, rOther.m_lwLimit);
+
+    return *this;
+}
+
+
 VOID CJsonValue::SwapPayload(CJsonValue &rOther)
 {
     std::swap(m_eValueType, rOther.m_eValueType);
@@ -350,6 +366,12 @@ CJsonValue & CJsonValue::operator[] (WORD32 dwIndex)
 
 CJsonValue & CJsonValue::operator[] (const CHAR *pName)
 {
+    if (m_eValueType == E_NULL_VALUE)
+    {
+        CJsonValue cObjValue(E_OBJECT_VALUE);
+        *this = cObjValue;
+    }
+
     if (m_eValueType != E_OBJECT_VALUE)
     {
         assert(0);
