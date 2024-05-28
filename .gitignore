@@ -1,0 +1,11 @@
+# 忽略build目录
+build
+
+# 忽略vs工程文件
+.vs
+*.props
+obj
+bin
+
+# 忽略source insight工程文件
+dpdk_framework.*
