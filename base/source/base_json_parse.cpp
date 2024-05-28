@@ -6,6 +6,106 @@
 #include "base_json_parse.h"
 
 
+CZString::CZString (WORD32 dwIndex)
+    : m_dwIndex(dwIndex)
+{
+}
+
+
+CZString::CZString (const CHAR *paucData)
+    : m_dwIndex(0),
+      m_cString(paucData)
+{
+}
+
+
+CZString::CZString (const CZString &rStr)
+    : m_dwIndex(rStr.m_dwIndex),
+      m_cString(rStr.m_cString)
+{
+}
+
+
+CZString::~CZString()
+{
+    m_dwIndex = 0;
+}
+
+
+CZString & CZString::operator=(const CZString &rOther)
+{
+    if (&rOther != this)
+    {
+        m_dwIndex = rOther.m_dwIndex;
+        m_cString = rOther.m_cString;
+    }
+
+    return *this;
+}
+
+
+BOOL CZString::operator< (const CZString &rOther) const
+{
+    if (&rOther == this)
+    {
+        return FALSE;
+    }
+    else
+    {
+        if (m_dwIndex < rOther.m_dwIndex)
+        {
+            return TRUE;
+        }
+        else if (m_dwIndex == rOther.m_dwIndex)
+        {
+            return m_cString < rOther.m_cString;
+        }
+        else
+        {
+            return FALSE;
+        }
+    }
+}
+
+
+BOOL CZString::operator==(const CZString &rOther) const
+{
+    if (&rOther == this)
+    {
+        return TRUE;
+    }
+    else
+    {
+        if (m_dwIndex == rOther.m_dwIndex)
+        {
+            return m_cString == rOther.m_cString;
+        }
+        else
+        {
+            return FALSE;
+        }
+    }
+}
+
+
+WORD32 CZString::Index()
+{
+    return m_dwIndex;
+}
+
+
+WORD32 CZString::Length()
+{
+    return m_cString.Length();
+}
+
+
+CHAR * CZString::Data()
+{
+    return m_cString.toChar();
+}
+
+
 WORD32 CJsonValue::InitValue()
 {
     switch (m_eValueType)
@@ -211,14 +311,6 @@ WORD32 CJsonValue::size()
         return 0;
 
     case E_ARRAY_VALUE :
-        if (!m_tValue.pMap->empty())
-        {
-            CObjectValues::const_iterator itLast = m_tValue.pMap->end();
-            --itLast;
-            return (*itLast).first.index() + 1;
-        }
-        return 0;
-
     case E_OBJECT_VALUE :
         return (WORD32)(m_tValue.pMap->size());
 
@@ -237,49 +329,50 @@ CJsonValue & CJsonValue::operator[] (WORD32 dwIndex)
         assert(0);
     }
 
-    CJsonString cKey(dwIndex);
-    CObjectValues::const_iterator it = m_tValue.pMap->find(cKey);
+    CZString cKey(dwIndex);
+    CObjectValues::iterator it = m_tValue.pMap->find(cKey);
     if (it == m_tValue.pMap->end())
     {
         return *(CJsonValue *)NULL;
     }
 
-    return (*it).second;
+    return it->second;
 }
 
 
-CJsonValue & CJsonValue::operator[] (const CHAR *pKey)
+CJsonValue & CJsonValue::operator[] (const CHAR *pName)
 {
     if (m_eValueType != E_OBJECT_VALUE)
     {
         assert(0);
     }
 
-    CJsonString cKey(pKey);
-    CObjectValues::const_iterator it = m_tValue.pMap->find(cKey);
+    CZString cKey(pName);
+    CObjectValues::iterator it = m_tValue.pMap->find(cKey);
     if (it == m_tValue.pMap->end())
     {
         return *(CJsonValue *)NULL;
     }
 
-    return (*it).second;
+    return it->second;
 }
 
 
-CJsonValue & CJsonValue::operator[] (const CJsonString &rKey)
+CJsonValue & CJsonValue::operator[] (CJsonString &rStr)
 {
     if (m_eValueType != E_OBJECT_VALUE)
     {
         assert(0);
     }
 
-    CObjectValues::const_iterator it = m_tValue.pMap->find(rKey);
+    CZString cKey(rStr.toChar());
+    CObjectValues::iterator it = m_tValue.pMap->find(cKey);
     if (it == m_tValue.pMap->end())
     {
         return *(CJsonValue *)NULL;
     }
 
-    return (*it).second;
+    return it->second;
 }
 
 
@@ -291,7 +384,7 @@ CJsonToken::CJsonToken()
 }
 
 
-CJsonToken::CJsonToken()
+CJsonToken::~CJsonToken()
 {
     m_eType  = E_TOKEN_EndOfStream;
     m_pStart = NULL;

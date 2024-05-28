@@ -10,13 +10,26 @@
 #include <unistd.h>
 #include <sched.h>
 #include <pthread.h>
+#include <fstream>
 
-#include "pub_global_def.h"
-
+#include "base_json_parse.h"
 
 
 int main(int argc, char **argv)
 {
+    std::ifstream cFile;
+    cFile.open("base.json");
+
+    CJsonReader  *pReader = new CJsonReader();
+    CJsonValue    cRoot;
+
+    if (!pReader->Parse(cFile, cRoot))
+    {
+        cFile.close();
+        return FAIL;
+    }
+
+    cFile.close();
 
     return SUCCESS;
 }

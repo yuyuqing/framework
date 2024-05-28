@@ -18,7 +18,6 @@
 
 #define JSON_MAX_STRING_LENGTH      ((WORD16)(128))
 
-
 typedef CString<JSON_MAX_STRING_LENGTH>  CJsonString;
 
 
@@ -33,10 +32,35 @@ typedef enum tagE_JsonValueType
 }E_JsonValueType;
 
 
+/* Array/Object类型的对象被组织存放在map中, map的第一个元素由CZString描述 */
+class CZString
+{
+public :
+    CZString (WORD32 dwIndex);
+    CZString (const CHAR *paucData);
+    CZString (const CZString &rStr);
+    virtual ~CZString();
+
+    CZString & operator=(const CZString &rOther);
+
+    BOOL operator< (const CZString &rOther) const;
+    BOOL operator==(const CZString &rOther) const;
+
+    WORD32 Index();
+    WORD32 Length();
+
+    CHAR * Data();
+
+protected :
+    WORD32       m_dwIndex;
+    CJsonString  m_cString;
+};
+
+
 class CJsonValue
 {
 public :
-    typedef std::map<CJsonString, CJsonValue>  CObjectValues;
+    typedef std::map<CZString, CJsonValue>  CObjectValues;
 
     typedef union tagT_ValueHolder
     {
@@ -69,8 +93,8 @@ public :
     WORD32 size();
 
     CJsonValue & operator[] (WORD32 dwIndex);
-    CJsonValue & operator[] (const CHAR *pKey);
-    CJsonValue & operator[] (const CJsonString &rKey);
+    CJsonValue & operator[] (const CHAR *pName);
+    CJsonValue & operator[] (CJsonString &rStr);
 
 public :
     E_JsonValueType  m_eValueType;

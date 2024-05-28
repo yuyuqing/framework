@@ -43,9 +43,11 @@ public :
     BOOL operator==(const CHAR cValue);
     BOOL operator==(const CHAR *paucData);
     BOOL operator==(CString &rStr);
-    BOOL operator==(const CString &rStr);
+    BOOL operator==(const CString &rStr) const;
     BOOL operator >(CString &rStr);
+    BOOL operator >(const CString &rStr) const;
     BOOL operator <(CString &rStr);
+    BOOL operator <(const CString &rStr) const;
 
     CString & operator+=(CHAR cValue);
     CString & operator+=(BYTE cValue);
@@ -55,7 +57,6 @@ public :
     CString & operator+=(CString &rStr);
 
     BYTE * toByte();
-
     CHAR * toChar();
 
     CString subStr(WORD32 dwPos = 0, WORD32 dwLen = 0);
@@ -370,18 +371,19 @@ inline BOOL CString<STR_LEN>::operator==(CString<STR_LEN> &rStr)
 
 
 template <WORD32 STR_LEN>
-inline BOOL CString<STR_LEN>::operator==(const CString &rStr)
+inline BOOL CString<STR_LEN>::operator==(const CString &rStr) const
 {
     if (&rStr == this)
     {
         return TRUE;
     }
 
-    WORD32 dwLen = rStr.Length();
+    WORD32 dwLen1 = strlen(m_aucData);
+    WORD32 dwLen2 = strlen(rStr.m_aucData);
 
-    if (Length() == dwLen)
+    if (dwLen1 == dwLen2)
     {
-        return (0 == memcmp(m_aucData, rStr.toByte(), dwLen));
+        return (0 == memcmp(m_aucData, rStr.m_aucData, dwLen1));
     }
     else
     {
@@ -407,6 +409,25 @@ inline BOOL CString<STR_LEN>::operator >(CString &rStr)
 
 
 template <WORD32 STR_LEN>
+inline BOOL CString<STR_LEN>::operator >(const CString &rStr) const
+{
+    if (&rStr == this)
+    {
+        return FALSE;
+    }
+    else
+    {
+        WORD32 dwLen1 = strlen(m_aucData);
+        WORD32 dwLen2 = strlen(rStr.m_aucData);
+
+        return (0 < memcmp(m_aucData,
+                           rStr.m_aucData,
+                           MIN(dwLen1, dwLen2)));
+    }
+}
+
+
+template <WORD32 STR_LEN>
 inline BOOL CString<STR_LEN>::operator <(CString &rStr)
 {
     if (&rStr == this)
@@ -418,6 +439,25 @@ inline BOOL CString<STR_LEN>::operator <(CString &rStr)
         return (0 > memcmp(m_aucData, 
                            rStr.toByte(), 
                            MIN(Length(), rStr.Length())));
+    }
+}
+
+
+template <WORD32 STR_LEN>
+inline BOOL CString<STR_LEN>::operator <(const CString &rStr) const
+{
+    if (&rStr == this)
+    {
+        return FALSE;
+    }
+    else
+    {
+        WORD32 dwLen1 = strlen(m_aucData);
+        WORD32 dwLen2 = strlen(rStr.m_aucData);
+
+        return (0 > memcmp(m_aucData,
+                           rStr.m_aucData,
+                           MIN(dwLen1, dwLen2)));
     }
 }
 
