@@ -17,7 +17,7 @@
 
 #define DEFAULT_LOG_FILE_SIZE        ((WORD64)(100 * BYTE_NUM_PER_MB))
 
-
+#define MAX_HUGE_DIR_LEN             ((WORD32)(56))
 #define MAX_BLOCK_NUM                ((WORD32)(32))
 #define MAX_POOL_NUM                 ((WORD32)(8))
 #define MAX_WORKER_NUM               ((WORD32)(16))
@@ -60,6 +60,7 @@ typedef struct tagT_MemJsonCfg
     BYTE              ucPoolNum;
     BYTE              ucResved;
     WORD32            dwMemSize;
+    CHAR              aucHugeDir[MAX_HUGE_DIR_LEN];
     T_MemJsonPool     atPool[MAX_POOL_NUM];
 }T_MemJsonCfg;
 
@@ -76,12 +77,27 @@ typedef struct tagT_LogJsonModule
 }T_LogJsonModule;
 
 
+typedef struct tagT_AppJsonCfg
+{
+    CHAR       aucName[APP_NAME_LEN];
+    WORD32     dwAppID;
+    WORD32     dwEventBegin;
+    BOOL       bAssocFlag;
+    WORD32     dwAssocNum;
+    WORD32     adwAssocID[MAX_ASSOCIATE_NUM_PER_APP];
+}T_AppJsonCfg;
+
+
 typedef struct tagT_LogJsonCfg
 {
     WORD32           dwCoreID;
     WORD32           dwPolicy;
     WORD32           dwPriority;
     WORD32           dwStackSize;
+    WORD32           dwCBNum;
+    WORD32           dwPacketCBNum;
+    WORD32           dwMultiCBNum;
+    WORD32           dwTimerThresh;
     CHAR             aucPath[LOG_FILE_NAME_LEN];
     BOOL             bMeasSwitch;
     BOOL             bGlobalSwitch;
@@ -90,8 +106,10 @@ typedef struct tagT_LogJsonCfg
     WORD16           wThresholdWait;     /* 日志策略 */
     WORD16           wThresholdLock;     /* 日志策略 */    
     WORD16           wThresholdLoop;     /* 日志策略 */
-    WORD32           dwModuleNum;        /* 取值为json中定义的模块列表数量 */
     WORD64           lwMaxFileSize;      /* 单个文件最大长度 */
+    WORD32           dwModuleNum;        /* 取值为json中定义的模块列表数量 */
+    WORD32           dwAppNum;           /* 日志线程绑定的App数量 */
+    T_AppJsonCfg     atApp[MAX_APP_NUM_PER_THREAD];
     T_LogJsonModule  atModule[E_LOG_MODULE_NUM];
 }T_LogJsonCfg;
 
@@ -118,17 +136,6 @@ typedef struct tagT_ShmJsonCfg
 }T_ShmJsonCfg;
 
 
-typedef struct tagT_AppJsonCfg
-{
-    CHAR       aucName[APP_NAME_LEN];
-    WORD32     dwAppID;
-    WORD32     dwEventBegin;
-    BOOL       bAssocFlag;
-    WORD32     dwAssocNum;
-    WORD32     adwAssocID[MAX_ASSOCIATE_NUM_PER_APP];
-}T_AppJsonCfg;
-
-
 typedef struct tagT_ThreadJsonCfg
 {
     CHAR          aucType[WORKER_NAME_LEN];
@@ -140,6 +147,8 @@ typedef struct tagT_ThreadJsonCfg
     WORD32        dwStackSize;
     WORD32        dwCBNum;
     WORD32        dwPacketCBNum;
+    WORD32        dwMultiCBNum;
+    WORD32        dwTimerThresh;
     BOOL          bAloneLog;
     WORD32        dwAppNum;
     T_AppJsonCfg  atApp[MAX_APP_NUM_PER_THREAD];

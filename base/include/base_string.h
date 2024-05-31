@@ -53,7 +53,9 @@ public :
     CString & operator+=(BYTE cValue);
 
     CString & operator+=(BYTE *pStr);
+    CString & operator+=(const BYTE *pStr);
     CString & operator+=(CHAR *pStr);
+    CString & operator+=(const CHAR *pStr);
     CString & operator+=(CString &rStr);
 
     BYTE * toByte();
@@ -493,15 +495,37 @@ inline CString<STR_LEN> & CString<STR_LEN>::operator+=(BYTE cValue)
 template <WORD32 STR_LEN>
 inline CString<STR_LEN> & CString<STR_LEN>::operator+=(BYTE *pStr)
 {
-    WORD32 dwPos = Length();
-    
-    if ((NULL != pStr) && (dwPos < STR_LEN))
+    if (unlikely(NULL == pStr))
     {
-        WORD32 dwLen = strlen((char *)pStr);
+        return *this;
+    }
 
-        memcpy((m_aucData + dwPos), 
-               pStr, 
-               MIN((sizeof(m_aucData) - dwPos - 1), dwLen));
+    WORD32 dwPos = Length();
+    WORD32 dwLen = strlen((CHAR *)pStr);
+
+    if ((dwPos + dwLen) < STR_LEN)
+    {
+        memcpy((m_aucData + dwPos), pStr, dwLen);
+    }
+
+    return *this;
+}
+
+
+template <WORD32 STR_LEN>
+inline CString<STR_LEN> & CString<STR_LEN>::operator+=(const BYTE *pStr)
+{
+    if (unlikely(NULL == pStr))
+    {
+        return *this;
+    }
+
+    WORD32 dwPos = Length();
+    WORD32 dwLen = strlen((CHAR *)pStr);
+
+    if ((dwPos + dwLen) < STR_LEN)
+    {
+        memcpy((m_aucData + dwPos), pStr, dwLen);
     }
 
     return *this;
@@ -511,15 +535,37 @@ inline CString<STR_LEN> & CString<STR_LEN>::operator+=(BYTE *pStr)
 template <WORD32 STR_LEN>
 inline CString<STR_LEN> & CString<STR_LEN>::operator+=(CHAR *pStr)
 {
-    WORD32 dwPos = Length();
-    
-    if ((NULL != pStr) && (dwPos < STR_LEN))
+    if (unlikely(NULL == pStr))
     {
-        WORD32 dwLen = strlen(pStr);
+        return *this;
+    }
 
-        memcpy((m_aucData + dwPos), 
-               pStr, 
-               MIN((sizeof(m_aucData) - dwPos - 1), dwLen));
+    WORD32 dwPos = Length();
+    WORD32 dwLen = strlen(pStr);
+
+    if ((dwPos + dwLen) < STR_LEN)
+    {
+        memcpy((m_aucData + dwPos), pStr, dwLen);
+    }
+
+    return *this;
+}
+
+
+template <WORD32 STR_LEN>
+inline CString<STR_LEN> & CString<STR_LEN>::operator+=(const CHAR *pStr)
+{
+    if (unlikely(NULL == pStr))
+    {
+        return *this;
+    }
+
+    WORD32 dwPos = Length();
+    WORD32 dwLen = strlen(pStr);
+
+    if ((dwPos + dwLen) < STR_LEN)
+    {
+        memcpy((m_aucData + dwPos), pStr, dwLen);
     }
 
     return *this;
@@ -529,15 +575,17 @@ inline CString<STR_LEN> & CString<STR_LEN>::operator+=(CHAR *pStr)
 template <WORD32 STR_LEN>
 inline CString<STR_LEN> & CString<STR_LEN>::operator+=(CString<STR_LEN> &rStr)
 {
-    WORD32 dwPos = Length();
-    
-    if ((&rStr != this) && (dwPos < STR_LEN))
+    if (&rStr == this)
     {
-        WORD32 dwLen = rStr.Length();
+        return *this;
+    }
 
-        memcpy((m_aucData + dwPos), 
-               rStr.toByte(), 
-               MIN((sizeof(m_aucData) - dwPos - 1), dwLen));
+    WORD32 dwPos = Length();
+    WORD32 dwLen = rStr.Length();
+
+    if ((dwPos + dwLen) < STR_LEN)
+    {
+        memcpy((m_aucData + dwPos), rStr.toChar(), dwLen);
     }
 
     return *this;

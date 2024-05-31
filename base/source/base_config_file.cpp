@@ -232,6 +232,9 @@ WORD32 ParseMem(T_MemJsonCfg &tMemConfig, CJsonValue &rRoot)
     tMemConfig.ucPoolNum = (BYTE)(rRoot["pools"].size());
     tMemConfig.dwMemSize = (WORD32)(rRoot["mem_size"].AsDWORD());
 
+    CString<MAX_HUGE_DIR_LEN> cDir(rRoot["huge_dir"].AsString());
+    memcpy(tMemConfig.aucHugeDir, cDir.toChar(), cDir.Length());
+
     for (WORD32 dwIndex = 0; dwIndex < tMemConfig.ucPoolNum; dwIndex++)
     {
         CJsonValue &rPool = rRoot["pools"][dwIndex];
@@ -258,6 +261,10 @@ WORD32 ParseLog(T_LogJsonCfg &tLogConfig, CJsonValue &rRoot)
     tLogConfig.dwPolicy          = (WORD32)(rRoot["policy"].AsDWORD());
     tLogConfig.dwPriority        = (WORD32)(rRoot["priority"].AsDWORD());
     tLogConfig.dwStackSize       = (WORD32)(rRoot["stack_size"].AsDWORD());
+    tLogConfig.dwCBNum           = (WORD32)(rRoot["cb_num"].AsDWORD());
+    tLogConfig.dwPacketCBNum     = (WORD32)(rRoot["packet_num"].AsDWORD());
+    tLogConfig.dwMultiCBNum      = (WORD32)(rRoot["multi_cb_num"].AsDWORD());
+    tLogConfig.dwTimerThresh     = (WORD32)(rRoot["timer_cb_num"].AsDWORD());
     tLogConfig.bMeasSwitch       = (BOOL)(rRoot["measure_switch"].AsBOOL());
     tLogConfig.bGlobalSwitch     = (BOOL)(rRoot["global_switch"].AsBOOL());
     tLogConfig.dwLogMeasure      = (WORD32)(rRoot["log_measure"].AsDWORD());
@@ -394,6 +401,8 @@ WORD32 ParseWorker(T_ThreadPoolJsonCfg &tConfig, CJsonValue &rRoot)
         tConfig.atWorker[dwIndex].dwStackSize   = (WORD32)(rWorker["stack_size"].AsDWORD());
         tConfig.atWorker[dwIndex].dwCBNum       = (WORD32)(rWorker["cb_num"].AsDWORD());
         tConfig.atWorker[dwIndex].dwPacketCBNum = (WORD32)(rWorker["packet_num"].AsDWORD());
+        tConfig.atWorker[dwIndex].dwMultiCBNum  = (WORD32)(rWorker["multi_cb_num"].AsDWORD());
+        tConfig.atWorker[dwIndex].dwTimerThresh = (WORD32)(rWorker["timer_cb_num"].AsDWORD());
         tConfig.atWorker[dwIndex].bAloneLog     = (BOOL)(rWorker["alone_log"].AsBOOL());
 
         ParseApp(tConfig.atWorker[dwIndex], rWorker["apps"]);
