@@ -81,25 +81,23 @@ WORD32 COamApp::InitApp()
 
     m_cCBTable.Initialize();
 
-    CLogThread *pThread = static_cast<CLogThread *>(m_pOwner);
-
-    pThread->Register(EV_BASE_LOG_SET_GLOBAL_SWITCH_ID,
+    RegisterProcessor(EV_BASE_LOG_SET_GLOBAL_SWITCH_ID,
                       (CCBObject *)this,
                       (PCBFUNC)(&COamApp::ProcGlobalSwitchMsg));
 
-    pThread->Register(EV_BASE_LOG_SET_WRITE_PERIOD_ID,
+    RegisterProcessor(EV_BASE_LOG_SET_WRITE_PERIOD_ID,
                       (CCBObject *)this,
                       (PCBFUNC)(&COamApp::ProcWritePeriodMsg));
 
-    pThread->Register(EV_BASE_LOG_SET_MODULE_SWITCH_ID,
+    RegisterProcessor(EV_BASE_LOG_SET_MODULE_SWITCH_ID,
                       (CCBObject *)this,
                       (PCBFUNC)(&COamApp::ProcModuleSwitchMsg));
 
-    pThread->Register(EV_BASE_LOG_REGIST_CALLBACK_ID,
+    RegisterProcessor(EV_BASE_LOG_REGIST_CALLBACK_ID,
                       (CCBObject *)this,
                       (PCBFUNC)(&COamApp::ProcCBRegistMsg));
 
-    pThread->Register(EV_BASE_LOG_REMOVE_CALLBACK_ID,
+    RegisterProcessor(EV_BASE_LOG_REMOVE_CALLBACK_ID,
                       (CCBObject *)this,
                       (PCBFUNC)(&COamApp::ProcCBRemoveMsg));
 
@@ -932,7 +930,7 @@ VOID COamApp::TimeOutSwitch(const VOID *pIn, WORD32 dwLen)
     m_ucPos = g_pLogger->GetPos();
 
     /* 切换日志线程及线程池的日志文件切换 */
-    SwitchLogFile(ucPos);
+    //SwitchLogFile(ucPos);
 }
 
 

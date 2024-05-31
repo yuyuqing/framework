@@ -265,6 +265,15 @@ VOID CMemMgr::Destroy()
         ptHead = s_pInstance->m_pMetaHead;
 
         delete s_pInstance;
+
+        if (NULL != ptHead)
+        {
+            WORD32 dwMetaSize = (WORD32)(ptHead->lwMetaSize);
+
+            CleanHuge(*ptHead);
+            munmap(ptHead, dwMetaSize);
+        }
+
         s_pInstance = NULL;
     }
 }
@@ -852,6 +861,29 @@ WORD32 CMemMgr::LinkHugePage(T_MemMetaHead *ptHead, WORD32 dwPos)
 }
 
 
+WORD32 CMemMgr::CleanHuge(T_MemMetaHead &rtHead)
+{
+    WORD32 dwHugeNum = rtHead.dwHugeNum;
+
+    for (WORD32 dwIndex = 0; dwIndex < dwHugeNum; dwIndex++)
+    {
+        T_MemMetaHuge &rtHuge = rtHead.atHugeInfo[dwIndex];
+        munmap((VOID *)(rtHuge.lwHugeAddr), s_lwAlign1G);
+
+        if (s_bMaster)
+        {
+            close(rtHuge.iPrimaryFileID);
+        }
+        else
+        {
+            close(rtHuge.iSecondaryFileID);
+        }
+    }
+
+    return SUCCESS;
+}
+
+
 CMemMgr::CMemMgr ()
 {
     m_pMetaHead       = NULL;
@@ -875,22 +907,6 @@ CMemMgr::~CMemMgr()
     {
         delete m_pCentralMemPool;
     }
-
-    if (NULL != m_pMetaHead)
-    {
-        WORD32 dwMetaSize = (WORD32)(m_pMetaHead->lwMetaSize);
-
-        CleanHuge(*m_pMetaHead);
-        munmap(m_pMetaHead, dwMetaSize);
-    }
-
-    m_pMetaHead       = NULL;
-    m_lwBaseAddr      = 0;
-    m_lwMemSize       = 0;
-    m_lwDataZoneAddr  = 0;
-    m_lwCentralAddr   = 0;
-    m_pDataZone       = NULL;
-    m_pCentralMemPool = NULL;
 }
 
 
@@ -944,29 +960,6 @@ VOID CMemMgr::Dump()
 
     m_pDataZone->Dump();
     m_pCentralMemPool->Dump();
-}
-
-
-WORD32 CMemMgr::CleanHuge(T_MemMetaHead &rtHead)
-{
-    WORD32 dwHugeNum = rtHead.dwHugeNum;
-
-    for (WORD32 dwIndex = 0; dwIndex < dwHugeNum; dwIndex++)
-    {
-        T_MemMetaHuge &rtHuge = rtHead.atHugeInfo[dwIndex];
-        munmap((VOID *)(rtHuge.lwHugeAddr), s_lwAlign1G);
-
-        if (s_bMaster)
-        {
-            close(rtHuge.iPrimaryFileID);
-        }
-        else
-        {
-            close(rtHuge.iSecondaryFileID);
-        }
-    }
-
-    return SUCCESS;
 }
 
 

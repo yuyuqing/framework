@@ -68,6 +68,7 @@ CInitList::~CInitList ()
     memset(m_atFunc, 0x00, sizeof(m_atFunc));
 
     DestroyGlobalData();
+    CFactoryApp::Destroy();
 }
 
 
@@ -129,9 +130,15 @@ WORD32 CInitList::InitComponent(WORD32 dwProcID, CB_RegistMemPool pFunc)
         assert(0);
     }
 
-    CAppCntrl       *pAppCntrl       = CAppCntrl::GetInstance();
     CCentralMemPool *pCentralMemPool = m_pMemMgr->GetCentralMemPool();
 
+    BYTE *pMem = pCentralMemPool->Malloc(sizeof(CAppCntrl));
+    if (NULL == pMem)
+    {
+        assert(0);
+    }
+
+    CAppCntrl *pAppCntrl = CAppCntrl::GetInstance(pMem);
     pAppCntrl->Initialize(pCentralMemPool);
 
     /* 从小到大排序 */

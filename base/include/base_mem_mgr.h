@@ -228,6 +228,8 @@ private :
 
     static WORD32 LinkHugePage(T_MemMetaHead *ptHead, WORD32 dwPos);
 
+    static WORD32 CleanHuge(T_MemMetaHead &rtHead);
+
 public : 
     CMemMgr ();
     virtual ~CMemMgr();
@@ -246,8 +248,6 @@ public :
     VOID Dump();
 
 private :
-    WORD32 CleanHuge(T_MemMetaHead &rtHead);
-
     WORD32 InitDataZone();
     WORD32 InitCentralMemPool();
 

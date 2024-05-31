@@ -12,16 +12,16 @@
 #include <pthread.h>
 #include <fstream>
 
-#include "base_config_file.h"
+#include "base_init_component.h"
 
 
 int main(int argc, char **argv)
 {
-    CBaseConfigFile *pConfig = CBaseConfigFile::GetInstance();
+    CInitList::GetInstance()->InitComponent((WORD32)E_PROC_DU);
 
-    pConfig->ParseFile();
+    sleep(5);
 
-    CBaseConfigFile::Destroy();
+    CInitList::Destroy();
 
     return SUCCESS;
 }

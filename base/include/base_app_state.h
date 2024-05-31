@@ -7,6 +7,7 @@
 #include "pub_event.h"
 
 #include "base_config_file.h"
+#include "base_factory_tpl.h"
 
 
 typedef enum tagE_AppClass
@@ -121,37 +122,22 @@ public :
                               MAX(sizeof(CAppWorkState), sizeof(CAppExitState)))
 
 
-typedef CAppInterface * (*PCreateApp) (BYTE *pMem);
-typedef CAppInterface * (*PResetApp)  (BYTE *pMem);
-typedef VOID (*PDestroyApp) (BYTE *pMem);
-
-
-typedef struct tagT_AppDefInfo
-{
-    CHAR            aucName[APP_NAME_LEN];
-    PCreateApp      pCreateFunc;
-    PResetApp       pResetFunc;
-    PDestroyApp     pDestroyFunc;
-    WORD32          dwMemSize;    
-}T_AppDefInfo;
-
-
 typedef struct tagT_AppInfo
 {
-    CHAR            aucName[APP_NAME_LEN];
-    WORD32          dwAppID;         /* 内部标识的AppID */
-    WORD32          dwThreadID;      /* 归属线程ID */
-    WORD32          dwStartEventID;  /* 起始消息ID, 每种App处理的消息个数为APP_CB_EVENT_NUM */
-    BOOL            bAssocFlag;      /* App是否存在绑定标志(与小区的绑定关系) */
-    WORD32          dwAssocNum;      /* App与关联对象之间的绑定关系 */
-    WORD32          adwAssocID[MAX_ASSOCIATE_NUM_PER_APP];
-    WORD32          dwMemSize;
-    CAppState      *pAppState;
-    BYTE            aucAppState[SIZEOF_APP_STATE];
-    PCreateApp      pCreateFunc;
-    PResetApp       pResetFunc;
-    PDestroyApp     pDestroyFunc;
-    BYTE           *pMem;
+    CHAR             aucName[APP_NAME_LEN];
+    WORD32           dwAppID;         /* 内部标识的AppID */
+    WORD32           dwThreadID;      /* 归属线程ID */
+    WORD32           dwStartEventID;  /* 起始消息ID, 每种App处理的消息个数为APP_CB_EVENT_NUM */
+    BOOL             bAssocFlag;      /* App是否存在绑定标志(与小区的绑定关系) */
+    WORD32           dwAssocNum;      /* App与关联对象之间的绑定关系 */
+    WORD32           adwAssocID[MAX_ASSOCIATE_NUM_PER_APP];
+    WORD32           dwMemSize;
+    CAppState       *pAppState;
+    BYTE             aucAppState[SIZEOF_APP_STATE];
+    PCreateProduct   pCreateFunc;
+    PResetProduct    pResetFunc;
+    PDestroyProduct  pDestroyFunc;
+    BYTE            *pMem;
 }T_AppInfo;
 
 

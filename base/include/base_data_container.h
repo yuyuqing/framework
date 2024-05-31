@@ -88,54 +88,6 @@ public :
 };
 
 
-template <class T>
-class CDecorateData : public CBaseData
-{
-public :
-    static T* Create(BYTE *pMem)
-    {
-        memset(pMem, 0x00, sizeof(CDecorateData<T>));        
-        CDecorateData<T> *pValue = new (pMem) CDecorateData<T>;
-
-        return (*pValue);
-    }
-
-    static T* Reset(BYTE *pMem)
-    {
-        CDecorateData<T> *pValue = (CDecorateData<T> *)(pMem);        
-        delete pValue;
-
-        memset(pMem, 0x00, sizeof(CDecorateData<T>));
-        pValue = new (pMem) CDecorateData<T>;
-
-        return (*pValue);
-    }
-
-    static VOID Destroy(BYTE *pMem)
-    {
-        CDecorateData<T> *pValue = (CDecorateData<T> *)(pMem);        
-        delete pValue;
-    }
-
-public :
-    CDecorateData () {}
-    virtual ~CDecorateData() {}
-
-    operator T& ()
-    {
-        return m_cValue;
-    }
-
-    operator T* ()
-    {
-        return &m_cValue;
-    }
-
-protected :
-    T   m_cValue;
-};
-
-
 template <class T, class V>
 class CDecorateDataV : public CBaseData
 {

@@ -274,11 +274,40 @@ WORD32 ParseLog(T_LogJsonCfg &tLogConfig, CJsonValue &rRoot)
     tLogConfig.wThresholdLoop    = (WORD16)(rRoot["loop_threshold"].AsDWORD());
     tLogConfig.lwMaxFileSize     = (WORD32)(rRoot["file_size"].AsDWORD());
     tLogConfig.dwModuleNum       = rRoot["modules"].size();
+    tLogConfig.dwAppNum          = rRoot["apps"].size();
 
     tLogConfig.lwMaxFileSize     = tLogConfig.lwMaxFileSize * BYTE_NUM_PER_MB;
 
     CString<LOG_FILE_NAME_LEN> cPath(rRoot["path"].AsString());
     memcpy(tLogConfig.aucPath, cPath.toChar(), cPath.Length());
+
+    for (WORD32 dwIndex = 0; dwIndex < tLogConfig.dwAppNum; dwIndex++)
+    {
+        CJsonValue   &rApp  = rRoot["apps"][dwIndex];
+        T_AppJsonCfg &rtCfg = tLogConfig.atApp[dwIndex];
+
+        CString<WORKER_NAME_LEN> cName(rApp["name"].AsString());
+        memcpy(rtCfg.aucName, 
+               cName.toChar(),
+               cName.Length());
+
+        rtCfg.dwAppID      = (WORD32)(rApp["app_id"].AsDWORD());
+        rtCfg.dwEventBegin = (WORD32)(rApp["event_begin"].AsDWORD());
+        rtCfg.dwAssocNum   = (WORD32)(rApp["assoc_cell"].size());
+        rtCfg.bAssocFlag   = (0 == rtCfg.dwAssocNum) ? FALSE : TRUE;
+
+        if (rtCfg.dwAssocNum > MAX_ASSOCIATE_NUM_PER_APP)
+        {
+            rtCfg.dwAssocNum = MAX_ASSOCIATE_NUM_PER_APP;
+        }
+
+        for (WORD32 dwIndex1 = 0; 
+             dwIndex1 < rtCfg.dwAssocNum; 
+             dwIndex1++)
+        {
+            rtCfg.adwAssocID[dwIndex1] = (WORD32)(rApp["assoc_cell"][dwIndex1].AsDWORD());
+        }
+    }
 
     for (WORD32 dwIndex = 0; dwIndex < tLogConfig.dwModuleNum; dwIndex++)
     {

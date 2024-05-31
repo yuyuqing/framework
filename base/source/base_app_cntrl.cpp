@@ -5,12 +5,61 @@
 #include "base_app_cntrl.h"
 
 
+CAppCntrl * CAppCntrl::s_pInstance = NULL;
+
+
+VOID CFactoryApp::Dump()
+{
+    TRACE_STACK("CFactoryApp::Dump()");
+
+    LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_TRACE, TRUE, 
+               "m_dwDefNum : %2d\n",
+               m_dwDefNum);
+
+    for (WORD32 dwIndex = 0; dwIndex < m_dwDefNum; dwIndex++)
+    {
+        LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_TRACE, TRUE, 
+                   "pCreateFunc : %p, pResetFunc : %p, pDestroyFunc : %p, aucName : %s\n",
+                   m_atDefInfo[dwIndex].pCreateFunc,
+                   m_atDefInfo[dwIndex].pResetFunc,
+                   m_atDefInfo[dwIndex].pDestroyFunc,
+                   m_atDefInfo[dwIndex].aucName);
+    }
+}
+
+
+CAppCntrl * CAppCntrl::GetInstance(BYTE *pMem)
+{
+    if (likely(NULL != s_pInstance))
+    {
+        return s_pInstance;
+    }
+
+    if (NULL == pMem)
+    {
+        return NULL;
+    }
+
+    s_pInstance = new (pMem) CAppCntrl();
+
+    return s_pInstance;
+}
+
+
+VOID CAppCntrl::Destroy()
+{
+    if (NULL != s_pInstance)
+    {
+        delete s_pInstance;
+        s_pInstance = NULL;
+    }
+}
+
+
 CAppCntrl::CAppCntrl ()
 {
-    m_dwDefNum = 0;
     m_dwAppNum = 0;
 
-    memset(m_atDefInfo,     0x00, sizeof(m_atDefInfo));
     memset(m_atAppInfo,     0x00, sizeof(m_atAppInfo));
     memset(m_adwAppThrdTbl, 0xFF, sizeof(m_adwAppThrdTbl));
     memset(m_adwAppClass,   0xFF, sizeof(m_adwAppClass));
@@ -31,10 +80,8 @@ CAppCntrl::~CAppCntrl()
         m_pMemInterface->Free(m_atAppInfo[dwIndex].pMem);
     }
 
-    m_dwDefNum = 0;
     m_dwAppNum = 0;
 
-    memset(m_atDefInfo,     0x00, sizeof(m_atDefInfo));
     memset(m_atAppInfo,     0x00, sizeof(m_atAppInfo));
     memset(m_adwAppThrdTbl, 0xFF, sizeof(m_adwAppThrdTbl));
     memset(m_adwAppClass,   0xFF, sizeof(m_adwAppClass));
@@ -62,7 +109,9 @@ T_AppInfo * CAppCntrl::Create(const CHAR   *pName,
         return NULL;
     }
 
-    T_AppDefInfo *ptInfo = FindDef(pName);
+    CFactoryApp *pFactory = CFactoryApp::GetInstance();
+
+    T_ProductDefInfo *ptInfo = pFactory->FineDef(pName);
     if (NULL == ptInfo)
     {
         return NULL;
@@ -114,7 +163,7 @@ T_AppInfo * CAppCntrl::Create(const CHAR   *pName,
 
     ptAppInfo->pMem = m_pMemInterface->Malloc(ptAppInfo->dwMemSize);
 
-    pInst = (*(ptAppInfo->pCreateFunc)) (ptAppInfo->pMem);
+    pInst = (CAppInterface *)((*(ptAppInfo->pCreateFunc)) (ptAppInfo->pMem));
     pInst->Initialize();
 
     ptAppInfo->pAppState = new (ptAppInfo->aucAppState) CAppState(pInst);
@@ -201,20 +250,11 @@ VOID CAppCntrl::Dump()
 {
     TRACE_STACK("CAppCntrl::Dump()");
 
-    LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_TRACE, TRUE, 
-               "m_dwDefNum : %2d, m_dwAppNum : %2d\n",
-               m_dwDefNum,
-               m_dwAppNum);
+    CFactoryApp::GetInstance()->Dump();
 
-    for (WORD32 dwIndex = 0; dwIndex < m_dwDefNum; dwIndex++)
-    {
-        LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_TRACE, TRUE, 
-                   "pCreateFunc : %p, pResetFunc : %p, pDestroyFunc : %p, aucName : %s\n",
-                   m_atDefInfo[dwIndex].pCreateFunc,
-                   m_atDefInfo[dwIndex].pResetFunc,
-                   m_atDefInfo[dwIndex].pDestroyFunc,
-                   m_atDefInfo[dwIndex].aucName);
-    }
+    LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_TRACE, TRUE, 
+               "m_dwAppNum : %2d\n",
+               m_dwAppNum);
 
     for (WORD32 dwIndex = 0; dwIndex < m_dwAppNum; dwIndex++)
     {
@@ -229,55 +269,6 @@ VOID CAppCntrl::Dump()
 
         m_atAppInfo[dwIndex].pAppState->Dump();
     }
-}
-
-
-T_AppDefInfo * CAppCntrl::Define(const CHAR *pName)
-{
-    if ((m_dwDefNum >= MAX_APP_NUM) || (NULL == pName))
-    {
-        return NULL;
-    }
-
-    WORD32 dwNameLen = MIN(strlen(pName), (APP_NAME_LEN - 1));
-
-    T_AppDefInfo *ptInfo = &(m_atDefInfo[m_dwDefNum]);
-
-    memcpy(ptInfo->aucName, pName, dwNameLen);
-
-    m_dwDefNum++;
-
-    return ptInfo;
-}
-
-
-T_AppDefInfo * CAppCntrl::FindDef(const CHAR *pName)
-{
-    if (NULL == pName)
-    {
-        return NULL;
-    }
-
-    WORD32 dwLen = strlen(pName);
-
-    T_AppDefInfo *ptInfo = NULL;
-
-    for (WORD32 dwIndex = 0; dwIndex < m_dwDefNum; dwIndex++)
-    {
-        ptInfo = &(m_atDefInfo[dwIndex]);
-
-        if (dwLen != strlen(ptInfo->aucName))
-        {
-            continue ;
-        }
-
-        if (0 == memcmp(pName, ptInfo->aucName, dwLen))
-        {
-            return ptInfo;
-        }
-    }
-
-    return NULL;
 }
 
 

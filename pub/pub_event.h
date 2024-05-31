@@ -83,13 +83,6 @@ extern "C" {
 #define EV_BASE_THREAD_RESET_TIMER_ID              ((WORD32)(EV_BASE_THREAD_START + 4))
 #define EV_BASE_THREAD_SLOT_TTI_ID                 ((WORD32)(EV_BASE_THREAD_START + 5))
 
-/* 日志线程处理消息 */
-#define EV_BASE_LOG_SET_GLOBAL_SWITCH_ID           ((WORD32)(EV_BASE_THREAD_START + 6))
-#define EV_BASE_LOG_SET_WRITE_PERIOD_ID            ((WORD32)(EV_BASE_THREAD_START + 7))
-#define EV_BASE_LOG_SET_MODULE_SWITCH_ID           ((WORD32)(EV_BASE_THREAD_START + 8))
-#define EV_BASE_LOG_REGIST_CALLBACK_ID             ((WORD32)(EV_BASE_THREAD_START + 10))
-#define EV_BASE_LOG_REMOVE_CALLBACK_ID             ((WORD32)(EV_BASE_THREAD_START + 11))
-
 /* APP Base级处理消息 */
 #define EV_BASE_APP_STARTUP_ID                     ((WORD32)(EV_BASE_APP_START + 0))
 #define EV_BASE_APP_SHUTDOWN_ID                    ((WORD32)(EV_BASE_APP_START + 1))
@@ -126,6 +119,12 @@ extern "C" {
  * 定义平台消息号段内部各个子模块消息号段 (512 ~ 1023)
  * EV_OAM_START ~ EV_OAM_END
  *****************************************************************************/
+/* 日志线程处理消息(COamApp处理) */
+#define EV_BASE_LOG_SET_GLOBAL_SWITCH_ID           ((WORD32)(EV_OAM_START + 0))
+#define EV_BASE_LOG_SET_WRITE_PERIOD_ID            ((WORD32)(EV_OAM_START + 1))
+#define EV_BASE_LOG_SET_MODULE_SWITCH_ID           ((WORD32)(EV_OAM_START + 2))
+#define EV_BASE_LOG_REGIST_CALLBACK_ID             ((WORD32)(EV_OAM_START + 3))
+#define EV_BASE_LOG_REMOVE_CALLBACK_ID             ((WORD32)(EV_OAM_START + 4))
 
 
 /******************************************************************************
