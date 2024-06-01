@@ -572,10 +572,9 @@ VOID COamApp::SyncClock(const VOID *pIn, WORD32 dwLen)
         m_apThread[m_ucThrdNum] = g_pLogThread;
         m_ucThrdNum++;
 
-        CThreadPool *pThreadPool = CThreadCntrl::GetInstance()->GetThreadPool();
         for (WORD32 dwIndex = 0; dwIndex < MAX_WORKER_NUM; dwIndex++)
         {
-            CBaseThread *pThread = (*pThreadPool)[dwIndex];
+            CBaseThread *pThread = (*g_pThreadPool)[dwIndex];
             if (NULL == pThread)
             {
                 break ;
@@ -889,7 +888,7 @@ VOID COamApp::TimeOutLogMeas(const VOID *pIn, WORD32 dwLen)
 
 VOID COamApp::TimeOutLogFlush(const VOID *pIn, WORD32 dwLen)
 {
-    TRACE_STACK("COamApp::TimeOutLogMeas()");
+    TRACE_STACK("COamApp::TimeOutLogFlush()");
 
     CLogThread *pThread = (CLogThread *)g_pLogThread;
     pThread->Flush();
@@ -995,6 +994,7 @@ WORD32 COamApp::SwitchLogFile(BYTE ucPos)
             continue ;
         }
 
+        pLogger = NULL;
         pLogger = pThread->GetLogger();
         if ((NULL != pLogger) && (pLogger != g_pLogger))
         {

@@ -12,6 +12,9 @@ DEFINE_THREAD(CWorkThread);
 DEFINE_THREAD(CMultiThread);
 
 
+CThreadCntrl * CThreadCntrl::s_pInstance = NULL;
+
+
 WORD32 ExitThreadCtrl(VOID *pArg)
 {    
     CThreadCntrl::Destroy();
@@ -26,10 +29,18 @@ WORD32 InitThreadCtrl(WORD32 dwProcID, VOID *pArg)
     T_InitFunc *ptInitFunc = (T_InitFunc *)pArg;
     ptInitFunc->pExitFunc  = &ExitThreadCtrl;
 
-    CThreadCntrl *pThreadCntrl = CThreadCntrl::GetInstance();
+    CCentralMemPool *pCentralMemPool = ptInitFunc->pMemInterface;
+
+    BYTE *pMem = pCentralMemPool->Malloc(sizeof(CThreadCntrl));
+    if (NULL == pMem)
+    {
+        assert(0);
+    }
+
+    CThreadCntrl *pThreadCntrl = CThreadCntrl::GetInstance(pMem);
 
     pThreadCntrl->Initialize(ptInitFunc->pMemInterface, dwProcID);
-    g_pThreadPool->StartThreads();
+    pThreadCntrl->StartThreads();
 
     pThreadCntrl->Dump();
 
@@ -38,18 +49,64 @@ WORD32 InitThreadCtrl(WORD32 dwProcID, VOID *pArg)
 INIT_EXPORT(InitThreadCtrl, 9);
 
 
-CThreadPool::CThreadPool ()
+VOID CFactoryThread::Dump()
 {
-    m_dwDefNum    = 0;
-    m_dwThreadNum = 0;
-    memset((BYTE *)(&(m_atDefInfo[0])),    0x00, sizeof(m_atDefInfo));
-    memset((BYTE *)(&(m_atThreadInfo[0])), 0x00, sizeof(m_atThreadInfo));
+    TRACE_STACK("CFactoryThread::Dump()");
 
-    m_pMemInterface = NULL;
+    LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_TRACE, TRUE, 
+               "m_dwDefNum : %2d\n",
+               m_dwDefNum);
+
+    for (WORD32 dwIndex = 0; dwIndex < m_dwDefNum; dwIndex++)
+    {
+        LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_TRACE, TRUE, 
+                   "pCreateFunc : %p, pResetFunc : %p, pDestroyFunc : %p, aucName : %s\n",
+                   m_atDefInfo[dwIndex].pCreateFunc,
+                   m_atDefInfo[dwIndex].pResetFunc,
+                   m_atDefInfo[dwIndex].pDestroyFunc,
+                   m_atDefInfo[dwIndex].aucName);
+    }
 }
 
 
-CThreadPool::~CThreadPool()
+CThreadCntrl * CThreadCntrl::GetInstance(BYTE *pMem)
+{
+    if (likely(NULL != s_pInstance))
+    {
+        return s_pInstance;
+    }
+
+    if (NULL == pMem)
+    {
+        return NULL;
+    }
+
+    s_pInstance = new (pMem) CThreadCntrl();
+
+    return s_pInstance;
+}
+
+
+VOID CThreadCntrl::Destroy()
+{
+    if (NULL != s_pInstance)
+    {
+        delete s_pInstance;
+        s_pInstance = NULL;
+    }
+}
+
+
+CThreadCntrl::CThreadCntrl ()
+{
+    m_pMemInterface = NULL;
+    m_dwThreadNum   = 0;
+
+    memset((BYTE *)(&(m_atThreadInfo[0])), 0x00, sizeof(m_atThreadInfo));
+}
+
+
+CThreadCntrl::~CThreadCntrl()
 {
     for (WORD32 dwIndex = 0; dwIndex < m_dwThreadNum; dwIndex++)
     {
@@ -63,18 +120,16 @@ CThreadPool::~CThreadPool()
         }
     }
 
-    m_dwDefNum    = 0;
-    m_dwThreadNum = 0;
-    memset((BYTE *)(&(m_atDefInfo[0])),    0x00, sizeof(m_atDefInfo));
-    memset((BYTE *)(&(m_atThreadInfo[0])), 0x00, sizeof(m_atThreadInfo));
-
     m_pMemInterface = NULL;
+    m_dwThreadNum   = 0;
+    memset((BYTE *)(&(m_atThreadInfo[0])), 0x00, sizeof(m_atThreadInfo));
 }
 
 
 /* 按ThreadID从小到大排序创建线程实例(启动顺序依赖创建顺序) */
-WORD32 CThreadPool::Initialize(CCentralMemPool *pMemInterface, WORD32 dwProcID)
+WORD32 CThreadCntrl::Initialize(CCentralMemPool *pMemInterface, WORD32 dwProcID)
 {
+    g_pThreadPool   = this;
     m_pMemInterface = pMemInterface;
 
     FetchJsonConfig();
@@ -102,20 +157,21 @@ WORD32 CThreadPool::Initialize(CCentralMemPool *pMemInterface, WORD32 dwProcID)
         tParam.bAloneLog     = m_atThreadInfo[dwIndex].bAloneLog;
         tParam.pMemPool      = m_pMemInterface;
 
-        m_atThreadInfo[dwIndex].pWorker = (*(m_atThreadInfo[dwIndex].pCreateFunc)) (m_atThreadInfo[dwIndex].pMem, tParam);
+        m_atThreadInfo[dwIndex].pWorker = (CBaseThread *)((*(m_atThreadInfo[dwIndex].pCreateFunc)) (m_atThreadInfo[dwIndex].pMem, &tParam));
 
         m_atThreadInfo[dwIndex].pWorker->Initialize();
 
         LoadApp(m_atThreadInfo[dwIndex]);
     }
 
+
     return SUCCESS;
 }
 
 
-WORD32 CThreadPool::StartThreads()
+WORD32 CThreadCntrl::StartThreads()
 {
-    TRACE_STACK("CThreadPool::StartThreads()");
+    TRACE_STACK("CThreadCntrl::StartThreads()");
 
     for (WORD32 dwIndex = 0; dwIndex < m_dwThreadNum; dwIndex++)
     {
@@ -133,9 +189,9 @@ WORD32 CThreadPool::StartThreads()
 }
 
 
-WORD32 CThreadPool::JoinThreads()
+WORD32 CThreadCntrl::JoinThreads()
 {
-    TRACE_STACK("CThreadPool::JoinThreads()");
+    TRACE_STACK("CThreadCntrl::JoinThreads()");
 
     for (WORD32 dwIndex = 0; dwIndex < m_dwThreadNum; dwIndex++)
     {
@@ -152,9 +208,9 @@ WORD32 CThreadPool::JoinThreads()
 }
 
 
-VOID CThreadPool::Dump()
+VOID CThreadCntrl::Dump()
 {
-    TRACE_STACK("CThreadPool::Dump()");
+    TRACE_STACK("CThreadCntrl::Dump()");
 
     LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_TRACE, TRUE,
                "m_dwThreadNum : %d\n",
@@ -177,91 +233,44 @@ VOID CThreadPool::Dump()
 }
 
 
-T_ThreadDefInfo * CThreadPool::Define(const CHAR *pName)
-{
-    if ((m_dwDefNum >= MAX_WORKER_NUM) || (NULL == pName))
-    {
-        return NULL;
-    }
-
-    WORD32 dwNameLen = MIN(strlen(pName), (MAX_WORKER_NUM - 1));
-
-    T_ThreadDefInfo *ptInfo = &(m_atDefInfo[m_dwDefNum]);
-
-    memcpy(ptInfo->aucName, pName, dwNameLen);
-
-    m_dwDefNum++;
-
-    return ptInfo;
-}
-
-
-T_ThreadDefInfo * CThreadPool::FindDef(const CHAR *pName)
-{
-    if (NULL == pName)
-    {
-        return NULL;
-    }
-
-    WORD32 dwLen = strlen(pName);
-
-    T_ThreadDefInfo *ptInfo = NULL;
-
-    for (WORD32 dwIndex = 0; dwIndex < m_dwDefNum; dwIndex++)
-    {
-        ptInfo = &(m_atDefInfo[dwIndex]);
-        
-        if (dwLen != strlen(ptInfo->aucName))
-        {
-            continue ;
-        }
-
-        if (0 == memcmp(pName, ptInfo->aucName, dwLen))
-        {
-            return ptInfo;
-        }
-    }
-
-    return NULL;
-}
-
-
-WORD32 CThreadPool::FetchJsonConfig()
+WORD32 CThreadCntrl::FetchJsonConfig()
 {
     T_ThreadPoolJsonCfg &rJsonCfg = CBaseConfigFile::GetInstance()->GetWorkerJsonCfg();
     T_ThreadJsonCfg     *ptWorker = NULL;
 
-    T_ThreadDefInfo *ptDefInfo    = NULL;
-    T_ThreadInfo    *ptThreadInfo = NULL;
+    T_ProductDefInfo *ptDefInfo    = NULL;
+    T_ThreadInfo     *ptThreadInfo = NULL;
+
+    CFactoryThread *pFactory = CFactoryThread::GetInstance();
 
     for (WORD32 dwIndex = 0; dwIndex < rJsonCfg.dwWorkerNum; dwIndex++)
     {
         ptWorker = &(rJsonCfg.atWorker[dwIndex]);
-        
+
         ptThreadInfo = FindThreadInfo(ptWorker->dwThreadID);
         if (NULL != ptThreadInfo)
         {
             continue ;
         }
 
-        ptDefInfo = FindDef(ptWorker->aucType);
+        ptDefInfo = pFactory->FindDef(ptWorker->aucType);
         if (NULL == ptDefInfo)
         {
             /* 配置错误 */
             assert(0);
         }
 
-        ptThreadInfo = CreateThread(ptWorker->dwThreadID, 
-                                    ptWorker->dwLogicalID, 
-                                    ptWorker->dwPolicy,
-                                    ptWorker->dwPriority,
-                                    ptWorker->dwStackSize,
-                                    ptWorker->dwCBNum,
-                                    ptWorker->dwPacketCBNum,
-                                    ptWorker->dwMultiCBNum,
-                                    ptWorker->dwTimerThresh,
-                                    ptWorker->bAloneLog,
-                                    ptDefInfo);        
+        ptThreadInfo = CreateInfo(ptWorker->dwThreadID,
+                                  ptWorker->dwLogicalID,
+                                  ptWorker->dwPolicy,
+                                  ptWorker->dwPriority,
+                                  ptWorker->dwStackSize,
+                                  ptWorker->dwCBNum,
+                                  ptWorker->dwPacketCBNum,
+                                  ptWorker->dwMultiCBNum,
+                                  ptWorker->dwTimerThresh,
+                                  ptWorker->bAloneLog,
+                                  ptDefInfo);
         if (NULL == ptThreadInfo)
         {
             /* 线程创建失败 */
@@ -293,19 +302,19 @@ WORD32 CThreadPool::FetchJsonConfig()
 }
 
 
-T_ThreadInfo * CThreadPool::CreateThread(WORD32           dwThreadID,
-                                         WORD32           dwLogicalID,
-                                         WORD32           dwPolicy,
-                                         WORD32           dwPriority,
-                                         WORD32           dwStakcSize,
-                                         WORD32           dwCBNum,
-                                         WORD32           dwPacketCBNum,
-                                         WORD32           dwMultiCBNum,
-                                         WORD32           dwTimerThresh,
-                                         BOOL             bAloneLog,
-                                         T_ThreadDefInfo *ptDefInfo)
+T_ThreadInfo * CThreadCntrl::CreateInfo(WORD32            dwThreadID,
+                                        WORD32            dwLogicalID,
+                                        WORD32            dwPolicy,
+                                        WORD32            dwPriority,
+                                        WORD32            dwStakcSize,
+                                        WORD32            dwCBNum,
+                                        WORD32            dwPacketCBNum,
+                                        WORD32            dwMultiCBNum,
+                                        WORD32            dwTimerThresh,
+                                        BOOL              bAloneLog,
+                                        T_ProductDefInfo *ptDefInfo)
 {
-    if (NULL == ptDefInfo)
+    if ((NULL == ptDefInfo) || (m_dwThreadNum >= MAX_WORKER_NUM))
     {
         return NULL;
     }
@@ -317,11 +326,7 @@ T_ThreadInfo * CThreadPool::CreateThread(WORD32           dwThreadID,
         assert(0);
     }
 
-    ptThreadInfo = Create();
-    if (NULL == ptThreadInfo)
-    {
-        return NULL;
-    }
+    ptThreadInfo = &(m_atThreadInfo[m_dwThreadNum]);
 
     ptThreadInfo->dwThreadID    = dwThreadID;
     ptThreadInfo->dwLogicalID   = dwLogicalID;
@@ -340,28 +345,15 @@ T_ThreadInfo * CThreadPool::CreateThread(WORD32           dwThreadID,
     ptThreadInfo->dwAppNum      = 0;
     ptThreadInfo->pMem          = NULL;
 
-    return ptThreadInfo;
-}
-
-
-T_ThreadInfo * CThreadPool::Create()
-{
-    if (m_dwThreadNum >= MAX_WORKER_NUM)
-    {
-        return NULL;
-    }
-
-    T_ThreadInfo *ptThreadInfo = &(m_atThreadInfo[m_dwThreadNum]);
-
     m_dwThreadNum++;
 
     return ptThreadInfo;
 }
 
 
-WORD32 CThreadPool::LoadApp(T_ThreadInfo &rtThread)
+WORD32 CThreadCntrl::LoadApp(T_ThreadInfo &rtThread)
 {
-    TRACE_STACK("CThreadPool::LoadApp()");
+    TRACE_STACK("CThreadCntrl::LoadApp()");
 
     CAppCntrl     *pAppCntrl = CAppCntrl::GetInstance();
     CBaseThread   *pWorker   = rtThread.pWorker;
@@ -388,44 +380,5 @@ WORD32 CThreadPool::LoadApp(T_ThreadInfo &rtThread)
 
     return SUCCESS;
 }
-
-
-CThreadCntrl::CThreadCntrl ()
-{
-    m_pMemInterface = NULL;
-}
-
-
-CThreadCntrl::~CThreadCntrl()
-{
-    m_pMemInterface = NULL;
-}
-
-
-WORD32 CThreadCntrl::Initialize(CCentralMemPool *pMemInterface, WORD32 dwProcID)
-{
-    m_pMemInterface = pMemInterface;
-
-    m_cThreadPool.Initialize(m_pMemInterface, dwProcID);
-
-    g_pThreadPool = &m_cThreadPool;
-
-    return SUCCESS;
-}
-
-
-VOID CThreadCntrl::Dump()
-{
-    TRACE_STACK("CThreadCntrl::Dump()");
-
-    LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_DEBUG, TRUE,
-               "================================================================\n");
-
-    m_cThreadPool.Dump();
-
-    LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_DEBUG, TRUE,
-               "================================================================\n");
-}
-
 
 

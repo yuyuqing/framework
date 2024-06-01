@@ -68,7 +68,6 @@ CInitList::~CInitList ()
     memset(m_atFunc, 0x00, sizeof(m_atFunc));
 
     DestroyGlobalData();
-    CFactoryApp::Destroy();
 }
 
 
@@ -268,6 +267,8 @@ WORD32 CInitList::DestroyGlobalData()
 
     CBaseConfigFile::Destroy();
     CCpuCoreInfo::Destroy();
+    CFactoryApp::Destroy();
+    CFactoryThread::Destroy();
 
     return SUCCESS;
 }

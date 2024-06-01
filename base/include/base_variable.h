@@ -50,14 +50,14 @@ class CGlobalClock;
 class CLogInfo;
 class COamApp;
 class CBaseThread;
-class CThreadPool;
+class CThreadCntrl;
 
 
 extern CGlobalClock  *g_pGlobalClock;
 extern CLogInfo      *g_pLogger;
 extern COamApp       *g_pOamApp;
 extern CBaseThread   *g_pLogThread;
-extern CThreadPool   *g_pThreadPool;
+extern CThreadCntrl  *g_pThreadPool;
 
 
 #endif

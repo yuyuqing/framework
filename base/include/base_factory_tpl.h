@@ -16,9 +16,9 @@ template <class V>
 class CProductTpl : public CBaseData
 {
 public :
-    template <typename... Args>
-    CProductTpl (Args&&... args)
-        : m_cValue(args...)
+    template <typename P>
+    CProductTpl (const P *pParam)
+        : m_cValue(*pParam)
     {
     }
 
@@ -55,7 +55,7 @@ typedef struct tagT_ProductDefInfo
 }T_ProductDefInfo;
 
 
-/* T : 具体的工厂类(CAppFactory/CThreadFactory) */
+/* T : 具体的工厂类(CFactoryApp/CFactoryThread) */
 template <class T>
 class CFactoryTpl
 {
@@ -81,23 +81,44 @@ public :
         }
     }
 
-    template <class V, typename... Args>
-    static V * CreateProduct(BYTE *pMem, Args&&... args)
+    template <class V>
+    static V * CreateProduct(BYTE *pMem)
     {
         memset(pMem, 0x00, sizeof(CProductTpl<V>));
-        CProductTpl<V> *pValue = new (pMem) CProductTpl<V>(args...);
+        CProductTpl<V> *pValue = new (pMem) CProductTpl<V>();
 
         return (*pValue);
     }
 
-    template <class V, typename... Args>
-    static V * ResetProduct(BYTE *pMem, Args&&... args)
+    template <class V>
+    static V * ResetProduct(BYTE *pMem)
     {
         CProductTpl<V> *pValue = (CProductTpl<V> *)(pMem);
         delete pValue;
 
         memset(pMem, 0x00, sizeof(CProductTpl<V>));
-        pValue = new (pMem) CProductTpl<V>(args...);
+        pValue = new (pMem) CProductTpl<V>();
+
+        return (*pValue);
+    }
+
+    template <class V, class P>
+    static V * CreateProduct(BYTE *pMem, const P *pParam)
+    {
+        memset(pMem, 0x00, sizeof(CProductTpl<V>));
+        CProductTpl<V> *pValue = new (pMem) CProductTpl<V>(pParam);
+
+        return (*pValue);
+    }
+
+    template <class V, class P>
+    static V * ResetProduct(BYTE *pMem, const P *pParam)
+    {
+        CProductTpl<V> *pValue = (CProductTpl<V> *)(pMem);
+        delete pValue;
+
+        memset(pMem, 0x00, sizeof(CProductTpl<V>));
+        pValue = new (pMem) CProductTpl<V>(pParam);
 
         return (*pValue);
     }
@@ -129,7 +150,27 @@ public :
         return SUCCESS;
     }
 
-    T_ProductDefInfo * FineDef(const CHAR *pName);
+    /* V : 具体的产品类(CAppXXX/CThreadXXX) */
+    template <class V, class P>
+    static WORD32 DefineProduct(const CHAR *pName)
+    {
+        T *pFactory = CFactoryTpl<T>::GetInstance();
+
+        T_ProductDefInfo *ptInfo = pFactory->Define(pName);
+        if (NULL == ptInfo)
+        {
+            return FAIL;
+        }
+
+        ptInfo->dwMemSize    = sizeof(CProductTpl<V>);
+        ptInfo->pCreateFunc  = (PCreateProduct)(&CFactoryTpl<T>::CreateProduct<V, P>);
+        ptInfo->pResetFunc   = (PResetProduct)(&CFactoryTpl<T>::ResetProduct<V, P>);
+        ptInfo->pDestroyFunc = (PDestroyProduct)(&CFactoryTpl<T>::DestroyProduct<V>);
+
+        return SUCCESS;
+    }
+
+    T_ProductDefInfo * FindDef(const CHAR *pName);
 
 protected :
     T_ProductDefInfo * Define(const CHAR *pName);
@@ -160,7 +201,7 @@ T * CFactoryTpl<T>::s_pInstance = NULL;
 
 
 template <class T>
-T_ProductDefInfo * CFactoryTpl<T>::FineDef(const CHAR *pName)
+T_ProductDefInfo * CFactoryTpl<T>::FindDef(const CHAR *pName)
 {
     if (NULL == pName)
     {

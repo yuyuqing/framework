@@ -34,6 +34,6 @@ CGlobalClock  *g_pGlobalClock = NULL;
 CLogInfo      *g_pLogger      = NULL;
 COamApp       *g_pOamApp      = NULL;
 CBaseThread   *g_pLogThread   = NULL;
-CThreadPool   *g_pThreadPool  = NULL;
+CThreadCntrl  *g_pThreadPool  = NULL;
 
 

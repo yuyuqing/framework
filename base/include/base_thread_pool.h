@@ -7,15 +7,30 @@
 #include "base_app_cntrl.h"
 
 
-class CThreadPool
+class CFactoryThread : public CFactoryTpl<CFactoryThread>
 {
 public :
-    template <class T>
-    static WORD32 DefThread(const CHAR *pName);
+    CFactoryThread () {}
+    virtual ~CFactoryThread() {}
+
+    VOID Dump();
+};
+
+
+#define DEFINE_THREAD(V)    \
+    WORD32 __attribute__((used)) __dwThread_##V##_ = CFactoryThread::DefineProduct<V, T_ThreadParam>(#V)
+
+
+class CThreadCntrl : public CBaseData
+{
+public :
+    static CThreadCntrl * GetInstance(BYTE *pMem);
+    static CThreadCntrl * GetInstance();
+    static VOID Destroy();
 
 public :
-    CThreadPool ();
-    virtual ~CThreadPool();
+    CThreadCntrl ();
+    virtual ~CThreadCntrl();
 
     WORD32 Initialize(CCentralMemPool *pMemInterface, WORD32 dwProcID);
 
@@ -37,40 +52,39 @@ public :
     VOID Dump();
 
 protected :
-    T_ThreadDefInfo * Define(const CHAR *pName);
-
-    T_ThreadDefInfo * FindDef(const CHAR *pName);
-
     WORD32 FetchJsonConfig();
 
-    T_ThreadInfo * CreateThread(WORD32           dwThreadID,
-                                WORD32           dwLogicalID,
-                                WORD32           dwPolicy,
-                                WORD32           dwPriority,
-                                WORD32           dwStakcSize,
-                                WORD32           dwCBNum,
-                                WORD32           dwPacketCBNum,
-                                WORD32           dwMultiCBNum,
-                                WORD32           dwTimerThresh,
-                                BOOL             bAloneLog,
-                                T_ThreadDefInfo *ptDefInfo);
-
-    T_ThreadInfo * Create();
+    T_ThreadInfo * CreateInfo(WORD32            dwThreadID,
+                              WORD32            dwLogicalID,
+                              WORD32            dwPolicy,
+                              WORD32            dwPriority,
+                              WORD32            dwStakcSize,
+                              WORD32            dwCBNum,
+                              WORD32            dwPacketCBNum,
+                              WORD32            dwMultiCBNum,
+                              WORD32            dwTimerThresh,
+                              BOOL              bAloneLog,
+                              T_ProductDefInfo *ptDefInfo);
 
     WORD32 LoadApp(T_ThreadInfo &rtThread);
 
-protected :    
-    WORD32           m_dwDefNum;
-    T_ThreadDefInfo  m_atDefInfo[MAX_WORKER_NUM];
+protected :
+    CCentralMemPool      *m_pMemInterface;    /* CentralÄÚ´æ³Ø */
+    WORD32                m_dwThreadNum;
+    T_ThreadInfo          m_atThreadInfo[MAX_WORKER_NUM];
 
-    WORD32           m_dwThreadNum;
-    T_ThreadInfo     m_atThreadInfo[MAX_WORKER_NUM];
-
-    CCentralMemPool *m_pMemInterface;    /* CentralÄÚ´æ³Ø */
+private :
+    static CThreadCntrl  *s_pInstance;
 };
 
 
-inline CBaseThread * CThreadPool::operator[] (WORD32 dwIndex)
+inline CThreadCntrl * CThreadCntrl::GetInstance()
+{
+    return s_pInstance;
+}
+
+
+inline CBaseThread * CThreadCntrl::operator[] (WORD32 dwIndex)
 {
     if (unlikely(dwIndex >= m_dwThreadNum))
     {
@@ -81,7 +95,7 @@ inline CBaseThread * CThreadPool::operator[] (WORD32 dwIndex)
 }
 
 
-inline T_ThreadInfo * CThreadPool::FindThreadInfo(WORD32 dwThreadID)
+inline T_ThreadInfo * CThreadCntrl::FindThreadInfo(WORD32 dwThreadID)
 {
     for (WORD32 dwIndex = 0; dwIndex < m_dwThreadNum; dwIndex++)
     {
@@ -95,7 +109,7 @@ inline T_ThreadInfo * CThreadPool::FindThreadInfo(WORD32 dwThreadID)
 }
 
 
-inline CBaseThread * CThreadPool::FindThread(WORD32 dwThreadID)
+inline CBaseThread * CThreadCntrl::FindThread(WORD32 dwThreadID)
 {
     for (WORD32 dwIndex = 0; dwIndex < m_dwThreadNum; dwIndex++)
     {
@@ -109,10 +123,10 @@ inline CBaseThread * CThreadPool::FindThread(WORD32 dwThreadID)
 }
 
 
-inline CBaseThread * CThreadPool::FindThread(E_AppClass  eDstClass,
-                                             WORD32      dwDstAssocID,
-                                             WORD32     &rdwDstAppID,
-                                             WORD32     &rdwDstThreadID)
+inline CBaseThread * CThreadCntrl::FindThread(E_AppClass  eDstClass,
+                                              WORD32      dwDstAssocID,
+                                              WORD32     &rdwDstAppID,
+                                              WORD32     &rdwDstThreadID)
 {
     CAppCntrl *pAppCntrl = CAppCntrl::GetInstance();
 
@@ -123,33 +137,9 @@ inline CBaseThread * CThreadPool::FindThread(E_AppClass  eDstClass,
 }
 
 
-inline WORD32 CThreadPool::GetThreadNum()
+inline WORD32 CThreadCntrl::GetThreadNum()
 {
     return m_dwThreadNum;
-}
-
-
-class CThreadCntrl : public CSingleton<CThreadCntrl>
-{
-public :
-    CThreadCntrl ();
-    virtual ~CThreadCntrl();
-
-    WORD32 Initialize(CCentralMemPool *pMemInterface, WORD32 dwProcID);
-
-    CThreadPool * GetThreadPool();
-
-    VOID Dump();
-
-protected :
-    CThreadPool         m_cThreadPool;
-    CCentralMemPool    *m_pMemInterface;    /* CentralÄÚ´æ³Ø */
-};
-
-
-inline CThreadPool * CThreadCntrl::GetThreadPool()
-{
-    return &m_cThreadPool;
 }
 
 
@@ -298,33 +288,6 @@ inline WORD32 SendMultiRingMsg(E_AppClass  eDstClass,
                                  dwMsgID,
                                  wLen,
                                  ptMsg);
-}
-
-
-#define DEFINE_THREAD(T)    \
-    WORD32 __attribute__((used)) __dwThread_##T##_ = CThreadPool::DefThread<T>(#T)
-
-
-template <class T>
-WORD32 CThreadPool::DefThread(const CHAR *pName)
-{
-    CThreadPool *pPool = CThreadCntrl::GetInstance()->GetThreadPool();
-    if (NULL == pPool)
-    {
-        return FAIL;
-    }
-
-    T_ThreadDefInfo *ptInfo = pPool->Define(pName);
-    if (NULL == ptInfo)
-    {
-        return FAIL;
-    }
-
-    ptInfo->pCreateFunc  = (PCreateThread)(&CDecorateDataV<T, T_ThreadParam>::Create);
-    ptInfo->pDestroyFunc = (PDestroyThread)(&CDecorateDataV<T, T_ThreadParam>::Destroy);
-    ptInfo->dwMemSize    = sizeof(CDecorateDataV<T, T_ThreadParam>);
-
-    return SUCCESS;
 }
 
 

@@ -111,7 +111,7 @@ T_AppInfo * CAppCntrl::Create(const CHAR   *pName,
 
     CFactoryApp *pFactory = CFactoryApp::GetInstance();
 
-    T_ProductDefInfo *ptInfo = pFactory->FineDef(pName);
+    T_ProductDefInfo *ptInfo = pFactory->FindDef(pName);
     if (NULL == ptInfo)
     {
         return NULL;

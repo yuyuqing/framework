@@ -617,39 +617,26 @@ inline VOID CBaseThread::GetMsgMemMeasure(T_MsgMemMeasure &rtMeasure)
 }
 
 
-typedef CBaseThread * (*PCreateThread) (BYTE *pMem, const T_ThreadParam &rParam);
-typedef VOID (*PDestroyThread) (BYTE *pMem);
-
-
-typedef struct tagT_ThreadDefInfo
-{
-    CHAR            aucName[WORKER_NAME_LEN];
-    PCreateThread   pCreateFunc;
-    PDestroyThread  pDestroyFunc;
-    WORD32          dwMemSize;
-}T_ThreadDefInfo;
-
-
 typedef struct tagT_ThreadInfo
 {
-    WORD32           dwThreadID;     /* 线程ID, 内部唯一标识 */
-    WORD32           dwLogicalID;    /* 线程绑定的逻辑核ID */
-    WORD32           dwPolicy;       /* 线程调度策略; SCHED_RR(2)/SCHED_FIFO(1)/SCHED_OTHER(0) */
-    WORD32           dwPriority;     /* 线程优先级 */
-    WORD32           dwStackSize;    /* 线程栈空间大小 */
-    WORD32           dwCBNum;        /* 低优先级队列每次循环最大回调次数 */
-    WORD32           dwPacketCBNum;  /* 报文队列每次循环最大回调次数 */
-    WORD32           dwMultiCBNum;   /* MultiRing队列每次循环最大回调次数(针对STRing) */
-    WORD32           dwTimerThresh;  /* 定时器队列每次循环最大回调次数 */
-    BOOL             bAloneLog;      /* 线程记录日志是否使用独立日志文件 */
-    PCreateThread    pCreateFunc;    /* 线程对象的创建函数 */
-    PDestroyThread   pDestroyFunc;   /* 线程对象的销毁函数 */
-    CBaseThread     *pWorker;        /* 线程对象 */
-    WORD32           dwMemSize;      /* 线程对象占用内存大小 */
-    WORD32           dwAppNum;       /* 线程绑定的App数量 */
-    BYTE            *pMem;           /* 线程对象内存块 */
-    T_AppJsonCfg     atApp[MAX_APP_NUM_PER_THREAD];
-    CHAR             aucName[WORKER_NAME_LEN];
+    WORD32            dwThreadID;     /* 线程ID, 内部唯一标识 */
+    WORD32            dwLogicalID;    /* 线程绑定的逻辑核ID */
+    WORD32            dwPolicy;       /* 线程调度策略; SCHED_RR(2)/SCHED_FIFO(1)/SCHED_OTHER(0) */
+    WORD32            dwPriority;     /* 线程优先级 */
+    WORD32            dwStackSize;    /* 线程栈空间大小 */
+    WORD32            dwCBNum;        /* 低优先级队列每次循环最大回调次数 */
+    WORD32            dwPacketCBNum;  /* 报文队列每次循环最大回调次数 */
+    WORD32            dwMultiCBNum;   /* MultiRing队列每次循环最大回调次数(针对STRing) */
+    WORD32            dwTimerThresh;  /* 定时器队列每次循环最大回调次数 */
+    BOOL              bAloneLog;      /* 线程记录日志是否使用独立日志文件 */
+    PCreateProduct    pCreateFunc;    /* 线程对象的创建函数 */
+    PDestroyProduct   pDestroyFunc;   /* 线程对象的销毁函数 */
+    CBaseThread      *pWorker;        /* 线程对象 */
+    WORD32            dwMemSize;      /* 线程对象占用内存大小 */
+    WORD32            dwAppNum;       /* 线程绑定的App数量 */
+    BYTE             *pMem;           /* 线程对象内存块 */
+    T_AppJsonCfg      atApp[MAX_APP_NUM_PER_THREAD];
+    CHAR              aucName[WORKER_NAME_LEN];
 
     tagT_ThreadInfo & operator=(const tagT_ThreadInfo &rValue)
     {
