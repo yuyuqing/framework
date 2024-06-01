@@ -16,14 +16,14 @@ template <class V>
 class CProductTpl : public CBaseData
 {
 public :
+    CProductTpl () {}
+    virtual ~CProductTpl() {}
+
     template <typename P>
     CProductTpl (const P *pParam)
         : m_cValue(*pParam)
     {
     }
-
-    CProductTpl () {}
-    virtual ~CProductTpl() {}
 
     operator V& ()
     {
@@ -90,6 +90,15 @@ public :
         return (*pValue);
     }
 
+    template <class V, class P>
+    static V * CreateProduct(BYTE *pMem, const P *pParam)
+    {
+        memset(pMem, 0x00, sizeof(CProductTpl<V>));
+        CProductTpl<V> *pValue = new (pMem) CProductTpl<V>(pParam);
+
+        return (*pValue);
+    }
+
     template <class V>
     static V * ResetProduct(BYTE *pMem)
     {
@@ -98,15 +107,6 @@ public :
 
         memset(pMem, 0x00, sizeof(CProductTpl<V>));
         pValue = new (pMem) CProductTpl<V>();
-
-        return (*pValue);
-    }
-
-    template <class V, class P>
-    static V * CreateProduct(BYTE *pMem, const P *pParam)
-    {
-        memset(pMem, 0x00, sizeof(CProductTpl<V>));
-        CProductTpl<V> *pValue = new (pMem) CProductTpl<V>(pParam);
 
         return (*pValue);
     }
