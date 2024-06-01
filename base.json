@@ -132,15 +132,15 @@
         "lock_threshold"    : 80,             //控制日志流控; 数值越大,等待锁竞争时间越长, 因为加锁失败而丢弃的日志数量越少
         "loop_threshold"    : 4,              //控制日志流控; 本参数作用不明显
         "file_size"         : 128,            //单个文件最大长度, 单位:MB
-		"apps"              :                 //为了充分利用核资源, 日志线程下也可以绑定App(但不支持Polling接口)
-		[
-			{
-				"name"         : "COamApp",
-				"app_id"       : 0,
-				"event_begin"  : 3072,
-				"assoc_cell"   : [0]
-			}
-		],
+        "apps"              :                 //为了充分利用核资源, 日志线程下也可以绑定App(但不支持Polling接口)
+        [
+            {
+                "name"         : "COamApp",
+                "app_id"       : 0,
+                "event_begin"  : 3072,
+                "assoc_cell"   : [0]
+            }
+        ],
         "modules"           : 
         [
             {
