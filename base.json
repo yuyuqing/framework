@@ -152,18 +152,6 @@
         ]
     },
 
-    "timer" :
-    {
-        "create_flag"      : true,      //是否创建定时器线程标志
-        "logical_id"       : 14,        //线程绑定核编号
-        "policy"           : 1,         //线程优先级策略(1:FIFO)
-        "priority"         : 40,        //线程优先级
-        "stack_size"       : 163840,    //线程栈空间大小
-        "service_measure"  : 1,         //定时器线程业务维测输出定时器时长(单位:分钟)
-        "app_measure"      : 1,         //应用维测输出定时器时长(单位:分钟)
-        "alone_log"        : true
-    },
-
     "shm" :
     {
         "create_flag"      : false,     //是否创建共享内存标志
