@@ -1001,6 +1001,8 @@ WORD32 COamApp::SwitchLogFile(BYTE ucPos)
             pLogger->SetPos(ucPos);
         }
     }
+
+    return SUCCESS;
 }
 
 

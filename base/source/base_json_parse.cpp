@@ -952,9 +952,8 @@ VOID CJsonReader::ReadNumber()
 
 BOOL CJsonReader::ReadComment()
 {
-    const CHAR *pBegin  = m_pCurrent - 1;
-    CHAR        cValue  = NextChar();
-    BOOL        bResult = FALSE;
+    CHAR  cValue  = NextChar();
+    BOOL  bResult = FALSE;
 
     if (cValue == '*')
     {

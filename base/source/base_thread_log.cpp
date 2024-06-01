@@ -355,7 +355,6 @@ VOID CLogThread::DoRun()
     TRACE_STACK("CLogThread::DoRun()");
 
     WORD64 lwTick           = THREAD_TICK_GRANULARITY;
-    WORD32 dwResult         = 0;
     WORD32 dwProcHNum       = 0;
     WORD32 dwProcLNum       = 0;
     WORD32 dwProcDNum       = 0;
