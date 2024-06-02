@@ -19,12 +19,12 @@ set(lib_obj
 set(main_primary_srcs
     ${CMAKE_CURRENT_SOURCE_DIR}/main_primary.cpp)
 add_executable(main_primary ${main_primary_srcs})
-redefine_file_macro(main_primary_srcs)
+redefine_file_macro(main_primary)
 target_link_libraries(main_primary -lglib-2.0 ${lib_obj} -lrt -pthread)
 
 
 set(main_secondary_srcs
     ${CMAKE_CURRENT_SOURCE_DIR}/main_secondary.cpp)
 add_executable(main_secondary ${main_secondary_srcs})
-redefine_file_macro(main_secondary_srcs)
+redefine_file_macro(main_secondary)
 target_link_libraries(main_secondary -lglib-2.0 ${lib_obj} -lrt -pthread)

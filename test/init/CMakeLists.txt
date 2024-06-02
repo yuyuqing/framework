@@ -42,6 +42,7 @@ set(main_init_srcs
     ${CMAKE_CURRENT_SOURCE_DIR}/main_init.cpp)
 
 add_executable(main_init ${main_init_srcs})
+redefine_file_macro(main_init)
 target_link_libraries(main_init ${lib_obj} -Wl,--whole-archive;-L/home/wrk1/dpdk_install/lib/x86_64-linux-gnu;
                       -l:librte_common_cpt.a;-l:librte_common_dpaax.a;-l:librte_common_iavf.a;-l:librte_common_idpf.a;
                       -l:librte_common_octeontx.a;-l:librte_bus_auxiliary.a;-l:librte_bus_cdx.a;-l:librte_bus_dpaa.a;
