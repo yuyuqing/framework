@@ -958,6 +958,30 @@ VOID CMemMgr::Dump()
                (WORD64)m_pDataZone,
                (WORD64)m_pCentralMemPool);
 
+    LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_TRACE, TRUE,
+               "lwMagic : %lu, dwVersion : %u, dwHeadSize : %u, "
+               "lwMasterLock : %lu, iGlobalLock : %d, bInitFlag : %d, "
+               "iMLock : %d, dwHugeNum : %d, iPrimaryFileID : %d, "
+               "iSecondaryFileID : %d, lwHugeAddr : %lu, aucHugePath : %s, "
+               "lwMetaAddr : %lu, lwMetaSize : %lu, lwHugeAddr : %lu, "
+               "lwShareMemSize : %lu\n",
+               m_pMetaHead->lwMagic,
+               m_pMetaHead->dwVersion,
+               m_pMetaHead->dwHeadSize,
+               m_pMetaHead->lwMasterLock,
+               m_pMetaHead->iGlobalLock,
+               m_pMetaHead->bInitFlag,
+               m_pMetaHead->iMLock,
+               m_pMetaHead->dwHugeNum,
+               m_pMetaHead->atHugeInfo[0].iPrimaryFileID,
+               m_pMetaHead->atHugeInfo[0].iSecondaryFileID,
+               m_pMetaHead->atHugeInfo[0].lwHugeAddr,
+               m_pMetaHead->atHugeInfo[0].aucHugePath,
+               m_pMetaHead->lwMetaAddr,
+               m_pMetaHead->lwMetaSize,
+               m_pMetaHead->lwHugeAddr,
+               m_pMetaHead->lwShareMemSize);
+
     m_pDataZone->Dump();
     m_pCentralMemPool->Dump();
 }

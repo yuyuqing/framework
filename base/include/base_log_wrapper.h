@@ -113,21 +113,43 @@ typedef struct tagT_LogBinaryMessage
 typedef VOID (*CB_RegistMemPool) ();
 
 
+/* 在主进程入口处调用 */
+extern WORD32 LogInit_Process(WORD32 dwProcID, CB_RegistMemPool pFunc);
+
+extern WORD32 LogExit_Process();
+
+
+/* 在线程入口处调用 */
+extern WORD32 LogInit_Thread();
+
+extern WORD32 LogExit_Thread();
+
+
 extern WORD32 SendMessageToLogThread(WORD32 dwMsgID, const VOID *ptMsg, WORD16 wLen);
 
 
 extern VOID LogAssert();
 
 
-extern VOID LogPrintf(WORD32      dwModuleID,
-                      WORD32      dwCellID,
-                      WORD32      dwLevelID,
-                      BOOL        bForced,
-                      const CHAR *pFile,
-                      WORD32      dwLine,
-                      BYTE        ucParamNum,
-                      const CHAR *pchPrtInfo,
+/* 普通日志打印接口 */
+extern VOID LogPrintf(WORD32        dwModuleID,
+                      WORD32        dwCellID,
+                      WORD32        dwLevelID,
+                      BOOL          bForced,
+                      const CHAR   *pchPrtInfo,
                       ...);
+
+
+/* Fast日志打印接口 */
+extern VOID FastLogPrintf(WORD32      dwModuleID,
+                          WORD32      dwCellID,
+                          WORD32      dwLevelID,
+                          BOOL        bForced,
+                          const CHAR *pFile,
+                          WORD32      dwLine,
+                          BYTE        ucParamNum,
+                          const CHAR *pchPrtInfo,
+                          ...);
 
 
 #define INTERNAL_GET_ARG_COUNT_PRIVATE(                     \
@@ -162,9 +184,22 @@ extern VOID LogPrintf(WORD32      dwModuleID,
 #define LOG_VPRINTF(ModuleID, CellID, Level, Flag, INFOSTR, ...)          \
     do                                                                    \
     {                                                                     \
-        LogPrintf(ModuleID, CellID, Level, Flag, __FILE__, __LINE__,      \
-                  GET_ARG_COUNT(__VA_ARGS__), INFOSTR,                    \
+        LogPrintf((WORD32)(ModuleID),                                     \
+                  (WORD32)(CellID),                                       \
+                  (WORD32)(Level),                                        \
+                  (BOOL)(Flag),                                           \
+                  "[%s:%d] " INFOSTR,                                     \
+                  __FILE__, __LINE__,                                     \
                   ##__VA_ARGS__);                                         \
+    } while(0)
+
+
+#define FAST_LOG_PRINTF(ModuleID, CellID, Level, Flag, INFOSTR, ...)      \
+    do                                                                    \
+    {                                                                     \
+        FastLogPrintf(ModuleID, CellID, Level, Flag, __FILE__, __LINE__,  \
+                      GET_ARG_COUNT(__VA_ARGS__), INFOSTR,                \
+                      ##__VA_ARGS__);                                     \
     } while(0)
 
 

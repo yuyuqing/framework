@@ -2,6 +2,7 @@
 
 #include <assert.h>
 
+#include "base_init_component.h"
 #include "base_thread_log.h"
 
 
@@ -39,6 +40,70 @@ static const CHAR s_aucFLine[LOG_FILE_LIN_PLACEHOLDER] =
 };
 
 
+/* 当业务线程不是通过CThreadPool创建时, 通过调用本接口完成注册线程专属数据区 */
+WORD32 RegistThreadZone(T_DataZone &rtThreadZone, VOID *pThread)
+{
+    CMultiMessageRing::CSTRing *pLogRing = InitLogRing(m_dwSelfRingID);
+    CLogMemPool *pLogMemPool = InitLogMemPool();
+
+    rtThreadZone.pLogMemPool   = (VOID *)pLogMemPool;
+    rtThreadZone.pLogRing      = (VOID *)pLogRing;
+    rtThreadZone.pLogger       = g_pLogger;
+    rtThreadZone.pThread       = NULL;
+
+    return SUCCESS;
+}
+
+
+/* 在主进程入口处调用 */
+WORD32 LogInit_Process(WORD32 dwProcID, CB_RegistMemPool pFunc)
+{
+    CInitList::GetInstance()->InitComponent(dwProcID, pFunc);
+
+    usleep(1000);
+
+    return SUCCESS;
+}
+
+
+WORD32 LogExit_Process()
+{
+    CInitList::Destroy();
+
+    return SUCCESS;
+}
+
+
+/* 在线程入口处调用(不通过框架线程池创建的线程实例) */
+WORD32 LogInit_Thread()
+{
+    CDataZone *pDataZone = CMemMgr::GetInstance()->GetDataZone();
+
+    /* 注册线程专属数据区(不通过框架线程池创建的线程实例) */
+    pDataZone->RegistZone((WORD32)INVALID_THREAD_TYPE,
+                          (CB_RegistZone)(&RegistThreadZone),
+                          NULL);
+
+    return SUCCESS;
+}
+
+
+/* 线程退出时调用(不通过框架线程池创建的线程实例) */
+WORD32 LogExit_Thread()
+{
+    /* 等待日志线程消费完日志 */
+    usleep(1000);
+
+    CDataZone *pDataZone = CMemMgr::GetInstance()->GetDataZone();
+
+    pDataZone->RemoveZone(m_pSelfThreadZone->dwThreadIdx,
+                          (CB_RemoveZone)(&RemoveThreadZone),
+                          NULL);
+
+    return SUCCESS;
+};
+
+
 WORD32 SendMessageToLogThread(WORD32 dwMsgID, const VOID *ptMsg, WORD16 wLen)
 {
     return g_pLogThread->SendLPMsgToApp(g_dwLogAppID,
@@ -59,15 +124,94 @@ VOID LogAssert()
 }
 
 
-VOID LogPrintf(WORD32      dwModuleID,
-               WORD32      dwCellID,
-               WORD32      dwLevelID,
-               BOOL        bForced,
-               const CHAR *pFile,
-               WORD32      dwLine,
-               BYTE        ucParamNum,
-               const CHAR *pchPrtInfo,
+/* 普通日志打印接口 */
+VOID LogPrintf(WORD32        dwModuleID,
+               WORD32        dwCellID,
+               WORD32        dwLevelID,
+               BOOL          bForced,
+               const CHAR   *pchPrtInfo,
                ...)
+{
+    if (unlikely((NULL == pchPrtInfo) || (NULL == m_pSelfThreadZone)))
+    {
+        return ;
+    }
+
+    CLogThread     *pLogThread = (CLogThread *)g_pLogThread;
+    CLogMemPool    *pMemPool   = (CLogMemPool *)(m_pSelfThreadZone->pLogMemPool);
+    CLogInfo       *pLogInfo   = (CLogInfo *)(m_pSelfThreadZone->pLogger);
+    CModuleLogInfo *pModule    = NULL;
+    BYTE           *pLogBuffer = NULL;
+
+    CMultiMessageRing::CSTRing *pRing = (CMultiMessageRing::CSTRing *)(m_pSelfThreadZone->pLogRing);
+
+    DO_LOG_COMMON(dwModuleID, dwCellID, dwLevelID, bForced, pRing);
+
+    WORD64 lwMicroSec = 0;
+
+    g_pGlobalClock->GetTime3(lwMicroSec, lwStartCycle);
+
+    /* 添加日期时间/日志级别信息 */
+    WORD32 dwLen = 0;
+    DO_LOG_PREFIX(dwLen,
+                  ((CHAR *)pLogBuffer),
+                  (lwMicroSec / 1000000),
+                  ((WORD32)(lwMicroSec % 1000000)),
+                  ((CHAR *)(s_aucModule[dwModuleID])),
+                  ((CHAR *)(s_aucLevel[dwLevelID])),
+                  ((CHAR)((dwCellID == 0xFFFF) ? 'X' : (dwCellID  + '0'))),
+                  lwTotalCount);
+
+    va_list  tParamList;
+    va_start(tParamList, pchPrtInfo);
+#ifndef STD_LOG
+    base_vsnprintf((CHAR *)(pLogBuffer + dwLen),
+                   (MAX_LOG_STR_LEN - dwLen),
+                   ' ',
+                   pchPrtInfo,
+                   tParamList);
+#else
+    vsnprintf((CHAR *)(pLogBuffer + dwLen),
+              (MAX_LOG_STR_LEN - dwLen),
+              pchPrtInfo,
+              tParamList);
+#endif
+    va_end(tParamList);
+
+/*#if DEBUG_NR5G
+    printf(GREEN "%s" GRAY, pLogBuffer);
+#endif*/
+
+    /* TraceMe打印 */
+    WORD32 dwResult = pLogThread->NormalWrite(pLogInfo->GetFileID(),
+                                              (WORD16)dwModuleID,
+                                              strlen((CHAR *)pLogBuffer),
+                                              (CHAR *)pLogBuffer,
+                                              bForced ? pLogInfo->GetLoopThrehold() : 0,
+                                              (WORD64)pMemPool,
+                                              pRing);
+    if (SUCCESS != dwResult)
+    {
+        pModule->m_lwEnqueueFail++;
+        pMemPool->Free(pLogBuffer);
+    }
+    else
+    {
+        pModule->m_lwSuccCount++;
+    }
+}
+
+
+/* Fast日志打印接口 */
+VOID FastLogPrintf(WORD32      dwModuleID,
+                   WORD32      dwCellID,
+                   WORD32      dwLevelID,
+                   BOOL        bForced,
+                   const CHAR *pFile,
+                   WORD32      dwLine,
+                   BYTE        ucParamNum,
+                   const CHAR *pchPrtInfo,
+                   ...)
 {
     if (unlikely( (NULL == pFile) 
                || (NULL == pchPrtInfo) 

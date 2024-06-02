@@ -110,25 +110,6 @@ typedef struct tagT_MemMetaHead
 }T_MemMetaHead;
 
 
-/* 通过共享内存记录内存元数据 */
-class CMemMetaZone
-{
-
-protected :
-    T_MemMetaHead    *m_ptMetaHead;
-    VOID             *m_pHugeAddr;
-
-    WORD32            m_dwProcID;
-    WORD16            m_wMemType;
-    WORD16            m_wPageNum;
-    WORD64            m_lwMemSize;
-    BOOL              m_bMaster;
-
-    WORD32            m_dwMetaSize;
-    SWORD32           m_iFileID;
-};
-
-
 /*********************************************************************************
  ---------------------------------------------------------------------------------
  |     64 BYTE    |    24704 BYTE |    128 BYTE     |   64 BYTE    |  128 BYTE   |
@@ -239,6 +220,7 @@ public :
                       WORD64         lwBaseAddr,
                       WORD64         lwMemSize);
 
+    T_MemMetaHead * GetMetaHead();
     CCentralMemPool * GetCentralMemPool();
     CDataZone * GetDataZone();
 
@@ -268,6 +250,12 @@ private :
     static CMemMgr   *s_pInstance;
     static BOOL       s_bMaster;
 };
+
+
+inline T_MemMetaHead * CMemMgr::GetMetaHead()
+{
+    return m_pMetaHead;
+}
 
 
 inline CCentralMemPool * CMemMgr::GetCentralMemPool()

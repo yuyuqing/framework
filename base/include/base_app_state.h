@@ -26,6 +26,7 @@ typedef enum tagE_AppClass
     E_APP_NRUP,           /* CNrupApp */
 
     E_APP_TEST,           /* ”√”⁄≤‚ ‘ */
+    E_APP_DPDK,
 
     E_APP_NUM,
 }E_AppClass;

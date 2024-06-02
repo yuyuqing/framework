@@ -11,6 +11,7 @@
 typedef enum tagE_OamTaskType
 {
     E_OAM_TASK_SYNC_ID = 0,
+    E_DPDK_MEASURE_ID,
 }E_OamTaskType;
 
 
