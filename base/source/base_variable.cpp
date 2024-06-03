@@ -33,6 +33,7 @@ const BYTE s_aucFileName[E_PROC_NUM][LOG_FILE_NAME_LEN] =
 CGlobalClock  *g_pGlobalClock = NULL;
 CLogInfo      *g_pLogger      = NULL;
 COamApp       *g_pOamApp      = NULL;
+CTimerApp     *g_pTimerApp    = NULL;
 CBaseThread   *g_pLogThread   = NULL;
 CThreadCntrl  *g_pThreadPool  = NULL;
 CShmMgr       *g_pShmMgr      = NULL;

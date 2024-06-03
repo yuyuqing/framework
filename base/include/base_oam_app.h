@@ -1,7 +1,7 @@
 
 
-#ifndef _BASE_THREAD_LOG_APP_H_
-#define _BASE_THREAD_LOG_APP_H_
+#ifndef _BASE_OAM_APP_H_
+#define _BASE_OAM_APP_H_
 
 
 #include "base_tree_array.h"
@@ -60,12 +60,17 @@ public :
 typedef CBTreeArray<COamCBNode, WORD32, OAM_CB_TABLE_NODE_POWER_NUM>  COamCBTable;
 
 
+#define DISABLE_SYNC_FLAG       ((BYTE)(0))
+#define ENABLE_SYNC_FLAG        ((BYTE)(1))
+
+
 class COamApp : public CAppInterface
 {
 public :
     enum { SYNC_PERIOD            = 30000 };
     enum { TIMER_SYNC_INTERVAL    =  5000 };
     enum { TIMER_TIMEOUT_INTERVAL =    20 };
+    enum { DELAY_INIT_APPS_TICK   =     5 };
 
 public :
     COamApp ();
@@ -78,8 +83,11 @@ public :
     WORD32 DeInit();
     WORD32 Exit(WORD32 dwMsgID, VOID *pIn, WORD16 wMsgLen);
 
-    /* 通知所有APP上电, 在main进程中调用 */
-    WORD32 InitAllApps();
+    /* 通知COamApp上电, 启动5ms定时器(超时后通知其它APP上电), 在main进程中调用 */
+    WORD32 NotifyOamStartUP();
+
+    /* 延迟通知其它APP上电(在COamApp上电后启动5ms定时器) */
+    VOID TimeOutStartUpAllApps(const VOID *pIn, WORD32 dwLen);
 
     VOID ProcGlobalSwitchMsg(const VOID *pIn, WORD32 dwLen);
 
@@ -93,6 +101,7 @@ public :
     /* 处理去注册定时回调函数的消息 */
     VOID ProcCBRemoveMsg(const VOID *pIn, WORD32 dwLen);
 
+    /* 针对注册定时回调函数, 周期性执行回调 */
     VOID CallBack(const VOID *pIn, WORD32 dwLen);
 
     /* 向其它应用或线程提供消息接口, 用以支持注册定时回调 */
@@ -140,6 +149,7 @@ protected :
     BYTE                  m_ucMeasMinute;  /* 维测定时器时长(单位:分钟) */
     WORD16                m_wSwitchPrd;    /* 日志文件切换周期(单位:分钟) */
 
+    BYTE                  m_ucSyncFlag;    /* 是否启动系统时钟标志 */
     BYTE                  m_ucThrdNum;
     BYTE                  m_ucAppNum;
 

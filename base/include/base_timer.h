@@ -8,14 +8,14 @@
 #include "base_time.h"
 
 
-typedef struct tagT_TimerParam
+typedef struct tagT_TimerCBParam
 {
     WORD32   dwID;
     WORD32   dwExtendID;
     WORD64   lwTransID;
     VOID    *pContext;
     VOID    *pUserData;
-}T_TimerParam;
+}T_TimerCBParam;
 
 
 class CTimerNode : public CBaseData
@@ -62,11 +62,11 @@ public :
     CTimerNode  *m_pPrev;
 
 protected :
-    WORD64        m_lwTimeoutTick;  /* 超时时间 */
-    CCBObject    *m_pObj;           /* 回调对象 */
-    PCBFUNC       m_pFunc;          /* 回调函数 */
+    WORD64          m_lwTimeoutTick;  /* 超时时间 */
+    CCBObject      *m_pObj;           /* 回调对象 */
+    PCBFUNC         m_pFunc;          /* 回调函数 */
 
-    T_TimerParam  m_tCBParam;       /* 回调出参 */
+    T_TimerCBParam  m_tCBParam;       /* 回调出参 */
 };
 
 

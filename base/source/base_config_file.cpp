@@ -267,6 +267,7 @@ WORD32 ParseLog(T_LogJsonCfg &tLogConfig, CJsonValue &rRoot)
     tLogConfig.dwTimerThresh     = (WORD32)(rRoot["timer_cb_num"].AsDWORD());
     tLogConfig.bMeasSwitch       = (BOOL)(rRoot["measure_switch"].AsBOOL());
     tLogConfig.bGlobalSwitch     = (BOOL)(rRoot["global_switch"].AsBOOL());
+    tLogConfig.dwSyncFlag        = (WORD32)(rRoot["enable_sync"].AsDWORD());
     tLogConfig.dwLogMeasure      = (WORD32)(rRoot["log_measure"].AsDWORD());
     tLogConfig.dwWriteFilePeriod = (WORD32)(rRoot["write_file_period"].AsDWORD());
     tLogConfig.wThresholdWait    = (WORD16)(rRoot["wait_threshold"].AsDWORD());

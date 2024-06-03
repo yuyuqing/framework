@@ -77,12 +77,6 @@ extern "C" {
 #define EV_BASE_THREAD_CANCEL_ID                   ((WORD32)(EV_BASE_THREAD_START + 0))
 #define EV_BASE_THREAD_RESET_APP_ID                ((WORD32)(EV_BASE_THREAD_START + 1))
 
-/* 定时器线程处理消息 */
-#define EV_BASE_THREAD_START_TIMER_ID              ((WORD32)(EV_BASE_THREAD_START + 2))
-#define EV_BASE_THREAD_STOP_TIMER_ID               ((WORD32)(EV_BASE_THREAD_START + 3))
-#define EV_BASE_THREAD_RESET_TIMER_ID              ((WORD32)(EV_BASE_THREAD_START + 4))
-#define EV_BASE_THREAD_SLOT_TTI_ID                 ((WORD32)(EV_BASE_THREAD_START + 5))
-
 /* APP Base级处理消息 */
 #define EV_BASE_APP_STARTUP_ID                     ((WORD32)(EV_BASE_APP_START + 0))
 #define EV_BASE_APP_SHUTDOWN_ID                    ((WORD32)(EV_BASE_APP_START + 1))
@@ -123,8 +117,14 @@ extern "C" {
 #define EV_BASE_LOG_SET_GLOBAL_SWITCH_ID           ((WORD32)(EV_OAM_START + 0))
 #define EV_BASE_LOG_SET_WRITE_PERIOD_ID            ((WORD32)(EV_OAM_START + 1))
 #define EV_BASE_LOG_SET_MODULE_SWITCH_ID           ((WORD32)(EV_OAM_START + 2))
-#define EV_BASE_LOG_REGIST_CALLBACK_ID             ((WORD32)(EV_OAM_START + 3))
-#define EV_BASE_LOG_REMOVE_CALLBACK_ID             ((WORD32)(EV_OAM_START + 4))
+#define EV_OAM_REGIST_CALLBACK_ID                  ((WORD32)(EV_OAM_START + 3))
+#define EV_OAM_REMOVE_CALLBACK_ID                  ((WORD32)(EV_OAM_START + 4))
+
+/* 定时器线程处理消息 */
+#define EV_TIMER_START_TIMER_ID                    ((WORD32)(EV_OAM_START + 5))
+#define EV_TIMER_STOP_TIMER_ID                     ((WORD32)(EV_OAM_START + 6))
+#define EV_TIMER_RESET_TIMER_ID                    ((WORD32)(EV_OAM_START + 7))
+#define EV_TIMER_SLOT_TTI_ID                       ((WORD32)(EV_OAM_START + 8))
 
 
 /******************************************************************************

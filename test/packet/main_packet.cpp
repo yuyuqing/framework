@@ -326,7 +326,7 @@ int main(int argc, char **argv)
 {
     CInitList::GetInstance()->InitComponent((WORD32)E_PROC_DU);
 
-    g_pOamApp->InitAllApps();
+    g_pOamApp->NotifyOamStartUP();
 
     sleep(5);
 

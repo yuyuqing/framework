@@ -53,6 +53,7 @@ COamApp::COamApp ()
     m_ucPos        = 0;
     m_ucMeasMinute = CLogInfo::s_awPeriodMinute[E_LOG_PERIOD_05_MINUTE];
     m_wSwitchPrd   = CLogInfo::s_awPeriodMinute[E_LOG_PERIOD_05_MINUTE];
+    m_ucSyncFlag   = ENABLE_SYNC_FLAG;
     m_ucThrdNum    = 0;
     m_ucAppNum     = 0;
 
@@ -93,11 +94,11 @@ WORD32 COamApp::InitApp()
                       (CCBObject *)this,
                       (PCBFUNC)(&COamApp::ProcModuleSwitchMsg));
 
-    RegisterProcessor(EV_BASE_LOG_REGIST_CALLBACK_ID,
+    RegisterProcessor(EV_OAM_REGIST_CALLBACK_ID,
                       (CCBObject *)this,
                       (PCBFUNC)(&COamApp::ProcCBRegistMsg));
 
-    RegisterProcessor(EV_BASE_LOG_REMOVE_CALLBACK_ID,
+    RegisterProcessor(EV_OAM_REMOVE_CALLBACK_ID,
                       (CCBObject *)this,
                       (PCBFUNC)(&COamApp::ProcCBRemoveMsg));
 
@@ -114,16 +115,19 @@ WORD32 COamApp::Start()
     m_ucPos        = (BYTE)(g_pLogger->GetPos());
     m_ucMeasMinute = (BYTE)(g_pLogger->GetLogMeasure());
     m_wSwitchPrd   = g_pLogger->GetPeriod();
+    m_ucSyncFlag   = g_pLogger->GetSyncFlag();
 
     LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
                "g_dwLogAppID : %d, m_dwAppID : %d, m_dwThreadID : %d, "
-               "m_ucPos : %d, m_ucMeasMinute : %d, m_wSwitchPrd : %d\n",
+               "m_ucPos : %d, m_ucMeasMinute : %d, m_wSwitchPrd : %d, "
+               "m_ucSyncFlag : %d\n",
                g_dwLogAppID,
                m_dwAppID,
                m_dwThreadID,
                m_ucPos,
                m_ucMeasMinute,
-               m_wSwitchPrd);
+               m_wSwitchPrd,
+               m_ucSyncFlag);
 
     return SUCCESS;
 }
@@ -182,14 +186,17 @@ WORD32 COamApp::Init()
     dwPeriod = dwPeriod * 60000;
 
     /* 发送周期性执行时钟同步任务的SYNC消息 */
-    dwResult = SendRegistCBMsg(E_OAM_TASK_SYNC_ID,
-                               SYNC_PERIOD,
-                               (CCBObject *)this,
-                               (PCBFUNC)(&COamApp::SyncClock),
-                               NULL);
-    if (SUCCESS != dwResult)
+    if (ENABLE_SYNC_FLAG == m_ucSyncFlag)
     {
-        assert(0);
+        dwResult = SendRegistCBMsg(E_OAM_TASK_SYNC_ID,
+                                   SYNC_PERIOD,
+                                   (CCBObject *)this,
+                                   (PCBFUNC)(&COamApp::SyncClock),
+                                   NULL);
+        if (SUCCESS != dwResult)
+        {
+            assert(0);
+        }
     }
 
     /* 发送周期性输出系统维测任务的MEAS消息 */
@@ -202,6 +209,11 @@ WORD32 COamApp::Init()
     {
         assert(0);
     }
+
+    RegisterTimer(DELAY_INIT_APPS_TICK,
+                  (CCBObject *)this,
+                  (PCBFUNC)(&COamApp::TimeOutStartUpAllApps),
+                  0);
 
     g_pGlobalClock->GetTime(lwSeconds, lwMicroSec, lwCycle);
 
@@ -251,10 +263,24 @@ WORD32 COamApp::Exit(WORD32 dwMsgID, VOID *pIn, WORD16 wMsgLen)
 }
 
 
-/* 通知所有APP上电, 在main进程中调用 */
-WORD32 COamApp::InitAllApps()
+WORD32 COamApp::NotifyOamStartUP()
 {
-    TRACE_STACK("COamApp::InitAllApps()");
+    TRACE_STACK("COamApp::NotifyOamStartUP()");
+
+    /* 通知OAM立即启动 */
+    m_pOwner->SendHPMsgToApp(m_dwAppID,
+                             m_dwAppID,
+                             EV_BASE_APP_STARTUP_ID,
+                             0, NULL);
+
+    return SUCCESS;
+}
+
+
+/* 延迟通知其它APP上电(在COamApp上电后启动5ms定时器) */
+VOID COamApp::TimeOutStartUpAllApps(const VOID *pIn, WORD32 dwLen)
+{
+    TRACE_STACK("COamApp::TimeOutStartUpAllApps()");
 
     CAppCntrl *pAppCntrl = CAppCntrl::GetInstance();
     WORD32     dwAppNum  = pAppCntrl->GetAppNum();
@@ -262,6 +288,10 @@ WORD32 COamApp::InitAllApps()
     for (WORD32 dwIndex = 0; dwIndex < dwAppNum; dwIndex++)
     {
         T_AppInfo *ptAppInfo = (*pAppCntrl)[dwIndex];
+        if (m_dwAppID == ptAppInfo->dwAppID)
+        {
+            continue ;
+        }
 
         LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE, 
                    "Notify App init; AppID : %d, ThreadID : %d, Name : %s\n",
@@ -286,8 +316,6 @@ WORD32 COamApp::InitAllApps()
                                   0, NULL);
         }
     }
-
-    return SUCCESS;
 }
 
 
@@ -517,12 +545,12 @@ VOID COamApp::CallBack(const VOID *pIn, WORD32 dwLen)
 {
     TRACE_STACK("COamApp::CallBack()");
 
-    if (unlikely((NULL == pIn) || (dwLen != sizeof(T_TimerParam))))
+    if (unlikely((NULL == pIn) || (dwLen != sizeof(T_TimerCBParam))))
     {
         return ;
     }
 
-    T_TimerParam *ptParam = (T_TimerParam *)pIn;
+    T_TimerCBParam *ptParam = (T_TimerCBParam *)pIn;
 
     WORD32      dwInstID  = ptParam->dwID;
     WORD32      dwTaskID  = ptParam->dwExtendID;
@@ -573,7 +601,7 @@ WORD32 COamApp::SendRegistCBMsg(WORD32     dwTaskID,
 
     WORD32 dwNum = m_pOwner->SendLPMsgToApp(m_dwAppID,
                                             m_dwAppID,
-                                            EV_BASE_LOG_REGIST_CALLBACK_ID,
+                                            EV_OAM_REGIST_CALLBACK_ID,
                                             sizeof(tMsg),
                                             &tMsg);
     if (0 == dwNum)
@@ -593,7 +621,7 @@ WORD32 COamApp::SendRemoveCBMsg(WORD32 dwTaskID)
 
     WORD32 dwNum = m_pOwner->SendLPMsgToApp(m_dwAppID,
                                             m_dwAppID,
-                                            EV_BASE_LOG_REMOVE_CALLBACK_ID,
+                                            EV_OAM_REMOVE_CALLBACK_ID,
                                             sizeof(tMsg),
                                             &tMsg);
     if (0 == dwNum)

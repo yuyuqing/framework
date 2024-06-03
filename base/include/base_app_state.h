@@ -17,6 +17,7 @@ typedef enum tagE_AppClass
     E_APP_BASE,           /* CBaseApp */
     E_APP_FT,             /* CFTApp */
     E_APP_OAM,            /* COamApp */
+    E_APP_TIMER,          /* CTimerApp */
     E_APP_PHY_RECV,       /* CPhyRecvApp */
     E_APP_CL,             /* CClApp */
     E_APP_SCH,            /* CSchApp */

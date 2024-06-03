@@ -91,6 +91,9 @@ public :
     /* 设置日志模块下的级别开关 */
     VOID SetLevelMask(WORD32 dwModuleID, WORD32 dwLevelID, BOOL bFlag);
 
+    /* 获取是否开启系统时钟同步标志 */
+    BYTE GetSyncFlag();
+
     /* 获取日志维测周期 */
     WORD16 GetLogMeasure();
 
@@ -161,6 +164,7 @@ private :
 
     WORD16                m_wStackInc;         /* 用于提供给CLogContext控制输出格式 */
 
+    BYTE                  m_ucSyncFlag;        /* 用于控制是否开启系统时钟同步 */
     WORD16                m_wLogMeasure;       /* 用于控制日志维测输出周期, 单位 : 分钟 */
     std::atomic<WORD16>   m_wPeriodMinute;     /* 5/10/15/30/60/120/240/480分钟, 日志文件切换间隔 */
 

@@ -101,6 +101,7 @@ typedef struct tagT_LogJsonCfg
     CHAR             aucPath[LOG_FILE_NAME_LEN];
     BOOL             bMeasSwitch;
     BOOL             bGlobalSwitch;
+    WORD32           dwSyncFlag;         /* 周期性同步系统时钟启动标志 */
     WORD32           dwLogMeasure;       /* 日志维测输出时长(单位 : 分钟) */
     WORD32           dwWriteFilePeriod;  /* 取值(0/1/2/3/4/5/6), 对应(5/10/15/30/60/120/240分钟) */
     WORD16           wThresholdWait;     /* 日志策略 */

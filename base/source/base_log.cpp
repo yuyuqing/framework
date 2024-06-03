@@ -30,6 +30,7 @@ CLogInfo::CLogInfo ()
     m_wThresholdLock = LOG_LOCK_THRESHOLD;
     m_wThresholdLoop = LOG_LOOP_THRESHOLD;
     m_wStackInc      = 0;
+    m_ucSyncFlag     = 0;
     m_wLogMeasure    = s_awPeriodMinute[E_LOG_PERIOD_05_MINUTE];
     m_wPeriodMinute  = s_awPeriodMinute[E_LOG_PERIOD_05_MINUTE];
     m_ucPos          = 0;
@@ -50,6 +51,7 @@ CLogInfo::~CLogInfo()
     m_wThresholdLock = LOG_LOCK_THRESHOLD;
     m_wThresholdLoop = LOG_LOOP_THRESHOLD;
     m_wStackInc      = 0;
+    m_ucSyncFlag     = 0;
     m_wLogMeasure    = s_awPeriodMinute[E_LOG_PERIOD_05_MINUTE];
     m_wPeriodMinute  = s_awPeriodMinute[E_LOG_PERIOD_05_MINUTE];
     m_ucPos          = 0;
@@ -134,6 +136,7 @@ WORD32 CLogInfo::FetchJsonConfig()
     SetLogMeasure(rJsonCfg.dwLogMeasure);
     SetPeriod((E_LogFilePeriod)(rJsonCfg.dwWriteFilePeriod));
 
+    m_ucSyncFlag     = (rJsonCfg.dwSyncFlag) ? 1 : 0;
     m_wThresholdWait = (rJsonCfg.wThresholdWait) ? rJsonCfg.wThresholdWait : LOG_WAIT_THRESHOLD;
     m_wThresholdLock = (rJsonCfg.wThresholdLock) ? rJsonCfg.wThresholdLock : LOG_LOCK_THRESHOLD;
     m_wThresholdLoop = (rJsonCfg.wThresholdLoop) ? rJsonCfg.wThresholdLoop : LOG_LOOP_THRESHOLD;
@@ -239,6 +242,13 @@ VOID CLogInfo::SetLevelMask(WORD32 dwModuleID, WORD32 dwLevelID, BOOL bFlag)
     {
         m_aModule[dwModuleID].m_cLevelBitMap.RemoveBitMap(dwLevelID);
     }
+}
+
+
+/* 获取是否开启系统时钟同步标志 */
+BYTE CLogInfo::GetSyncFlag()
+{
+    return m_ucSyncFlag;
 }
 
 
