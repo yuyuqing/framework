@@ -111,22 +111,19 @@ WORD32 COamApp::Start()
 
     g_dwLogAppID = m_dwAppID;
 
-    WORD32 dwNum = m_pOwner->SendHPMsgToApp(m_dwAppID,
-                                            m_dwAppID,
-                                            EV_BASE_APP_STARTUP_ID,
-                                            0, NULL);
+    m_ucPos        = (BYTE)(g_pLogger->GetPos());
+    m_ucMeasMinute = (BYTE)(g_pLogger->GetLogMeasure());
+    m_wSwitchPrd   = g_pLogger->GetPeriod();
 
     LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
                "g_dwLogAppID : %d, m_dwAppID : %d, m_dwThreadID : %d, "
-               "m_ucPos : %d, m_ucMeasMinute : %d, m_wSwitchPrd : %d, "
-               "dwNum : %d\n",
+               "m_ucPos : %d, m_ucMeasMinute : %d, m_wSwitchPrd : %d\n",
                g_dwLogAppID,
                m_dwAppID,
                m_dwThreadID,
                m_ucPos,
                m_ucMeasMinute,
-               m_wSwitchPrd,
-               dwNum);
+               m_wSwitchPrd);
 
     return SUCCESS;
 }
@@ -142,18 +139,64 @@ WORD32 COamApp::Init()
     WORD32 dwPeriod   = 0;
     WORD32 dwResult   = 0;
 
-    m_ucPos        = (BYTE)(g_pLogger->GetPos());
-    m_ucMeasMinute = (BYTE)(g_pLogger->GetLogMeasure());
-    m_wSwitchPrd   = g_pLogger->GetPeriod();
+    if (0 == m_ucThrdNum)
+    {
+        m_apThread[m_ucThrdNum] = g_pLogThread;
+        m_ucThrdNum++;
+
+        for (WORD32 dwIndex = 0; dwIndex < MAX_WORKER_NUM; dwIndex++)
+        {
+            CBaseThread *pThread = (*g_pThreadPool)[dwIndex];
+            if (NULL == pThread)
+            {
+                break ;
+            }
+
+            m_apThread[m_ucThrdNum] = pThread;
+            m_ucThrdNum++;
+        }
+    }
+
+    if (0 == m_ucAppNum)
+    {
+        CAppCntrl *pAppCntrl = CAppCntrl::GetInstance();
+        for (WORD32 dwIndex = 0; dwIndex < MAX_APP_NUM; dwIndex++)
+        {
+            T_AppInfo *ptAppInfo = (*pAppCntrl)[dwIndex];
+            if (NULL == ptAppInfo)
+            {
+                break ;
+            }
+
+            if (NULL == ptAppInfo->pAppState)
+            {
+                break ;
+            }
+
+            m_apApp[m_ucAppNum] = ptAppInfo->pAppState->GetAppInst();
+            m_ucAppNum++;
+        }
+    }
 
     dwPeriod = m_ucMeasMinute;
     dwPeriod = dwPeriod * 60000;
 
-    /* 发送周期性输出系统维测任务的SYNC消息 */
+    /* 发送周期性执行时钟同步任务的SYNC消息 */
     dwResult = SendRegistCBMsg(E_OAM_TASK_SYNC_ID,
-                               dwPeriod,
+                               SYNC_PERIOD,
                                (CCBObject *)this,
                                (PCBFUNC)(&COamApp::SyncClock),
+                               NULL);
+    if (SUCCESS != dwResult)
+    {
+        assert(0);
+    }
+
+    /* 发送周期性输出系统维测任务的MEAS消息 */
+    dwResult = SendRegistCBMsg(E_OAM_MEASURE_ID,
+                               dwPeriod,
+                               (CCBObject *)this,
+                               (PCBFUNC)(&COamApp::DumpMeasure),
                                NULL);
     if (SUCCESS != dwResult)
     {
@@ -208,7 +251,7 @@ WORD32 COamApp::Exit(WORD32 dwMsgID, VOID *pIn, WORD16 wMsgLen)
 }
 
 
-/* 通知其它APP上电, 在main进程中调用 */
+/* 通知所有APP上电, 在main进程中调用 */
 WORD32 COamApp::InitAllApps()
 {
     TRACE_STACK("COamApp::InitAllApps()");
@@ -219,11 +262,6 @@ WORD32 COamApp::InitAllApps()
     for (WORD32 dwIndex = 0; dwIndex < dwAppNum; dwIndex++)
     {
         T_AppInfo *ptAppInfo = (*pAppCntrl)[dwIndex];
-        if (m_dwAppID == ptAppInfo->dwAppID)
-        {
-            /* 跳过自己 */
-            continue ;
-        }
 
         LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE, 
                    "Notify App init; AppID : %d, ThreadID : %d, Name : %s\n",
@@ -231,11 +269,22 @@ WORD32 COamApp::InitAllApps()
                    ptAppInfo->dwThreadID,
                    ptAppInfo->aucName);
 
-        SendHighPriorMsgToApp(ptAppInfo->dwThreadID,
-                              ptAppInfo->dwAppID,
-                              0,
-                              EV_BASE_APP_STARTUP_ID,
-                              0, NULL);
+        if (m_dwThreadID == ptAppInfo->dwThreadID)
+        {
+            /* 针对绑定到日志线程的App, 无法通过线程池接口发送消息 */
+            m_pOwner->SendHPMsgToApp(ptAppInfo->dwAppID,
+                                     0,
+                                     EV_BASE_APP_STARTUP_ID,
+                                     0, NULL);
+        }
+        else
+        {
+            SendHighPriorMsgToApp(ptAppInfo->dwThreadID,
+                                  ptAppInfo->dwAppID,
+                                  0,
+                                  EV_BASE_APP_STARTUP_ID,
+                                  0, NULL);
+        }
     }
 
     return SUCCESS;
@@ -556,54 +605,35 @@ WORD32 COamApp::SendRemoveCBMsg(WORD32 dwTaskID)
 }
 
 
+/* 发送周期性执行是时钟同步任务的SYNC消息 */
 VOID COamApp::SyncClock(const VOID *pIn, WORD32 dwLen)
 {
     TRACE_STACK("COamApp::SyncClock()");
+
+    WORD64 lwSeconds  = 0;
+    WORD64 lwMicroSec = 0;
+    WORD64 lwCycle    = 0;
+
+    g_pGlobalClock->GetTime(lwSeconds, lwMicroSec, lwCycle);
+
+    LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+               "Seconds : %lu, MicroSec : %lu, Cycle : %lu, "
+               "m_ucThrdNum : %d, m_ucAppNum : %d\n",
+               lwSeconds, lwMicroSec, lwCycle,
+               m_ucThrdNum, m_ucAppNum);
+}
+
+
+/* 发送周期性输出系统维测任务的MEAS消息 */
+VOID COamApp::DumpMeasure(const VOID *pIn, WORD32 dwLen)
+{
+    TRACE_STACK("COamApp::DumpMeasure()");
 
     WORD64 lwMicroSec    = 0;
     WORD64 lwCycle       = 0;
     WORD64 lwCentralSize = 0;
     WORD64 lwCentralUsed = 0;
     WORD64 lwCentralFree = 0;
-
-    if (unlikely(0 == m_ucThrdNum))
-    {
-        m_apThread[m_ucThrdNum] = g_pLogThread;
-        m_ucThrdNum++;
-
-        for (WORD32 dwIndex = 0; dwIndex < MAX_WORKER_NUM; dwIndex++)
-        {
-            CBaseThread *pThread = (*g_pThreadPool)[dwIndex];
-            if (NULL == pThread)
-            {
-                break ;
-            }
-
-            m_apThread[m_ucThrdNum] = pThread;
-            m_ucThrdNum++;
-        }
-    }
-
-    if (unlikely(0 == m_ucAppNum))
-    {
-        CAppCntrl *pAppCntrl = CAppCntrl::GetInstance();
-        for (WORD32 dwIndex = 0; dwIndex < MAX_APP_NUM; dwIndex++)
-        {
-            T_AppInfo *ptAppInfo = (*pAppCntrl)[dwIndex];
-            if (NULL == ptAppInfo)
-            {
-                break ;
-            }
-
-            if (NULL == ptAppInfo->pAppState)
-            {
-                break ;
-            }
-
-            m_apApp[m_ucAppNum] = ptAppInfo->pAppState->GetAppInst();
-            m_ucAppNum++;
-        }
-    }
 
     RegisterTimer(TIMER_TIMEOUT_INTERVAL,
                   (CCBObject *)this,

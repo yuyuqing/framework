@@ -13,11 +13,14 @@
 #include <fstream>
 
 #include "base_init_component.h"
+#include "base_oam_app.h"
 
 
 int main(int argc, char **argv)
 {
     CInitList::GetInstance()->InitComponent((WORD32)E_PROC_DU);
+
+    g_pOamApp->InitAllApps();
 
     sleep(5);
 

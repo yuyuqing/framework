@@ -11,6 +11,7 @@
 typedef enum tagE_OamTaskType
 {
     E_OAM_TASK_SYNC_ID = 0,
+    E_OAM_MEASURE_ID,
     E_DPDK_MEASURE_ID,
 }E_OamTaskType;
 
@@ -62,8 +63,9 @@ typedef CBTreeArray<COamCBNode, WORD32, OAM_CB_TABLE_NODE_POWER_NUM>  COamCBTabl
 class COamApp : public CAppInterface
 {
 public :
-    enum { TIMER_SYNC_INTERVAL    = 5000 };
-    enum { TIMER_TIMEOUT_INTERVAL =    5 };
+    enum { SYNC_PERIOD            = 30000 };
+    enum { TIMER_SYNC_INTERVAL    =  5000 };
+    enum { TIMER_TIMEOUT_INTERVAL =    20 };
 
 public :
     COamApp ();
@@ -76,7 +78,7 @@ public :
     WORD32 DeInit();
     WORD32 Exit(WORD32 dwMsgID, VOID *pIn, WORD16 wMsgLen);
 
-    /* 通知其它APP上电 */
+    /* 通知所有APP上电, 在main进程中调用 */
     WORD32 InitAllApps();
 
     VOID ProcGlobalSwitchMsg(const VOID *pIn, WORD32 dwLen);
@@ -103,7 +105,11 @@ public :
     /* 向其它应用或线程提供消息接口, 用以支持去注册定时回调 */
     WORD32 SendRemoveCBMsg(WORD32 dwTaskID);
 
+    /* 发送周期性执行是时钟同步任务的SYNC消息 */
     VOID SyncClock(const VOID *pIn, WORD32 dwLen);
+
+    /* 发送周期性输出系统维测任务的MEAS消息 */
+    VOID DumpMeasure(const VOID *pIn, WORD32 dwLen);
     VOID TimeOutDumpThreadMeas(const VOID *pIn, WORD32 dwLen);
     VOID TimeOutDumpAppMeas(const VOID *pIn, WORD32 dwLen);
     VOID TimeOutDumpMsgQueueMeas(const VOID *pIn, WORD32 dwLen);
