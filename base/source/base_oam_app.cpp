@@ -560,7 +560,6 @@ VOID COamApp::SyncClock(const VOID *pIn, WORD32 dwLen)
 {
     TRACE_STACK("COamApp::SyncClock()");
 
-    WORD64 lwSeconds     = 0;
     WORD64 lwMicroSec    = 0;
     WORD64 lwCycle       = 0;
     WORD64 lwCentralSize = 0;
@@ -666,13 +665,13 @@ VOID COamApp::SyncClock(const VOID *pIn, WORD32 dwLen)
         pMemPool->GetMeasure(m_tMemPoolMeasure);
     }
 
-    g_pGlobalClock->GetTime(lwSeconds, lwMicroSec, lwCycle);
+    g_pGlobalClock->GetTime3(lwMicroSec, lwCycle);
 
     LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
-               "Seconds : %lu, MicroSec : %lu, Cycle : %lu, "
+               "MicroSec : %lu, Cycle : %lu, "
                "m_ucThrdNum : %d, m_ucAppNum : %d, "
                "CentralMemSize : %ld, CentralUsed : %ld, CentralFree : %ld\n",
-               lwSeconds, lwMicroSec, lwCycle,
+               lwMicroSec, lwCycle,
                m_ucThrdNum, m_ucAppNum,
                lwCentralSize, lwCentralUsed, lwCentralFree);
 }
