@@ -29,8 +29,9 @@ int main(int argc, char **argv)
     CDataZone       *pDataZone       = pMemMgr->GetDataZone();
     CCentralMemPool *pCentralMemPool = pMemMgr->GetCentralMemPool();
 
-    printf("pMetaHead = %lu, pCentralMemPool = %lu, pDataZone = %lu\n",
+    printf("pMetaHead = %lu, pMemMgr = %lu, pDataZone = %lu, pCentralMemPool = %lu\n",
                (WORD64)pMetaHead,
+               (WORD64)pMemMgr,
                (WORD64)pDataZone,
                (WORD64)pCentralMemPool);
 

@@ -949,12 +949,13 @@ VOID CMemMgr::Dump()
     LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_TRACE, TRUE,
                "m_pMetaHead = %lu, m_lwBaseAddr = %lu, m_lwMemSize = %lu, "
                "m_lwDataZoneAddr = %lu, m_lwCentralAddr = %lu, "
-               "m_pDataZone = %lu, m_pCentralMemPool = %lu\n",
+               "this = %lu, m_pDataZone = %lu, m_pCentralMemPool = %lu\n",
                (WORD64)m_pMetaHead,
                m_lwBaseAddr,
                m_lwMemSize,
                m_lwDataZoneAddr,
                m_lwCentralAddr,
+               (WORD64)this,
                (WORD64)m_pDataZone,
                (WORD64)m_pCentralMemPool);
 
