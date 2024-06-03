@@ -179,7 +179,7 @@
             [
                 {
                     "name"         : "CEthQueueApp",
-                    "app_id"       : 1,
+                    "app_id"       : 2,
                     "event_begin"  : 3072,
                     "assoc_cell"   : [0]
                 }
