@@ -26,6 +26,8 @@ WORD32 ExitThreadCtrl(VOID *pArg)
 /* 按ThreadID从小到大排序创建线程实例(启动顺序依赖创建顺序) */
 WORD32 InitThreadCtrl(WORD32 dwProcID, VOID *pArg)
 {
+    TRACE_STACK("InitThreadCtrl()");
+
     T_InitFunc *ptInitFunc = (T_InitFunc *)pArg;
     ptInitFunc->pExitFunc  = &ExitThreadCtrl;
 

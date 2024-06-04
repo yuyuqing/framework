@@ -140,6 +140,12 @@
                 "app_id"       : 0,
                 "event_begin"  : 3072,
                 "assoc_cell"   : [0]
+            },
+            {
+                "name"         : "CTimerApp",
+                "app_id"       : 1,
+                "event_begin"  : 3072,
+                "assoc_cell"   : [0]
             }
         ],
         "modules"           : 

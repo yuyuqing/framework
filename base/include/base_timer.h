@@ -6,16 +6,7 @@
 
 #include "base_call_back.h"
 #include "base_time.h"
-
-
-typedef struct tagT_TimerCBParam
-{
-    WORD32   dwID;
-    WORD32   dwExtendID;
-    WORD64   lwTransID;
-    VOID    *pContext;
-    VOID    *pUserData;
-}T_TimerCBParam;
+#include "base_timer_wrapper.h"
 
 
 class CTimerNode : public CBaseData
@@ -29,7 +20,8 @@ public :
                 PCBFUNC    pFunc,
                 WORD32     dwID,
                 WORD32     dwExtendID,
-                WORD64     lwTransID,
+                WORD32     dwTransID,
+                WORD32     dwResvID,
                 VOID      *pContext,
                 VOID      *pUserData);
 
@@ -42,7 +34,8 @@ public :
                 PCBFUNC    pFunc,
                 WORD32     dwID,
                 WORD32     dwExtendID,
-                WORD64     lwTransID,
+                WORD32     dwTransID,
+                WORD32     dwResvID,
                 VOID      *pContext,
                 VOID      *pUserData);
 
@@ -53,20 +46,22 @@ public :
     BOOL operator > (CTimerNode &rNode);
 
     /* 判断是否超时; (TRUE : 超时, FALSE : 未超时) */
-    BOOL IsTimeOut(WORD64 lwCurTick);
+    BOOL IsTimeOut(WORD64 lwCurUs);
 
     VOID CallBack();
+
+    VOID UpdateClock(WORD64 lwMicroSec, WORD32 dwTick);
 
 public :
     CTimerNode  *m_pNext;
     CTimerNode  *m_pPrev;
 
 protected :
-    WORD64          m_lwTimeoutTick;  /* 超时时间 */
+    WORD64          m_lwTimeoutUs;    /* 超时时间(绝对时间, 单位:us) */
     CCBObject      *m_pObj;           /* 回调对象 */
     PCBFUNC         m_pFunc;          /* 回调函数 */
 
-    T_TimerCBParam  m_tCBParam;       /* 回调出参 */
+    T_TimerParam    m_tCBParam;       /* 回调出参 */
 };
 
 
@@ -74,12 +69,13 @@ inline CTimerNode & CTimerNode::operator = (const CTimerNode &rNode)
 {
     if (&rNode != this)
     {
-        m_lwTimeoutTick       = rNode.m_lwTimeoutTick;
+        m_lwTimeoutUs         = rNode.m_lwTimeoutUs;
         m_pObj                = rNode.m_pObj;
         m_pFunc               = rNode.m_pFunc;
         m_tCBParam.dwID       = rNode.m_tCBParam.dwID;
         m_tCBParam.dwExtendID = rNode.m_tCBParam.dwExtendID;
-        m_tCBParam.lwTransID  = rNode.m_tCBParam.lwTransID;
+        m_tCBParam.dwTransID  = rNode.m_tCBParam.dwTransID;
+        m_tCBParam.dwResvID   = rNode.m_tCBParam.dwResvID;
         m_tCBParam.pContext   = rNode.m_tCBParam.pContext;
         m_tCBParam.pUserData  = rNode.m_tCBParam.pUserData;
     }
@@ -90,14 +86,14 @@ inline CTimerNode & CTimerNode::operator = (const CTimerNode &rNode)
 
 inline BOOL CTimerNode::operator > (CTimerNode &rNode)
 {
-    return (m_lwTimeoutTick > rNode.m_lwTimeoutTick);
+    return (m_lwTimeoutUs > rNode.m_lwTimeoutUs);
 }
 
 
 /* 判断是否超时; (TRUE : 超时, FALSE : 未超时) */
-inline BOOL CTimerNode::IsTimeOut(WORD64 lwCurTick)
+inline BOOL CTimerNode::IsTimeOut(WORD64 lwCurUs)
 {
-    return (lwCurTick >= m_lwTimeoutTick);
+    return (lwCurUs >= m_lwTimeoutUs);
 }
 
 
@@ -107,6 +103,14 @@ inline VOID CTimerNode::CallBack()
     {
         (m_pObj->*(m_pFunc)) (&(m_tCBParam), sizeof(m_tCBParam));
     }
+}
+
+
+inline VOID CTimerNode::UpdateClock(WORD64 lwMicroSec, WORD32 dwTick)
+{
+    WORD64 lwTickUs = dwTick * 1000;
+
+    m_lwTimeoutUs = lwMicroSec + lwTickUs;
 }
 
 
@@ -126,7 +130,7 @@ public :
     WORD32 Clear();
 
     /* 定时器注册接口 : 超时后该定时器自动删除, 无需再调用KillTimer删除
-     * dwTick : 超时时长, 单位(0.5ms, TTI中断)
+     * dwTick : 超时时长, 单位(1ms)
      * pObj   : 回调对象
      * pFunc  : 回调函数
      * 
@@ -136,9 +140,27 @@ public :
                          PCBFUNC    pFunc,
                          WORD32     dwID,
                          WORD32     dwExtendID = INVALID_DWORD,
-                         WORD64     lwTransID  = INVALID_LWORD,
+                         WORD32     dwTransID  = INVALID_DWORD,
+                         WORD32     dwResvID   = INVALID_DWORD,
                          VOID      *pContext   = NULL,
                          VOID      *pUserData  = NULL);
+
+    /* 定时器注册接口 : 超时后该定时器自动删除, 无需再调用KillTimer删除
+     * dwTick : 超时时长, 单位(1ms)
+     * pObj   : 回调对象
+     * pFunc  : 回调函数
+     * 
+     */
+    WORD32 RegisterTimer(WORD32       dwTick,
+                         CTimerNode **pNode,
+                         CCBObject   *pObj,
+                         PCBFUNC      pFunc,
+                         WORD32       dwID,
+                         WORD32       dwExtendID = INVALID_DWORD,
+                         WORD32       dwTransID  = INVALID_DWORD,
+                         WORD32       dwResvID   = INVALID_DWORD,
+                         VOID        *pContext   = NULL,
+                         VOID        *pUserData  = NULL);
 
     /* 绝对定时器 */
     WORD32 RegisterTimer(BYTE       ucHour,
@@ -149,7 +171,8 @@ public :
                          PCBFUNC    pFunc,
                          WORD32     dwID,
                          WORD32     dwExtendID = INVALID_DWORD,
-                         WORD64     lwTransID  = INVALID_DWORD,
+                         WORD32     dwTransID  = INVALID_DWORD,
+                         WORD32     dwResvID   = INVALID_DWORD,
                          VOID      *pContext   = NULL,
                          VOID      *pUserData  = NULL);
 
@@ -159,7 +182,7 @@ public :
 
     WORD32 Remove(CTimerNode *pNode);
 
-    WORD32 Decrease(WORD64 lwCurTick, WORD32 dwThreshCount, WORD64 &rlwTimeOutNum);
+    WORD32 Decrease(WORD64 lwCurUs, WORD32 dwThreshCount, WORD64 &rlwTimeOutNum);
 
     WORD32 GetCount();
 
@@ -244,7 +267,8 @@ inline WORD32 CTimerList<TIMER_NODE_NUM>::RegisterTimer(WORD32     dwTick,
                                                         PCBFUNC    pFunc,
                                                         WORD32     dwID,
                                                         WORD32     dwExtendID,
-                                                        WORD64     lwTransID,
+                                                        WORD32     dwTransID,
+                                                        WORD32     dwResvID,
                                                         VOID      *pContext,
                                                         VOID      *pUserData)
 {
@@ -255,24 +279,76 @@ inline WORD32 CTimerList<TIMER_NODE_NUM>::RegisterTimer(WORD32     dwTick,
 
     WORD32 dwTimerID = INVALID_DWORD;
 
-    CTimerNode *pNode = m_List.Malloc(&dwTimerID);
-    if (unlikely(NULL == pNode))
+    CTimerNode *pTimer = m_List.Malloc(&dwTimerID);
+    if (unlikely(NULL == pTimer))
     {
         return INVALID_DWORD;
     }
 
-    new (pNode) CTimerNode(dwTick,
+    new (pTimer) CTimerNode(dwTick,
                             pObj,
                             pFunc,
                             dwID,
                             dwExtendID,
-                            lwTransID,
+                            dwTransID,
+                            dwResvID,
                             pContext,
                             pUserData);
 
-    Insert(pNode);
+    Insert(pTimer);
 
     m_dwCount++;
+
+    return dwTimerID;
+}
+
+
+/* 定时器注册接口 : 超时后该定时器自动删除, 无需再调用KillTimer删除
+ * dwTick : 超时时长, 单位(1ms)
+ * pObj   : 回调对象
+ * pFunc  : 回调函数
+ * 
+ */
+template <WORD32 TIMER_NODE_NUM>
+inline WORD32 CTimerList<TIMER_NODE_NUM>::RegisterTimer(WORD32       dwTick,
+                                                        CTimerNode **pNode,
+                                                        CCBObject   *pObj,
+                                                        PCBFUNC      pFunc,
+                                                        WORD32       dwID,
+                                                        WORD32       dwExtendID,
+                                                        WORD32       dwTransID,
+                                                        WORD32       dwResvID,
+                                                        VOID        *pContext,
+                                                        VOID        *pUserData)
+{
+    if (unlikely((NULL == pObj) || (NULL == pFunc)))
+    {
+        return INVALID_DWORD;
+    }
+
+    WORD32 dwTimerID = INVALID_DWORD;
+
+    CTimerNode *pTimer = m_List.Malloc(&dwTimerID);
+    if (unlikely(NULL == pTimer))
+    {
+        return INVALID_DWORD;
+    }
+
+    new (pTimer) CTimerNode(dwTick,
+                            pObj,
+                            pFunc,
+                            dwID,
+                            dwExtendID,
+                            dwTransID,
+                            dwResvID,
+                            pContext,
+                            pUserData);
+
+    Insert(pTimer);
+
+    m_dwCount++;
+
+    *pNode = pTimer;
 
     return dwTimerID;
 }
@@ -287,7 +363,8 @@ inline WORD32 CTimerList<TIMER_NODE_NUM>::RegisterTimer(BYTE       ucHour,
                                                         PCBFUNC    pFunc,
                                                         WORD32     dwID,
                                                         WORD32     dwExtendID,
-                                                        WORD64     lwTransID,
+                                                        WORD32     dwTransID,
+                                                        WORD32     dwResvID,
                                                         VOID      *pContext,
                                                         VOID      *pUserData)
 {
@@ -307,7 +384,7 @@ inline WORD32 CTimerList<TIMER_NODE_NUM>::RegisterTimer(BYTE       ucHour,
 
     new (pNode) CTimerNode(ucHour, ucMinute, ucSecond, wMillSec, 
                            pObj, pFunc, 
-                           dwID, dwExtendID, lwTransID,
+                           dwID, dwExtendID, dwTransID, dwResvID,
                            pContext, pUserData);
 
     Insert(pNode);
@@ -449,7 +526,7 @@ inline WORD32 CTimerList<TIMER_NODE_NUM>::Remove(CTimerNode *pNode)
 
 
 template <WORD32 TIMER_NODE_NUM>
-inline WORD32 CTimerList<TIMER_NODE_NUM>::Decrease(WORD64  lwCurTick,
+inline WORD32 CTimerList<TIMER_NODE_NUM>::Decrease(WORD64  lwCurUs,
                                                    WORD32  dwThreshCount,
                                                    WORD64 &rlwTimeOutNum)
 {
@@ -465,7 +542,7 @@ inline WORD32 CTimerList<TIMER_NODE_NUM>::Decrease(WORD64  lwCurTick,
             break ;
         }
 
-        if (TRUE == pCur->IsTimeOut(lwCurTick))
+        if (TRUE == pCur->IsTimeOut(lwCurUs))
         {
             rlwTimeOutNum++;
 

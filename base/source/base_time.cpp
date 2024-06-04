@@ -163,6 +163,50 @@ CGlobalClock::~CGlobalClock()
 }
 
 
+/* 强制时钟同步(lwSysClock : 当前系统绝对时间, 单位us; lwSysCycle : 当前系统Cycle) */
+VOID CGlobalClock::SyncTime(WORD64 lwSysClock)
+{
+    WORD32 dwCyclePer100ns = CYCLE_NUM_PER_100NS;
+    WORD32 dwCpuFreq       = m_dwCpuFreq.load(std::memory_order_relaxed);
+    WORD64 lwLastCycle     = m_lwLastCycle.load(std::memory_order_relaxed);
+    WORD64 lwLastMicroSec  = m_lwLastMicroSec.load(std::memory_order_relaxed);
+    WORD64 lwSysCycle      = GetCycle();
+    WORD64 lwDiffCycle     = lwSysCycle - lwLastCycle;
+    WORD64 lwDiffUs        = lwSysClock - lwLastMicroSec;
+
+    if (likely((0 != lwDiffCycle) && (0 != lwDiffUs)))
+    {
+        dwCpuFreq       = (WORD32)(lwDiffCycle / lwDiffUs);
+        dwCpuFreq       = ROUND_UP(dwCpuFreq, 2);
+        dwCpuFreq       = (dwCpuFreq < 10) ? CYCLE_NUM_PER_1US : dwCpuFreq;
+        dwCyclePer100ns = ROUND_UP((dwCpuFreq / 10), 2);
+        dwCpuFreq       = dwCyclePer100ns * 10;
+    }
+
+    m_bFlag.store(FALSE, std::memory_order_relaxed);
+
+    /* 内存屏障 */
+#ifdef ARCH_ARM64    
+    asm volatile("dmb " "ishld" : : : "memory");  /* 针对Arm64指令 */
+#else        
+    asm volatile ("" : : : "memory");             /* 针对X86指令 */
+#endif
+
+    m_dwCpuFreq.store(dwCpuFreq, std::memory_order_relaxed);
+    m_lwLastCycle.store(lwSysClock, std::memory_order_relaxed);
+    m_lwLastMicroSec.store(lwSysCycle, std::memory_order_relaxed);
+
+    /* 内存屏障 */
+#ifdef ARCH_ARM64    
+    asm volatile("dmb " "ishld" : : : "memory");  /* 针对Arm64指令 */
+#else        
+    asm volatile ("" : : : "memory");             /* 针对X86指令 */
+#endif
+
+    m_bFlag.store(TRUE, std::memory_order_relaxed);
+}
+
+
 /* 获取当前秒部+微秒部, 本接口仅日志线程使用 */
 VOID CGlobalClock::GetTime(WORD64 &lwSeconds, WORD64 &lwMicroSec, WORD64 &lwCycle)
 {

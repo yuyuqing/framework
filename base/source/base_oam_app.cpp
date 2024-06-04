@@ -241,7 +241,38 @@ WORD32 COamApp::DeInit()
 {
     TRACE_STACK("COamApp::DeInit()");
 
-    m_pOwner->SendLPMsgToApp(m_dwAppID,
+    CAppCntrl *pAppCntrl = CAppCntrl::GetInstance();
+    WORD32     dwAppNum  = pAppCntrl->GetAppNum();
+
+    for (WORD32 dwIndex = 0; dwIndex < dwAppNum; dwIndex++)
+    {
+        T_AppInfo *ptAppInfo = (*pAppCntrl)[dwIndex];
+        if (m_dwAppID == ptAppInfo->dwAppID)
+        {
+            continue ;
+        }
+
+        LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE, 
+                   "Notify App shutdown; AppID : %d, ThreadID : %d, Name : %s\n",
+                   ptAppInfo->dwAppID,
+                   ptAppInfo->dwThreadID,
+                   ptAppInfo->aucName);
+
+        if (m_dwThreadID == ptAppInfo->dwThreadID)
+        {
+            /* 针对绑定到日志线程的App, 无法通过线程池接口发送消息 */
+            m_pOwner->SendHPMsgToApp(ptAppInfo->dwAppID,
+                                     m_dwAppID,
+                                     EV_BASE_APP_SHUTDOWN_ID,
+                                     0, NULL);
+            m_pOwner->SendHPMsgToApp(ptAppInfo->dwAppID,
+                                     m_dwAppID,
+                                     EV_BASE_APP_SHUTDOWN_ID,
+                                     0, NULL);
+        }
+    }
+
+    m_pOwner->SendHPMsgToApp(m_dwAppID,
                              m_dwAppID,
                              EV_BASE_APP_SHUTDOWN_ID,
                              0, NULL);
@@ -507,7 +538,7 @@ VOID COamApp::ProcCBRegistMsg(const VOID *pIn, WORD32 dwLen)
     pNode->m_dwTimerID = RegisterTimer(dwPeriod,
                                        (CCBObject *)this,
                                        (PCBFUNC)(&COamApp::CallBack),
-                                       dwInstID, dwTaskID, dwPeriod,
+                                       dwInstID, dwTaskID, dwPeriod, 0,
                                        (VOID *)(pNode),
                                        (VOID *)(lwUsrData));
 }
@@ -545,16 +576,16 @@ VOID COamApp::CallBack(const VOID *pIn, WORD32 dwLen)
 {
     TRACE_STACK("COamApp::CallBack()");
 
-    if (unlikely((NULL == pIn) || (dwLen != sizeof(T_TimerCBParam))))
+    if (unlikely((NULL == pIn) || (dwLen != sizeof(T_TimerParam))))
     {
         return ;
     }
 
-    T_TimerCBParam *ptParam = (T_TimerCBParam *)pIn;
+    T_TimerParam *ptParam = (T_TimerParam *)pIn;
 
     WORD32      dwInstID  = ptParam->dwID;
     WORD32      dwTaskID  = ptParam->dwExtendID;
-    WORD32      dwPeriod  = (WORD32)(ptParam->lwTransID);
+    WORD32      dwPeriod  = ptParam->dwTransID;
     COamCBNode *pNode     = (COamCBNode *)(ptParam->pContext);
     WORD64      lwUsrData = (WORD64)(ptParam->pUserData);
     CCBObject  *pObj      = (CCBObject *)(pNode->m_pObj);
@@ -572,7 +603,7 @@ VOID COamApp::CallBack(const VOID *pIn, WORD32 dwLen)
     pNode->m_dwTimerID = RegisterTimer(dwPeriod,
                                        (CCBObject *)this,
                                        (PCBFUNC)(&COamApp::CallBack),
-                                       dwInstID, dwTaskID, dwPeriod,
+                                       dwInstID, dwTaskID, dwPeriod, 0,
                                        (VOID *)(pNode),
                                        (VOID *)(lwUsrData));
 

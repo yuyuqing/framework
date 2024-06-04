@@ -66,7 +66,8 @@ public :
                          PCBFUNC    pFunc,
                          WORD32     dwID,
                          WORD32     dwExtendID = INVALID_DWORD,
-                         WORD64     lwTransID  = INVALID_DWORD,
+                         WORD32     dwTransID  = INVALID_DWORD,
+                         WORD32     dwResvID   = INVALID_DWORD,
                          VOID      *pContext   = NULL,
                          VOID      *pUserData  = NULL);
 
@@ -79,7 +80,8 @@ public :
                          PCBFUNC    pFunc,
                          WORD32     dwID,
                          WORD32     dwExtendID = INVALID_DWORD,
-                         WORD64     lwTransID  = INVALID_DWORD,
+                         WORD32     dwTransID  = INVALID_DWORD,
+                         WORD32     dwResvID   = INVALID_DWORD,
                          VOID      *pContext   = NULL,
                          VOID      *pUserData  = NULL);
 

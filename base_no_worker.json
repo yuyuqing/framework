@@ -169,29 +169,6 @@
 
     "workers"  :
     [
-        {
-            "type"         : "CPollingThread",  //线程类型名
-            "name"         : "dpdk",            //线程名称
-            "thread_id"    : 13,                //线程ID(框架内部编号, 进程内唯一, 0~999)
-            "logical_id"   : 13,                //线程绑定核编号
-            "policy"       : 1,                 //线程优先级策略(1:FIFO)
-            "priority"     : 99,                //线程优先级
-            "stack_size"   : 163840,            //线程栈空间大小
-            "cb_num"       : 2,                 //低优先级消息队列每次循环最大回调次数
-            "packet_num"   : 16,                //数据报文队列每次循环最大回调次数
-            "multi_cb_num" : 32,                //MultiRing队列每次循环最大回调次数(针对每个STRing)
-            "timer_cb_num" : 8,                 //定时器队列每次循环最大回调次数
-            "alone_log"    : true,              //是否使用单独的日志文件记录日志
-            "apps"         :
-            [
-                {
-                    "name"         : "CEthQueueApp",
-                    "app_id"       : 2,
-                    "event_begin"  : 3072,
-                    "assoc_cell"   : [0]
-                }
-            ]
-        }
     ],
 
     "dpdk" :

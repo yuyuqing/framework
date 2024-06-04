@@ -118,11 +118,11 @@ public :
     CGlobalClock ();
     virtual ~CGlobalClock();
 
+    /* 强制时钟同步(lwSysClock : 当前系统绝对时间, 单位us) */
+    VOID SyncTime(WORD64 lwSysClock);
+
     /* 获取当前秒部+微秒部+Cycle, 本接口仅日志线程使用 */
     VOID GetTime(WORD64 &lwSeconds, WORD64 &lwMicroSec, WORD64 &lwCycle);
-
-    /* 获取当前系统时间(单位:微秒) */
-    VOID GetTime2(WORD64 &lwMicroSec, WORD64 &lwCycle);
 
     /* 获取当前系统时间(单位:微秒) */
     VOID GetTime3(WORD64 &lwMicroSec, WORD64 &lwCycle);
@@ -166,22 +166,6 @@ protected :
     std::atomic<WORD16>    m_wSFN;
     std::atomic<BYTE>      m_ucSlot;
 };
-
-
-/* 获取当前系统时间(单位:微秒) */
-inline VOID CGlobalClock::GetTime2(WORD64 &lwMicroSec, WORD64 &lwCycle)
-{
-    WORD64 lwLastCycle    = m_lwStartCycle;
-    WORD64 lwLastMicroSec = m_lwStartMicroSec;
-    WORD32 dwCpuFreq      = m_dwCyclePer100ns * 10;
-
-    lwCycle = GetCycle();
-
-    WORD64 lwDiffCycle = lwCycle - lwLastCycle;
-    WORD64 lwDiffUs    = TRANSFER_CYCLE_TO_US(lwDiffCycle, dwCpuFreq);
-
-    lwMicroSec = lwDiffUs + lwLastMicroSec;
-}
 
 
 /* 获取当前系统时间(单位:微秒) */

@@ -9,6 +9,74 @@
 #include "base_timer_wrapper.h"
 
 
+typedef struct tagT_TimerMeasure
+{
+    std::atomic<WORD64>    lwStartCount;     /* 业务进程调用启动定时器接口计数 */
+    std::atomic<WORD64>    lwStartMFail;     /* 业务进程调用启动定时器接口内存分配失败计数 */
+    std::atomic<WORD64>    lwStartQFail;     /* 业务进程调用启动定时器接口入队列失败计数 */
+    std::atomic<WORD64>    lwStopCount;      /* 业务进程调用停止定时器接口计数 */
+    std::atomic<WORD64>    lwStopMFail;      /* 业务进程调用停止定时器接口内存分配失败计数 */
+    std::atomic<WORD64>    lwStopQFail;      /* 业务进程调用停止定时器接口入队列失败计数 */
+    std::atomic<WORD64>    lwResetCount;     /* 业务进程调用重置定时器接口计数 */
+    std::atomic<WORD64>    lwResetMFail;     /* 业务进程调用重置定时器接口内存分配失败计数 */
+    std::atomic<WORD64>    lwResetQFail;     /* 业务进程调用重置定时器接口入队列失败计数 */
+    std::atomic<WORD64>    lwSlotCount;      /* 业务调用发送SlotInd消息接口计数 */
+    std::atomic<WORD64>    lwSlotMFail;      /* 业务调用发送SlotInd消息接口分配内存失败计数 */
+    std::atomic<WORD64>    lwSlotQFail;      /* 业务调用发送SlotInd消息接口入队列失败计数 */
+
+    WORD64  lwStartMsgCount;                 /* 定时器线程接收到启动定时器消息计数 */
+    WORD64  lwCreateFailCount;               /* 定时器线程接收到启动定时器消息注册定时器失败计数 */
+    WORD64  lwStopMsgCount;                  /* 定时器线程接收到停止定时器消息计数 */
+    WORD64  lwNotFindCount;                  /* 定时器线程接收到停止定时器消息查找定时器失败计数 */
+    WORD64  lwResetMsgCount;                 /* 定时器线程接收到重置定时器消息计数 */
+    WORD64  lwResetNotFindCount;             /* 定时器线程接收到重置定时器消息查找定时器失败计数 */
+    WORD64  lwSlotMsgCount;                  /* 收到SlotTTI消息计数 */
+    WORD64  lwSlotMsgMissCount;              /* 收到SlotTTI消息不连续计数 */
+}T_TimerMeasure;
+
+
+class CTimerTreeNode : public CCBObject
+{
+public :
+    CTimerTreeNode ();
+    virtual ~CTimerTreeNode();
+
+    WORD32 Initialize(WORD32          dwTimerID,
+                      WORD32          dwKey,
+                      CTimerNode     *pTimer,
+                      PTimerCallBack  pFunc);
+
+    VOID TimeOut(const VOID *pIn, WORD32 dwLen);
+
+    WORD32 GetTimerID();
+
+    CTimerNode * GetTimer();
+
+protected :
+    WORD32          m_dwTimerID;
+    WORD32          m_dwKey;
+    CTimerNode     *m_pTimer;
+    PTimerCallBack  m_pCBFunc;
+};
+
+
+inline WORD32 CTimerTreeNode::GetTimerID()
+{
+    return m_dwTimerID;
+}
+
+
+inline CTimerNode * CTimerTreeNode::GetTimer()
+{
+    return m_pTimer;
+}
+
+
+#define TIMER_NODE_POWER_NUM        ((WORD32)(10))
+
+typedef CBTreeArray<CTimerTreeNode, WORD32, TIMER_NODE_POWER_NUM>  CTimerTree;
+
+
 class CTimerApp : public CAppInterface
 {
 public :
@@ -54,6 +122,28 @@ public :
     WORD32 NotifySlotInd(WORD16 wSFN, BYTE ucSlot);
 
 protected :
+    WORD32 InnerCreate(WORD32          dwKey,
+                       WORD64          lwMicroSec,
+                       WORD32          dwTick,
+                       PTimerCallBack  pFunc,
+                       WORD32          dwID,
+                       WORD32          dwExtendID,
+                       WORD32          dwTransID,
+                       WORD32          dwResvID,
+                       VOID           *pContext,
+                       VOID           *pUserData);
+
+    WORD32 InnerDelete(WORD32 dwKey);
+
+protected :
+    CTimerTree        m_cTree;
+    CB_RegistMemPool  m_pRegistMemPoolFunc;  /* 向NGP内存池注册线程信息 */
+
+    WORD64            m_lwSlotCount;
+    WORD16            m_wSFN;
+    BYTE              m_ucSlot;
+
+    T_TimerMeasure    m_tMeas;
 };
 
 

@@ -36,6 +36,7 @@
 
 /* CPUÖ÷Æµ2.5GHz : 1us=2500 Cycles */
 #define CYCLE_NUM_PER_1US                       ((WORD32)(2500))
+#define CYCLE_NUM_PER_100NS                     ((WORD32)(250))
 
 #define TRANSFER_CYCLE_TO_100NS2(Cycle, Freq)   ((WORD32)((Cycle) / (Freq)))
 #define TRANSFER_CYCLE_TO_US(Cycle, Freq)       ((WORD64)((Cycle) / (Freq)))

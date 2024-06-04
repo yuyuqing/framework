@@ -158,7 +158,8 @@ WORD32 CAppInterface::RegisterTimer(WORD32     dwTick,
                                     PCBFUNC    pFunc,
                                     WORD32     dwID,
                                     WORD32     dwExtendID,
-                                    WORD64     lwTransID,
+                                    WORD32     dwTransID,
+                                    WORD32     dwResvID,
                                     VOID      *pContext,
                                     VOID      *pUserData)
 {
@@ -172,7 +173,8 @@ WORD32 CAppInterface::RegisterTimer(WORD32     dwTick,
                                                  pObj, pFunc,
                                                  dwID,
                                                  dwExtendID,
-                                                 lwTransID,
+                                                 dwTransID,
+                                                 dwResvID,
                                                  pContext,
                                                  pUserData);
 
@@ -189,7 +191,8 @@ WORD32 CAppInterface::RegisterTimer(BYTE       ucHour,
                                     PCBFUNC    pFunc,
                                     WORD32     dwID,
                                     WORD32     dwExtendID,
-                                    WORD64     lwTransID,
+                                    WORD32     dwTransID,
+                                    WORD32     dwResvID,
                                     VOID      *pContext,
                                     VOID      *pUserData)
 {
@@ -203,7 +206,8 @@ WORD32 CAppInterface::RegisterTimer(BYTE       ucHour,
                                                  pObj, pFunc,
                                                  dwID,
                                                  dwExtendID,
-                                                 lwTransID,
+                                                 dwTransID,
+                                                 dwResvID,
                                                  pContext,
                                                  pUserData);
 

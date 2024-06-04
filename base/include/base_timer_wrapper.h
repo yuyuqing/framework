@@ -36,12 +36,11 @@ using PTimerCallBack = WORD32 (*)(WORD32 dwKey, T_TimerParam *ptParam);
 /* 启动定时器消息 */
 typedef struct tagT_StartTimerMessage
 {
-    WORD64          lwSeconds;     /* 超时时间(绝对时间 : 秒部) */
-    WORD32          dwMicroSec;    /* 超时时间(绝对时间 : 微秒部) */
+    WORD64          lwMicroSec;  /* 调用StartTimer接口时的绝对时间(单位微秒) */
+    WORD32          dwTick;      /* 等待超时间隔(单位毫秒) */
+    WORD32          dwTimerID;   /* 定时器ID, 由业务线程分配, 全局唯一 */
 
-    WORD32          dwTimerID;     /* 定时器ID, 由业务线程分配, 全局唯一 */
-
-    PTimerCallBack  pFunc;         /* 回调函数地址 */
+    PTimerCallBack  pFunc;       /* 回调函数地址 */
 
     /* 出参内容 */
     WORD32          dwID;
@@ -63,9 +62,9 @@ typedef struct tagT_StopTimerMessage
 /* 重置定时器消息 */
 typedef struct tagT_ResetTimerMessage
 {
-    WORD64          lwSeconds;     /* 超时时间(绝对时间 : 秒部) */
-    WORD32          dwMicroSec;    /* 超时时间(绝对时间 : 微秒部) */
-    WORD32          dwTimerID;     /* 定时器ID, 由业务线程分配, 全局唯一 */
+    WORD64          lwMicroSec;  /* 调用StartTimer接口时的绝对时间(单位微秒) */
+    WORD32          dwTick;      /* 等待超时间隔(单位毫秒) */
+    WORD32          dwTimerID;   /* 定时器ID, 由业务线程分配, 全局唯一 */
 }T_ResetTimerMessage;
 
 

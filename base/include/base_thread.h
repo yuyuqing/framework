@@ -21,7 +21,7 @@
 #include "base_app_state.h"
 
 
-#define THREAD_TIMER_NODE_NUM                ((WORD32)(16000))
+#define THREAD_TIMER_NODE_NUM                ((WORD32)(1600))
 typedef CTimerList<THREAD_TIMER_NODE_NUM>    CTimerRepo;
 
 

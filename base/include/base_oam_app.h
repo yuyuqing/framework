@@ -67,7 +67,7 @@ typedef CBTreeArray<COamCBNode, WORD32, OAM_CB_TABLE_NODE_POWER_NUM>  COamCBTabl
 class COamApp : public CAppInterface
 {
 public :
-    enum { SYNC_PERIOD            = 30000 };
+    enum { SYNC_PERIOD            = 30000 };  /* 30√Î = 30000ms */
     enum { TIMER_SYNC_INTERVAL    =  5000 };
     enum { TIMER_TIMEOUT_INTERVAL =    20 };
     enum { DELAY_INIT_APPS_TICK   =     5 };
