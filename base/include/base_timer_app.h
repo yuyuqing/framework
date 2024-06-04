@@ -121,6 +121,11 @@ public :
     /* 向CTimerApp发送SlotTti消息 */
     WORD32 NotifySlotInd(WORD16 wSFN, BYTE ucSlot);
 
+    /* 周期性输出系统维测 */
+    VOID DumpMeasure(const VOID *pIn, WORD32 dwLen);
+
+    WORD32 InnerDelete(WORD32 dwKey);
+
 protected :
     WORD32 InnerCreate(WORD32          dwKey,
                        WORD64          lwMicroSec,
@@ -133,8 +138,6 @@ protected :
                        VOID           *pContext,
                        VOID           *pUserData);
 
-    WORD32 InnerDelete(WORD32 dwKey);
-
 protected :
     CTimerTree        m_cTree;
     CB_RegistMemPool  m_pRegistMemPoolFunc;  /* 向NGP内存池注册线程信息 */
@@ -142,6 +145,8 @@ protected :
     WORD64            m_lwSlotCount;
     WORD16            m_wSFN;
     BYTE              m_ucSlot;
+
+    BYTE              m_ucMeasMinute;  /* 维测定时器时长(单位:分钟) */
 
     T_TimerMeasure    m_tMeas;
 };

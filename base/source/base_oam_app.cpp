@@ -188,27 +188,19 @@ WORD32 COamApp::Init()
     /* 发送周期性执行时钟同步任务的SYNC消息 */
     if (ENABLE_SYNC_FLAG == m_ucSyncFlag)
     {
-        dwResult = SendRegistCBMsg(E_OAM_TASK_SYNC_ID,
-                                   SYNC_PERIOD,
-                                   (CCBObject *)this,
-                                   (PCBFUNC)(&COamApp::SyncClock),
-                                   NULL);
-        if (SUCCESS != dwResult)
-        {
-            assert(0);
-        }
+        SendRegistCBMsg(E_OAM_TASK_SYNC_ID,
+                        SYNC_PERIOD,
+                        (CCBObject *)this,
+                        (PCBFUNC)(&COamApp::SyncClock),
+                        NULL);
     }
 
     /* 发送周期性输出系统维测任务的MEAS消息 */
-    dwResult = SendRegistCBMsg(E_OAM_MEASURE_ID,
-                               dwPeriod,
-                               (CCBObject *)this,
-                               (PCBFUNC)(&COamApp::DumpMeasure),
-                               NULL);
-    if (SUCCESS != dwResult)
-    {
-        assert(0);
-    }
+    SendRegistCBMsg(E_OAM_MEASURE_ID,
+                    dwPeriod,
+                    (CCBObject *)this,
+                    (PCBFUNC)(&COamApp::DumpMeasure),
+                    NULL);
 
     RegisterTimer(DELAY_INIT_APPS_TICK,
                   (CCBObject *)this,

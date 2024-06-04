@@ -61,6 +61,8 @@ VOID CTimerTreeNode::TimeOut(const VOID *pIn, WORD32 dwLen)
     {
         (*m_pCBFunc) (m_dwKey, ptParam);
     }
+
+    g_pTimerApp->InnerDelete(m_dwKey);
 }
 
 
@@ -72,6 +74,7 @@ CTimerApp::CTimerApp ()
     m_lwSlotCount        = 0;
     m_wSFN               = INVALID_WORD;
     m_ucSlot             = INVALID_BYTE;
+    m_ucMeasMinute       = CLogInfo::s_awPeriodMinute[E_LOG_PERIOD_05_MINUTE];
 
     memset(&m_tMeas, 0x00, sizeof(m_tMeas));
 }
@@ -114,10 +117,13 @@ WORD32 CTimerApp::Start()
 {
     TRACE_STACK("CTimerApp::Start()");
 
+    m_ucMeasMinute = (BYTE)(g_pLogger->GetLogMeasure());
+
     LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
-               "m_dwAppID : %d, m_dwThreadID : %d\n",
+               "m_dwAppID : %d, m_dwThreadID : %d, m_ucMeasMinute : %d\n",
                m_dwAppID,
-               m_dwThreadID);
+               m_dwThreadID,
+               m_ucMeasMinute);
 
     return SUCCESS;
 }
@@ -131,6 +137,15 @@ WORD32 CTimerApp::Init()
     {
         (*m_pRegistMemPoolFunc) ();
     }
+
+    WORD32 dwPeriod = m_ucMeasMinute;
+    dwPeriod = dwPeriod * 60000;
+
+    g_pOamApp->SendRegistCBMsg(E_TIMER_MEASURE_ID,
+                               dwPeriod,
+                               (CCBObject *)this,
+                               (PCBFUNC)(&CTimerApp::DumpMeasure),
+                               NULL);
 
     return SUCCESS;
 }
@@ -471,6 +486,59 @@ WORD32 CTimerApp::NotifySlotInd(WORD16 wSFN, BYTE ucSlot)
 }
 
 
+/* 周期性输出系统维测 */
+VOID CTimerApp::DumpMeasure(const VOID *pIn, WORD32 dwLen)
+{
+    TRACE_STACK("CTimerApp::DumpMeasure()");
+
+    WORD64 lwStartCount = m_tMeas.lwStartCount.load(std::memory_order_relaxed);
+    WORD64 lwStartMFail = m_tMeas.lwStartMFail.load(std::memory_order_relaxed);
+    WORD64 lwStartQFail = m_tMeas.lwStartQFail.load(std::memory_order_relaxed);
+    WORD64 lwStopCount  = m_tMeas.lwStopCount.load(std::memory_order_relaxed);
+    WORD64 lwStopMFail  = m_tMeas.lwStopMFail.load(std::memory_order_relaxed);
+    WORD64 lwStopQFail  = m_tMeas.lwStopQFail.load(std::memory_order_relaxed);
+    WORD64 lwResetCount = m_tMeas.lwResetCount.load(std::memory_order_relaxed);
+    WORD64 lwResetMFail = m_tMeas.lwResetMFail.load(std::memory_order_relaxed);
+    WORD64 lwResetQFail = m_tMeas.lwResetQFail.load(std::memory_order_relaxed);
+    WORD64 lwSlotCount  = m_tMeas.lwSlotCount.load(std::memory_order_relaxed);
+    WORD64 lwSlotMFail  = m_tMeas.lwSlotMFail.load(std::memory_order_relaxed);
+    WORD64 lwSlotQFail  = m_tMeas.lwSlotQFail.load(std::memory_order_relaxed);
+
+    LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+               "StartNum : %lu, StartMFail : %lu, StartQFail : %lu, "
+               "StopNum : %lu, StopMFail : %lu, StopQFail : %lu, "
+               "ResetNum : %lu, ResetMFail : %lu, ResetQFail : %lu, "
+               "SlotNum : %lu, SlotMFail : %lu, SlotQFail : %lu\n",
+               lwStartCount, lwStartMFail, lwStartQFail,
+               lwStopCount,  lwStopMFail,  lwStopQFail,
+               lwResetCount, lwResetMFail, lwResetQFail,
+               lwSlotCount,  lwSlotMFail,  lwSlotQFail);
+
+    LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+               "StartMsgNum : %lu, CreateFail : %lu, "
+               "StopMsgNum : %lu, StopNotFind : %lu, ResetMsgNum : %lu, "
+               "ResetNotFind : %lu, SlotMsgNum : %lu, SlotMissNum : %lu\n",
+               m_tMeas.lwStartMsgCount,
+               m_tMeas.lwCreateFailCount,
+               m_tMeas.lwStopMsgCount,
+               m_tMeas.lwNotFindCount,
+               m_tMeas.lwResetMsgCount,
+               m_tMeas.lwResetNotFindCount,
+               m_tMeas.lwSlotMsgCount,
+               m_tMeas.lwSlotMsgMissCount);
+}
+
+
+WORD32 CTimerApp::InnerDelete(WORD32 dwKey)
+{
+    WORD32 dwTimerID = INVALID_DWORD;
+    WORD32 dwResult  = INVALID_DWORD;
+
+    /* 在删除树叶节点时会自动删除定时器节点 */
+    return m_cTree.Remove(dwKey);
+}
+
+
 WORD32 CTimerApp::InnerCreate(WORD32          dwKey,
                               WORD64          lwMicroSec,
                               WORD32          dwTick,
@@ -512,16 +580,6 @@ WORD32 CTimerApp::InnerCreate(WORD32          dwKey,
     pNode->Initialize(dwTimerID, dwKey, pTimer, pFunc);
 
     return dwTimerID;
-}
-
-
-WORD32 CTimerApp::InnerDelete(WORD32 dwKey)
-{
-    WORD32 dwTimerID = INVALID_DWORD;
-    WORD32 dwResult  = INVALID_DWORD;
-
-    /* 在删除树叶节点时会自动删除定时器节点 */
-    return m_cTree.Remove(dwKey);
 }
 
 
