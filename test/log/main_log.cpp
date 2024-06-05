@@ -166,7 +166,7 @@ int main()
 
     StartOam();
 
-#if 1
+#if 0
     T_LogSetGlobalSwitch tMsg1;
     T_LogSetWritePeriod  tMsg2;
     T_LogSetModuleSwitch tMsg3;

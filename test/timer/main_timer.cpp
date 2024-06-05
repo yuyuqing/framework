@@ -92,13 +92,11 @@ int main(int argc, char **argv)
             StopTimer(dwTimerID);
         }
 
-        usleep(50000);
+        usleep(10000);
     }
 
     LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_DEBUG, TRUE,
                "===============================================\n");
-
-    sleep(7200);
 
     CInitList::Destroy();
 

@@ -24,8 +24,8 @@ typedef enum tagE_MemSizeType
 
 typedef enum tagE_MemBufPowerNum
 {
-    E_MemBufPowerNum_256 = 10,  /* 2^10 = 1024 256K */
-    E_MemBufPowerNum_512 =  9,  /* 2^9  =  512 256K */
+    E_MemBufPowerNum_256 = 12,  /* 2^12 = 4096   1M */
+    E_MemBufPowerNum_512 = 10,  /* 2^10 = 1024 512K */
     E_MemBufPowerNum_01K =  9,  /* 2^9  =  512 512K */
     E_MemBufPowerNum_04K =  8,  /* 2^8  =  256   1M */
     E_MemBufPowerNum_16K =  6,  /* 2^6  =   64   1M */

@@ -136,6 +136,8 @@ typedef enum tagE_LOG_MODULE
     E_CU_USERP_EXTRA,
 
     /* DUÄ£¿é */
+    E_DU_MGR2 = 88,
+    E_DU_APP_UE2 = 89,
     E_DU_OAM_AGENT = 90,
     E_DU_MGR,
     E_DU_RRM,
@@ -201,6 +203,8 @@ typedef enum tagE_LOG_MODULE
     E_DU_NGP_PRIOQ,
     E_DU_NGP_WORKQ,
     E_DU_NGP_PERF = 150,
+    E_DU_QOS,
+    E_DU_MAC1 = 152,
 
     /* L1Ä£¿é */
     E_L1 = 170,
