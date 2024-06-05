@@ -63,6 +63,8 @@ public :
 
     VOID Dump();
 
+    VOID Printf();
+
 protected :
     WORD32             m_dwAppNum;
     T_AppInfo          m_atAppInfo[MAX_APP_NUM];

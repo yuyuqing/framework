@@ -32,6 +32,7 @@ typedef struct tagT_TimerMeasure
     WORD64  lwResetNotFindCount;             /* 定时器线程接收到重置定时器消息查找定时器失败计数 */
     WORD64  lwSlotMsgCount;                  /* 收到SlotTTI消息计数 */
     WORD64  lwSlotMsgMissCount;              /* 收到SlotTTI消息不连续计数 */
+    WORD64  lwTimeOutCount;                  /* 定时器超时次数统计 */
 }T_TimerMeasure;
 
 
@@ -72,13 +73,16 @@ inline CTimerNode * CTimerTreeNode::GetTimer()
 }
 
 
-#define TIMER_NODE_POWER_NUM        ((WORD32)(10))
+#define TIMER_NODE_POWER_NUM        ((WORD32)(12))
 
 typedef CBTreeArray<CTimerTreeNode, WORD32, TIMER_NODE_POWER_NUM>  CTimerTree;
 
 
 class CTimerApp : public CAppInterface
 {
+public :
+    friend class CTimerTreeNode;
+
 public :
     CTimerApp ();
     virtual ~CTimerApp();

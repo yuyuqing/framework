@@ -3,6 +3,7 @@
 #include <assert.h>
 
 #include "base_app_cntrl.h"
+#include "base_mem_mgr.h"
 
 
 CAppCntrl * CAppCntrl::s_pInstance = NULL;
@@ -65,6 +66,9 @@ CAppCntrl::CAppCntrl ()
     memset(m_adwAppClass,   0xFF, sizeof(m_adwAppClass));
 
     m_pMemInterface = NULL;
+
+    T_MemMetaHead *pMetaHead  = CMemMgr::GetInstance()->GetMetaHead();
+    pMetaHead->lwAppCntrlAddr = (WORD64)this;
 }
 
 
@@ -268,6 +272,23 @@ VOID CAppCntrl::Dump()
                    m_atAppInfo[dwIndex].aucName);
 
         m_atAppInfo[dwIndex].pAppState->Dump();
+    }
+}
+
+
+VOID CAppCntrl::Printf()
+{
+    printf("m_dwAppNum : %d\n", m_dwAppNum);
+
+    for (WORD32 dwIndex = 0; dwIndex < m_dwAppNum; dwIndex++)
+    {
+        CAppInterface *pAppInst = m_atAppInfo[dwIndex].pAppState->GetAppInst();
+
+        printf("-----------------------------------------------------------\n");
+
+        pAppInst->Printf();
+
+        printf("-----------------------------------------------------------\n");
     }
 }
 

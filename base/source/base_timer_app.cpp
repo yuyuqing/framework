@@ -62,6 +62,7 @@ VOID CTimerTreeNode::TimeOut(const VOID *pIn, WORD32 dwLen)
         (*m_pCBFunc) (m_dwKey, ptParam);
     }
 
+    g_pTimerApp->m_tMeas.lwTimeOutCount++;
     g_pTimerApp->InnerDelete(m_dwKey);
 }
 
@@ -516,8 +517,9 @@ VOID CTimerApp::DumpMeasure(const VOID *pIn, WORD32 dwLen)
 
     LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
                "StartMsgNum : %lu, CreateFail : %lu, "
-               "StopMsgNum : %lu, StopNotFind : %lu, ResetMsgNum : %lu, "
-               "ResetNotFind : %lu, SlotMsgNum : %lu, SlotMissNum : %lu\n",
+               "StopMsgNum : %lu, StopNotFind : %lu, "
+               "ResetMsgNum : %lu, ResetNotFind : %lu, "
+               "SlotMsgNum : %lu, SlotMissNum : %lu, TimeOutNum : %lu\n",
                m_tMeas.lwStartMsgCount,
                m_tMeas.lwCreateFailCount,
                m_tMeas.lwStopMsgCount,
@@ -525,7 +527,8 @@ VOID CTimerApp::DumpMeasure(const VOID *pIn, WORD32 dwLen)
                m_tMeas.lwResetMsgCount,
                m_tMeas.lwResetNotFindCount,
                m_tMeas.lwSlotMsgCount,
-               m_tMeas.lwSlotMsgMissCount);
+               m_tMeas.lwSlotMsgMissCount,
+               m_tMeas.lwTimeOutCount);
 }
 
 

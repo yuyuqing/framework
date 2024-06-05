@@ -15,6 +15,27 @@
 #include "pub_global_def.h"
 
 #include "base_init_component.h"
+#include "base_thread_pool.h"
+
+
+VOID PrintThreadCntrl(WORD64 lwThreadCntrlAddr)
+{
+    CThreadCntrl *pCntrl = (CThreadCntrl *)lwThreadCntrlAddr;
+    pCntrl->Printf();
+}
+
+
+VOID PrintAppCntrl(WORD64 lwAppCntrlAddr)
+{
+    CAppCntrl *pCntrl = (CAppCntrl *)lwAppCntrlAddr;
+    pCntrl->Printf();
+}
+
+
+VOID PrintDataZone(CDataZone &rDataZone)
+{
+    rDataZone.Printf();
+}
 
 
 int main(int argc, char **argv)
@@ -31,17 +52,17 @@ int main(int argc, char **argv)
     CCentralMemPool *pCentralMemPool = pMemMgr->GetCentralMemPool();
 
     printf("pMetaHead = %lu, pMemMgr = %lu, pDataZone = %lu, pCentralMemPool = %lu\n",
-               (WORD64)pMetaHead,
-               (WORD64)pMemMgr,
-               (WORD64)pDataZone,
-               (WORD64)pCentralMemPool);
+           (WORD64)pMetaHead,
+           (WORD64)pMemMgr,
+           (WORD64)pDataZone,
+           (WORD64)pCentralMemPool);
 
     printf("lwMagic : %lu, dwVersion : %u, dwHeadSize : %u, "
            "lwMasterLock : %lu, iGlobalLock : %d, bInitFlag : %d, "
            "iMLock : %d, dwHugeNum : %d, iPrimaryFileID : %d, "
            "iSecondaryFileID : %d, lwHugeAddr : %lu, aucHugePath : %s, "
            "lwMetaAddr : %lu, lwMetaSize : %lu, lwHugeAddr : %lu, "
-           "lwShareMemSize : %lu\n",
+           "lwShareMemSize : %lu, lwAppCntrlAddr : %lu, lwThreadCntrlAddr : %lu\n",
            pMetaHead->lwMagic,
            pMetaHead->dwVersion,
            pMetaHead->dwHeadSize,
@@ -57,14 +78,20 @@ int main(int argc, char **argv)
            pMetaHead->lwMetaAddr,
            pMetaHead->lwMetaSize,
            pMetaHead->lwHugeAddr,
-           pMetaHead->lwShareMemSize);
+           pMetaHead->lwShareMemSize,
+           pMetaHead->lwAppCntrlAddr,
+           pMetaHead->lwThreadCntrlAddr);
 
     WORD64 lwAddr = 0;
-    std::cin >> lwAddr;
 
-    printf("address is %lu, value is %d\n", lwAddr, *((WORD32 *)lwAddr));
+    while (TRUE)
+    {
+        std::cin >> lwAddr;
 
-    sleep(1800);
+        PrintThreadCntrl(pMetaHead->lwThreadCntrlAddr);
+        PrintAppCntrl(pMetaHead->lwAppCntrlAddr);
+        PrintDataZone(*pDataZone);
+    }
 
     return SUCCESS;
 }

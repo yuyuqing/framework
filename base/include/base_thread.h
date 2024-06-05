@@ -21,7 +21,7 @@
 #include "base_app_state.h"
 
 
-#define THREAD_TIMER_NODE_NUM                ((WORD32)(1600))
+#define THREAD_TIMER_NODE_NUM                ((WORD32)(4800))
 typedef CTimerList<THREAD_TIMER_NODE_NUM>    CTimerRepo;
 
 
@@ -256,7 +256,9 @@ public :
     VOID GetMsgMemMeasure(T_MsgMemMeasure &rtMeasure);
 
     virtual VOID Dump();
-    
+
+    VOID Printf();
+
     /* 更新线程日志文件配置 */
     VOID UpdateGlobalSwitch(BOOL bFlag);
 

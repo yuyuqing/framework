@@ -29,6 +29,7 @@ WORD32 g_adwTimerTick[TEST_MAX_TIMER_NUM] = {
 
 WORD32 TestTimeOut(WORD32 dwKey, T_TimerParam *ptParam)
 {
+#if 0
     TRACE_STACK("TestTimeOut");
 
     LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_DEBUG, TRUE,
@@ -36,10 +37,14 @@ WORD32 TestTimeOut(WORD32 dwKey, T_TimerParam *ptParam)
                dwKey,
                ptParam->dwID,
                ptParam->dwExtendID);
+#endif
 
     StartTimer(ptParam->dwExtendID,
                (PTimerCallBack)(&TestTimeOut),
-               ptParam->dwID, ptParam->dwExtendID, 0, 0, NULL, NULL);
+               ptParam->dwID,
+               ptParam->dwExtendID,
+               ptParam->dwTransID,
+               ptParam->dwResvID + 1, NULL, NULL);
 
     return SUCCESS;
 }
@@ -51,18 +56,49 @@ int main(int argc, char **argv)
 
     g_pOamApp->NotifyOamStartUP();
 
+    sleep(1);
+
     WORD32 dwTimerID = INVALID_DWORD;
     WORD32 dwTick    = 0;
+    WORD32 dwTransID = 0;
 
-    for (WORD32 dwIndex = 0; dwIndex < TEST_MAX_TIMER_NUM; dwIndex++)
+    for (WORD32 dwLoop = 0; dwLoop < 10; dwLoop++)
     {
-        dwTick    = g_adwTimerTick[dwIndex];
-        dwTimerID = StartTimer(dwTick,
-                               (PTimerCallBack)(&TestTimeOut),
-                               dwIndex, dwTick, 0, 0, NULL, NULL);
+        for (WORD32 dwIndex = 0; dwIndex < TEST_MAX_TIMER_NUM; dwIndex++)
+        {
+            dwTick    = g_adwTimerTick[dwIndex];
+            dwTimerID = StartTimer(dwTick,
+                                   (PTimerCallBack)(&TestTimeOut),
+                                   dwTransID++, dwTick, 0,
+                                   0, NULL, NULL);
+        }
     }
 
-    sleep(300);
+    LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_DEBUG, TRUE,
+               "===============================================\n");
+
+    for (WORD32 dwIndex = 0; dwIndex < 1000000; dwIndex++)
+    {
+        /* Stop Timer UseCase */
+        for (WORD32 dwIndex1 = 0; dwIndex1 < TEST_MAX_TIMER_NUM; dwIndex1++)
+        {
+            dwTick    = g_adwTimerTick[dwIndex1];
+            dwTimerID = StartTimer(dwTick,
+                                   (PTimerCallBack)(&TestTimeOut),
+                                   dwTransID++, dwTick, 0,
+                                   0, NULL, NULL);
+
+            ResetTimer(dwTimerID, (dwTick + dwTick));
+            StopTimer(dwTimerID);
+        }
+
+        usleep(5000);
+    }
+
+    LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_DEBUG, TRUE,
+               "===============================================\n");
+
+    sleep(7200);
 
     CInitList::Destroy();
 

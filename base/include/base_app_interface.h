@@ -104,6 +104,8 @@ public :
     
     virtual VOID Dump();
 
+    VOID Printf();
+
 protected :
     WORD32 InitMeasure();
 

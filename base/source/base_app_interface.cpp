@@ -278,6 +278,18 @@ VOID CAppInterface::Dump()
 }
 
 
+VOID CAppInterface::Printf()
+{
+    WORD64 lwProcNum = m_tMeasure.lwProcNum.load(std::memory_order_relaxed);
+
+    printf("AppID : %3d, ThreadID : %3d, lwProcNum : %lu, Name : %s\n",
+           m_dwAppID,
+           m_dwThreadID,
+           lwProcNum,
+           m_aucName);
+}
+
+
 WORD32 CAppInterface::InitMeasure()
 {
     m_tMeasure.dwAppID         = m_dwAppID;

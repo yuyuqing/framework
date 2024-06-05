@@ -105,6 +105,9 @@ CThreadCntrl::CThreadCntrl ()
     m_dwThreadNum   = 0;
 
     memset((BYTE *)(&(m_atThreadInfo[0])), 0x00, sizeof(m_atThreadInfo));
+
+    T_MemMetaHead *pMetaHead     = CMemMgr::GetInstance()->GetMetaHead();
+    pMetaHead->lwThreadCntrlAddr = (WORD64)this;
 }
 
 
@@ -231,6 +234,31 @@ VOID CThreadCntrl::Dump()
                    m_atThreadInfo[dwIndex].dwAppNum);
 
         m_atThreadInfo[dwIndex].pWorker->Dump();
+    }
+}
+
+
+/* 用于维测(在辅进程中输出打印信息) */
+VOID CThreadCntrl::Printf()
+{
+    printf("m_dwThreadNum : %d\n", m_dwThreadNum);
+
+    for (WORD32 dwIndex = 0; dwIndex < m_dwThreadNum; dwIndex++)
+    {
+        printf("===========================================================\n");
+
+        printf("dwThreadID : %3d, dwLogicalID : %2d, dwPolicy : %d, "
+               "dwPriority : %2d, dwMemSize : %9d, dwAppNum : %2d\n",
+               m_atThreadInfo[dwIndex].dwThreadID,
+               m_atThreadInfo[dwIndex].dwLogicalID,
+               m_atThreadInfo[dwIndex].dwPolicy,
+               m_atThreadInfo[dwIndex].dwPriority,
+               m_atThreadInfo[dwIndex].dwMemSize,
+               m_atThreadInfo[dwIndex].dwAppNum);
+
+        m_atThreadInfo[dwIndex].pWorker->Printf();
+
+        printf("===========================================================\n");
     }
 }
 

@@ -198,6 +198,43 @@ VOID CDataZone::Dump()
 }
 
 
+VOID CDataZone::Printf()
+{
+    WORD32 dwZoneNum = m_dwZoneNum.load(std::memory_order_relaxed);
+
+    printf("m_dwMainZoneIdx : %d, ZoneNum : %d\n",
+           m_dwMainZoneIdx,
+           dwZoneNum);
+
+    for (WORD32 dwIndex = 0; dwIndex < dwZoneNum; dwIndex++)
+    {
+        T_DataZone *ptData = (T_DataZone *)(m_cList[dwIndex]);
+        if (NULL == ptData)
+        {
+            continue ;
+        }
+
+        printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
+
+        printf("Index : %3d, ThrdIdx : %3d, ThrdType : %2d, ThrdID : %d, "
+               "LogMemPool : %15lu, LogRing : %15lu, "
+               "Logger : %15lu, Thread : %15lu, TThrdID : %ld, Name : %s, \n",
+               dwIndex,
+               ptData->dwThreadIdx,
+               ptData->dwThreadType,
+               ptData->dwThreadID,
+               (WORD64)(ptData->pLogMemPool),
+               (WORD64)(ptData->pLogRing),
+               (WORD64)(ptData->pLogger),
+               (WORD64)(ptData->pThread),
+               (WORD64)(ptData->tThreadID),
+               ptData->aucName);
+
+        printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
+    }
+}
+
+
 CMemMgr * CMemMgr::CreateMemMgr(WORD32      dwProcID,
                                 BYTE        ucMemType,
                                 BYTE        ucPageNum,
@@ -527,18 +564,20 @@ WORD32 CMemMgr::InitContext(BOOL           bMaster,
 
     if (bMaster)
     {
-        ptHead->lwMagic        = s_lwMagicValue;
-        ptHead->dwVersion      = s_dwVersion;
-        ptHead->dwHeadSize     = sizeof(T_MemMetaHead);
-        ptHead->lwMasterLock   = 0;
-        ptHead->iGlobalLock    = 0;
-        ptHead->bInitFlag      = FALSE;
-        ptHead->iMLock         = 0;
-        ptHead->dwHugeNum      = 0;
-        ptHead->lwMetaAddr     = 0;
-        ptHead->lwMetaSize     = dwMetaSize;
-        ptHead->lwHugeAddr     = 0;
-        ptHead->lwShareMemSize = lwMemSize;
+        ptHead->lwMagic           = s_lwMagicValue;
+        ptHead->dwVersion         = s_dwVersion;
+        ptHead->dwHeadSize        = sizeof(T_MemMetaHead);
+        ptHead->lwMasterLock      = 0;
+        ptHead->iGlobalLock       = 0;
+        ptHead->bInitFlag         = FALSE;
+        ptHead->iMLock            = 0;
+        ptHead->dwHugeNum         = 0;
+        ptHead->lwMetaAddr        = 0;
+        ptHead->lwMetaSize        = dwMetaSize;
+        ptHead->lwHugeAddr        = 0;
+        ptHead->lwShareMemSize    = lwMemSize;
+        ptHead->lwAppCntrlAddr    = 0;
+        ptHead->lwThreadCntrlAddr = 0;
 
         LockGlobal(*ptHead);
 

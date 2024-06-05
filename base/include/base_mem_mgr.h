@@ -44,6 +44,8 @@ public :
 
     VOID Dump();
 
+    VOID Printf();
+
 protected :
     /* 主线程专属数据区对应的下标 */
     WORD32                 m_dwMainZoneIdx;
@@ -107,6 +109,9 @@ typedef struct tagT_MemMetaHead
     volatile WORD64  lwMetaSize;         /* 共享内存元数据总大小 */
     volatile WORD64  lwHugeAddr;         /* 大页内存起始地址 */
     volatile WORD64  lwShareMemSize;     /* 进程间共享内存总大小 */
+
+    volatile WORD64  lwAppCntrlAddr;     /* CAppCntrl实例地址 */
+    volatile WORD64  lwThreadCntrlAddr;  /* CThreadCntrl实例地址 */
 }T_MemMetaHead;
 
 
