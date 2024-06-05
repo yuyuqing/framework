@@ -84,7 +84,7 @@ inline WORD32 CMsgRing<POWER_NUM>::Enqueue(VOID *pBuf, WORD16 wLoopThreshold)
         dwNum = CBaseRingTpl<POWER_NUM>::Enqueue(pBuf);
         dwLoop++;
     }while ((0 == dwNum) && (dwLoop < wLoopThreshold));
-    
+
     return dwNum;
 }
 
@@ -113,7 +113,7 @@ inline WORD32 CMsgRing<POWER_NUM>::Dequeue(VOID *pObj, PMsgCallBack pFunc)
         }
 
         dwTotalNum += dwNum;
-    } while (dwRemainSize > 0);    
+    } while (dwRemainSize > 0);
 
     return dwTotalNum;
 }

@@ -92,7 +92,7 @@ int main(int argc, char **argv)
             StopTimer(dwTimerID);
         }
 
-        usleep(5000);
+        usleep(50000);
     }
 
     LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_DEBUG, TRUE,
