@@ -77,7 +77,7 @@ CTimerApp::CTimerApp ()
     m_ucSlot             = INVALID_BYTE;
     m_ucMeasMinute       = CLogInfo::s_awPeriodMinute[E_LOG_PERIOD_05_MINUTE];
 
-    memset(&m_tMeas, 0x00, sizeof(m_tMeas));
+    memset((BYTE *)(&m_tMeas), 0x00, sizeof(m_tMeas));
 }
 
 
@@ -534,9 +534,6 @@ VOID CTimerApp::DumpMeasure(const VOID *pIn, WORD32 dwLen)
 
 WORD32 CTimerApp::InnerDelete(WORD32 dwKey)
 {
-    WORD32 dwTimerID = INVALID_DWORD;
-    WORD32 dwResult  = INVALID_DWORD;
-
     /* 在删除树叶节点时会自动删除定时器节点 */
     return m_cTree.Remove(dwKey);
 }
