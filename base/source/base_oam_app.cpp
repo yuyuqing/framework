@@ -296,6 +296,8 @@ WORD32 COamApp::NotifyOamStartUP()
                              EV_BASE_APP_STARTUP_ID,
                              0, NULL);
 
+    usleep(10000);
+
     return SUCCESS;
 }
 

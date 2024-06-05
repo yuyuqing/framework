@@ -20,6 +20,8 @@ public :
     /* 创建线程实例后执行初始化(在主线程栈空间执行) */
     virtual WORD32 Initialize();
 
+    virtual WORD32 Notify();
+
     virtual CMultiMessageRing * GetMultiRing();
 
 protected :
@@ -28,6 +30,12 @@ protected :
 protected :
     CMultiMessageRing  m_cMultiRing;
 };
+
+
+inline WORD32 CMultiThread::Notify()
+{
+    return m_cSemaphore.Post();
+}
 
 
 inline CMultiMessageRing * CMultiThread::GetMultiRing()

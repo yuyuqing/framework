@@ -33,7 +33,7 @@ protected :
 
 inline WORD32 CWorkThread::Notify()
 {
-    return m_cSemaphore.Post();
+    return SUCCESS;
 }
 
 
