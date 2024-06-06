@@ -43,6 +43,9 @@ T_CallInfo  g_atCallInfo[CALL_NUM] =
 };
 
 
+#define   TEST_FAST       (0)
+
+
 VOID * CallFunc(VOID *pArgs)
 {
     T_CallInfo *ptCallInfo = (T_CallInfo *)pArgs;
@@ -74,60 +77,65 @@ VOID * CallFunc(VOID *pArgs)
         
         dwSN++;
 
-        FAST_LOG_PRINTF(ptCallInfo->dwModuleID,
-                        1,
-                        E_LOG_LEVEL_INFO,
-                        TRUE,
+#if TEST_FAST
+        FAST_LOG_PRINTF(ptCallInfo->dwModuleID, 1, E_LOG_LEVEL_INFO, TRUE,
                         "LogVprintf, Logical_CHANNEL , "
                         "bFlag = %d, ucTmp1 : %u, ucTmp2 : %d, wTmp3 : %u, "
                         "swTmp4 : %d, dwTmp5 : %u, sdwTmp6 : %d, dwCount : %d\n",
-                        bFlag,
-                        ucTmp1,
-                        ucTmp2, 
-                        wTmp3,
-                        swTmp4,
-                        dwTmp5,
-                        sdwTmp6,
-                        dwSN);
+                        bFlag, ucTmp1, ucTmp2, wTmp3,
+                        swTmp4, dwTmp5, sdwTmp6, dwSN);
+#else
+        LOG_VPRINTF(ptCallInfo->dwModuleID, 1, E_LOG_LEVEL_INFO, TRUE,
+                    "LogVprintf, Logical_CHANNEL , "
+                    "bFlag = %d, ucTmp1 : %u, ucTmp2 : %d, wTmp3 : %u, "
+                    "swTmp4 : %d, dwTmp5 : %u, sdwTmp6 : %d, dwCount : %d\n",
+                    bFlag, ucTmp1, ucTmp2, wTmp3,
+                    swTmp4, dwTmp5, sdwTmp6, dwSN);
+#endif
 
         dwSN++;
 
-        FAST_LOG_PRINTF(ptCallInfo->dwModuleID,
-                        1,
-                        E_LOG_LEVEL_INFO,
-                        TRUE,
+#if TEST_FAST
+        FAST_LOG_PRINTF(ptCallInfo->dwModuleID, 1, E_LOG_LEVEL_INFO, TRUE,
                         "LogVprintf, Logical_CHANNEL ,"
                         "bFlag = %d, ucTmp1 : %u, ucTmp2 : %d, wTmp3 : %u, "
                         "swTmp4 : %d, dwTmp5 : %u, dwCount : %d\n",
-                        bFlag,
-                        ucTmp1,
-                        ucTmp2, 
-                        wTmp3,
-                        swTmp4,
-                        dwTmp5,
-                        dwSN);
+                        bFlag, ucTmp1, ucTmp2, wTmp3,
+                        swTmp4, dwTmp5, dwSN);
+#else
+        LOG_VPRINTF(ptCallInfo->dwModuleID, 1, E_LOG_LEVEL_INFO, TRUE,
+                    "LogVprintf, Logical_CHANNEL ,"
+                    "bFlag = %d, ucTmp1 : %u, ucTmp2 : %d, wTmp3 : %u, "
+                    "swTmp4 : %d, dwTmp5 : %u, dwCount : %d\n",
+                    bFlag, ucTmp1, ucTmp2, wTmp3,
+                    swTmp4, dwTmp5, dwSN);
+#endif
 
         dwSN++;
 
-        FAST_LOG_PRINTF(ptCallInfo->dwModuleID,
-                        1,
-                        E_LOG_LEVEL_INFO,
-                        TRUE,
+#if TEST_FAST
+        FAST_LOG_PRINTF(ptCallInfo->dwModuleID, 1, E_LOG_LEVEL_INFO, TRUE,
                         "LogVprintf, Logical_CHANNEL ,"
                         "bFlag = %d, ucTmp1 : %u, ucTmp2 : %d, dwCount : %d\n",
-                        bFlag,
-                        ucTmp1,
-                        ucTmp2, 
-                        dwSN);
+                        bFlag, ucTmp1, ucTmp2, dwSN);
+#else
+        LOG_VPRINTF(ptCallInfo->dwModuleID, 1, E_LOG_LEVEL_INFO, TRUE,
+                    "LogVprintf, Logical_CHANNEL ,"
+                    "bFlag = %d, ucTmp1 : %u, ucTmp2 : %d, dwCount : %d\n",
+                    bFlag, ucTmp1, ucTmp2, dwSN);
+#endif
 
         dwSN++;
 
-        FAST_LOG_PRINTF(ptCallInfo->dwModuleID,
-                        0xFFFF,
-                        E_LOG_LEVEL_WARN,
-                        TRUE,
+#if TEST_FAST
+        FAST_LOG_PRINTF(ptCallInfo->dwModuleID, 0xFFFF, E_LOG_LEVEL_WARN, TRUE,
                         "------------TestLog------------dwCount : %d\n",
                         dwSN);
+#else
+        LOG_VPRINTF(ptCallInfo->dwModuleID, 0xFFFF, E_LOG_LEVEL_WARN, TRUE,
+                    "------------TestLog------------dwCount : %d\n",
+                    dwSN);
+#endif
 
         if (dwSN >= 16000000)
         {
