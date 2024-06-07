@@ -155,6 +155,12 @@ WORD32 CTimerApp::Init()
 WORD32 CTimerApp::DeInit()
 {
     TRACE_STACK("CTimerApp::DeInit()");
+
+    RemoveProcessor(EV_TIMER_START_TIMER_ID);
+    RemoveProcessor(EV_TIMER_STOP_TIMER_ID);
+    RemoveProcessor(EV_TIMER_RESET_TIMER_ID);
+    RemoveProcessor(EV_TIMER_SLOT_TTI_ID);
+
     return SUCCESS;
 }
 
@@ -162,6 +168,9 @@ WORD32 CTimerApp::DeInit()
 WORD32 CTimerApp::Exit(WORD32 dwMsgID, VOID *pIn, WORD16 wMsgLen)
 {
     TRACE_STACK("CTimerApp::Exit()");
+
+    /* 定时器尚未清除(对FT场景存在影响, 正常业务场景无影响) */
+
     return SUCCESS;
 }
 

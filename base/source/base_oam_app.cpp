@@ -269,6 +269,12 @@ WORD32 COamApp::DeInit()
                              EV_BASE_APP_SHUTDOWN_ID,
                              0, NULL);
 
+    RemoveProcessor(EV_BASE_LOG_SET_GLOBAL_SWITCH_ID);
+    RemoveProcessor(EV_BASE_LOG_SET_WRITE_PERIOD_ID);
+    RemoveProcessor(EV_BASE_LOG_SET_MODULE_SWITCH_ID);
+    RemoveProcessor(EV_OAM_REGIST_CALLBACK_ID);
+    RemoveProcessor(EV_OAM_REMOVE_CALLBACK_ID);
+
     return SUCCESS;
 }
 

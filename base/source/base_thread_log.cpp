@@ -424,7 +424,7 @@ VOID CLogThread::DoRun()
         if (unlikely(isCancel()))
         {
             /* 将消息队列中残留日志全部处理完 */
-            m_MsgRingL.Dequeue(this, &CLogThread::RecvLog);
+            m_MsgRingL.Dequeue(this, &CPollingThread::ProcMessageLP);
             m_MsgRingD.Dequeue();
             m_cMultiRing.Dequeue(this, &CLogThread::RecvLog);
 
