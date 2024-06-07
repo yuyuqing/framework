@@ -359,6 +359,9 @@ VOID CThreadCntrl::Printf()
                 }
             }
             break ;
+
+        default :
+            break ;
         }
 
         printf("===========================================================\n");
