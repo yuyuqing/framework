@@ -385,7 +385,6 @@ WORD32 CThreadCntrl::LoadApp(T_ThreadInfo &rtThread)
 {
     TRACE_STACK("CThreadCntrl::LoadApp()");
 
-    CAppCntrl     *pAppCntrl = CAppCntrl::GetInstance();
     CBaseThread   *pWorker   = rtThread.pWorker;
     T_AppJsonCfg  *ptAppCfg  = NULL;
     T_AppInfo     *ptAppInfo = NULL;
@@ -394,9 +393,9 @@ WORD32 CThreadCntrl::LoadApp(T_ThreadInfo &rtThread)
     for (WORD32 dwIndex = 0; dwIndex < rtThread.dwAppNum; dwIndex++)
     {
         ptAppCfg  = &(rtThread.atApp[dwIndex]);
-        ptAppInfo = pAppCntrl->Create(ptAppCfg->aucName, 
-                                      rtThread.dwThreadID,
-                                      ptAppCfg);
+        ptAppInfo = g_pAppCntrl->Create(ptAppCfg->aucName,
+                                        rtThread.dwThreadID,
+                                        ptAppCfg);
         if (NULL == ptAppInfo)
         {
             continue ;

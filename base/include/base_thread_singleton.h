@@ -184,7 +184,6 @@ WORD32 CSingletonThread<TH, TM>::SendExclusiveMsgToThread(WORD32      dwMsgID,
 template<class TH, class TM>
 WORD32 CSingletonThread<TH, TM>::BindApp()
 {
-    CAppCntrl     *pAppCntrl = CAppCntrl::GetInstance();
     CBaseThread   *pWorker   = (CBaseThread *)this;
     T_AppJsonCfg  *ptAppCfg  = NULL;
     T_AppInfo     *ptAppInfo = NULL;
@@ -193,9 +192,9 @@ WORD32 CSingletonThread<TH, TM>::BindApp()
     for (WORD32 dwIndex = 0; dwIndex < m_tBindInfo.dwAppNum; dwIndex++)
     {
         ptAppCfg  = &(m_tBindInfo.atApp[dwIndex]);
-        ptAppInfo = pAppCntrl->Create(ptAppCfg->aucName,
-                                      pWorker->GetThreadID(),
-                                      ptAppCfg);
+        ptAppInfo = g_pAppCntrl->Create(ptAppCfg->aucName,
+                                        pWorker->GetThreadID(),
+                                        ptAppCfg);
         if (NULL == ptAppInfo)
         {
             continue ;

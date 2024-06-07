@@ -51,6 +51,7 @@ class CLogInfo;
 class COamApp;
 class CTimerApp;
 class CBaseThread;
+class CAppCntrl;
 class CThreadCntrl;
 class CShmMgr;
 
@@ -60,6 +61,7 @@ extern CLogInfo      *g_pLogger;
 extern COamApp       *g_pOamApp;
 extern CTimerApp     *g_pTimerApp;
 extern CBaseThread   *g_pLogThread;
+extern CAppCntrl     *g_pAppCntrl;
 extern CThreadCntrl  *g_pThreadPool;
 extern CShmMgr       *g_pShmMgr;
 

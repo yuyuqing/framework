@@ -163,10 +163,9 @@ WORD32 COamApp::Init()
 
     if (0 == m_ucAppNum)
     {
-        CAppCntrl *pAppCntrl = CAppCntrl::GetInstance();
         for (WORD32 dwIndex = 0; dwIndex < MAX_APP_NUM; dwIndex++)
         {
-            T_AppInfo *ptAppInfo = (*pAppCntrl)[dwIndex];
+            T_AppInfo *ptAppInfo = (*g_pAppCntrl)[dwIndex];
             if (NULL == ptAppInfo)
             {
                 break ;
@@ -233,12 +232,11 @@ WORD32 COamApp::DeInit()
 {
     TRACE_STACK("COamApp::DeInit()");
 
-    CAppCntrl *pAppCntrl = CAppCntrl::GetInstance();
-    WORD32     dwAppNum  = pAppCntrl->GetAppNum();
+    WORD32 dwAppNum = g_pAppCntrl->GetAppNum();
 
     for (WORD32 dwIndex = 0; dwIndex < dwAppNum; dwIndex++)
     {
-        T_AppInfo *ptAppInfo = (*pAppCntrl)[dwIndex];
+        T_AppInfo *ptAppInfo = (*g_pAppCntrl)[dwIndex];
         if (m_dwAppID == ptAppInfo->dwAppID)
         {
             continue ;
@@ -313,12 +311,11 @@ VOID COamApp::TimeOutStartUpAllApps(const VOID *pIn, WORD32 dwLen)
 {
     TRACE_STACK("COamApp::TimeOutStartUpAllApps()");
 
-    CAppCntrl *pAppCntrl = CAppCntrl::GetInstance();
-    WORD32     dwAppNum  = pAppCntrl->GetAppNum();
+    WORD32 dwAppNum  = g_pAppCntrl->GetAppNum();
 
     for (WORD32 dwIndex = 0; dwIndex < dwAppNum; dwIndex++)
     {
-        T_AppInfo *ptAppInfo = (*pAppCntrl)[dwIndex];
+        T_AppInfo *ptAppInfo = (*g_pAppCntrl)[dwIndex];
         if (m_dwAppID == ptAppInfo->dwAppID)
         {
             continue ;

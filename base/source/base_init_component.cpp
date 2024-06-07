@@ -173,7 +173,7 @@ VOID CInitList::Dump()
     TRACE_STACK("CInitList::Dump()");
 
     CCpuCoreInfo::GetInstance()->Dump();
-    CAppCntrl::GetInstance()->Dump();
+    g_pAppCntrl->Dump();
 
     if (NULL != m_pMemMgr)
     {

@@ -52,11 +52,11 @@ WORD32 CAppInterface::PreInit(CBaseThread *pOwner, const T_AppInfo *ptAppInfo)
     memcpy(m_aucName,    ptAppInfo->aucName, APP_NAME_LEN);
     memcpy(m_adwAssocID, ptAppInfo->adwAssocID, sizeof(m_adwAssocID));
 
-    CAppCntrl::GetInstance()->RegisterTable(m_dwAppID, 
-                                            m_dwThreadID,
-                                            m_eClass,
-                                            m_dwAssocNum, 
-                                            m_adwAssocID);
+    g_pAppCntrl->RegisterTable(m_dwAppID,
+                               m_dwThreadID,
+                               m_eClass,
+                               m_dwAssocNum,
+                               m_adwAssocID);
 
     /* 初始化CAppInterface基类维测信息 */
     InitMeasure();

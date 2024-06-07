@@ -4,6 +4,7 @@
 #define _BASE_APP_CNTRL_H_
 
 
+#include "base_singleton_tpl.h"
 #include "base_mem_interface.h"
 #include "base_app_interface.h"
 
@@ -22,14 +23,10 @@ public :
     WORD32 __attribute__((used)) __dwApp_##V##_ = CFactoryApp::DefineProduct<V>(#V)
 
 
-class CAppCntrl : public CBaseData
+class CAppCntrl : public CSingleton<CAppCntrl>, public CBaseData
 {
 public :
     enum { APP_THREAD_TABLE = 256 };
-
-    static CAppCntrl * GetInstance(BYTE *pMem);
-    static CAppCntrl * GetInstance();
-    static VOID Destroy();
 
 public :
     CAppCntrl ();
@@ -73,16 +70,7 @@ protected :
     WORD32             m_adwAppClass[E_APP_NUM][MAX_ASSOCIATE_NUM_PER_APP];
 
     CMemInterface     *m_pMemInterface;
-
-private :
-    static CAppCntrl  *s_pInstance;
 };
-
-
-inline CAppCntrl * CAppCntrl::GetInstance()
-{
-    return s_pInstance;
-}
 
 
 inline WORD32 CAppCntrl::GetAppNum()

@@ -6,9 +6,6 @@
 #include "base_mem_mgr.h"
 
 
-CAppCntrl * CAppCntrl::s_pInstance = NULL;
-
-
 VOID CFactoryApp::Dump()
 {
     TRACE_STACK("CFactoryApp::Dump()");
@@ -29,37 +26,10 @@ VOID CFactoryApp::Dump()
 }
 
 
-CAppCntrl * CAppCntrl::GetInstance(BYTE *pMem)
-{
-    if (likely(NULL != s_pInstance))
-    {
-        return s_pInstance;
-    }
-
-    if (NULL == pMem)
-    {
-        return NULL;
-    }
-
-    s_pInstance = new (pMem) CAppCntrl();
-
-    return s_pInstance;
-}
-
-
-VOID CAppCntrl::Destroy()
-{
-    if (NULL != s_pInstance)
-    {
-        delete s_pInstance;
-        s_pInstance = NULL;
-    }
-}
-
-
 CAppCntrl::CAppCntrl ()
 {
-    m_dwAppNum = 0;
+    g_pAppCntrl = this;
+    m_dwAppNum  = 0;
 
     memset(m_atAppInfo,     0x00, sizeof(m_atAppInfo));
     memset(m_adwAppThrdTbl, 0xFF, sizeof(m_adwAppThrdTbl));
@@ -91,6 +61,7 @@ CAppCntrl::~CAppCntrl()
     memset(m_adwAppClass,   0xFF, sizeof(m_adwAppClass));
 
     m_pMemInterface = NULL;
+    g_pAppCntrl     = NULL;
 }
 
 

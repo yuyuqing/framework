@@ -148,7 +148,7 @@ public :
             pTBBuf->dwPduNum = TEST_CHECK_PARAM_2;
             pTBBuf->dwTbSize = TEST_CHECK_PARAM_1;
 
-            CTestRlcApp *pRlcApp = (CTestRlcApp *)(CAppCntrl::GetInstance()->GetApp(E_APP_RLC, (pApp->m_dwCellIdx + 1)));
+            CTestRlcApp *pRlcApp = (CTestRlcApp *)(g_pAppCntrl->GetApp(E_APP_RLC, (pApp->m_dwCellIdx + 1)));
             if (NULL == pRlcApp)
             {
                 return FAIL;
@@ -237,8 +237,7 @@ WORD32 CTestEgtpApp::RecvPDU(VOID *pArg, VOID *pBuf)
 /* 模拟从CU侧收到下行报文后主动向RLC投递该报文 */
 WORD32 CTestEgtpApp::Polling()
 {
-    CAppCntrl *pAppCntrl = CAppCntrl::GetInstance();
-    CTestRlcApp *pRlcApp = (CTestRlcApp *)(pAppCntrl->GetApp(E_APP_RLC, (m_dwCellIdx + 1)));
+    CTestRlcApp *pRlcApp = (CTestRlcApp *)(g_pAppCntrl->GetApp(E_APP_RLC, (m_dwCellIdx + 1)));
     if (NULL == pRlcApp)
     {
         return FAIL;
@@ -280,7 +279,7 @@ WORD32 CTestRlcApp::RecvPDU(VOID *pArg, VOID *pBuf)
       && (TEST_CHECK_PARAM_2 == pTBBuf->dwTbSize))
     {
         /* 下行 */
-        CTestDMacApp *pDMacApp = (CTestDMacApp *)(CAppCntrl::GetInstance()->GetApp(E_APP_DMAC, (pApp->m_dwCellIdx + 1)));
+        CTestDMacApp *pDMacApp = (CTestDMacApp *)(g_pAppCntrl->GetApp(E_APP_DMAC, (pApp->m_dwCellIdx + 1)));
         if (NULL == pDMacApp)
         {
             return FAIL;
@@ -296,7 +295,7 @@ WORD32 CTestRlcApp::RecvPDU(VOID *pArg, VOID *pBuf)
            && (TEST_CHECK_PARAM_1 == pTBBuf->dwTbSize))
     {
         /* 上行 */
-        CTestEgtpApp *pEgtpApp = (CTestEgtpApp *)(CAppCntrl::GetInstance()->GetApp(E_APP_EGTP, (pApp->m_dwCellIdx + 1)));
+        CTestEgtpApp *pEgtpApp = (CTestEgtpApp *)(g_pAppCntrl->GetApp(E_APP_EGTP, (pApp->m_dwCellIdx + 1)));
         if (NULL == pEgtpApp)
         {
             return FAIL;

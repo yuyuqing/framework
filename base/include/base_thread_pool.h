@@ -129,10 +129,8 @@ inline CBaseThread * CThreadCntrl::FindThread(E_AppClass  eDstClass,
                                               WORD32     &rdwDstAppID,
                                               WORD32     &rdwDstThreadID)
 {
-    CAppCntrl *pAppCntrl = CAppCntrl::GetInstance();
-
-    rdwDstAppID    = pAppCntrl->GetAppIDByAppClass(eDstClass, dwDstAssocID);
-    rdwDstThreadID = pAppCntrl->GetThreadIDByAppID(rdwDstAppID);
+    rdwDstAppID    = g_pAppCntrl->GetAppIDByAppClass(eDstClass, dwDstAssocID);
+    rdwDstThreadID = g_pAppCntrl->GetThreadIDByAppID(rdwDstAppID);
 
     return FindThread(rdwDstThreadID);
 }
@@ -180,10 +178,8 @@ inline WORD32 SendHighPriorMsg(E_AppClass  eDstClass,
                                WORD16      wLen,
                                const VOID *ptMsg)
 {
-    CAppCntrl *pAppCntrl = CAppCntrl::GetInstance();
-
-    WORD32 dwDstAppID    = pAppCntrl->GetAppIDByAppClass(eDstClass, dwDstAssocID);
-    WORD32 dwDstThreadID = pAppCntrl->GetThreadIDByAppID(dwDstAppID);
+    WORD32 dwDstAppID    = g_pAppCntrl->GetAppIDByAppClass(eDstClass, dwDstAssocID);
+    WORD32 dwDstThreadID = g_pAppCntrl->GetThreadIDByAppID(dwDstAppID);
 
     return SendHighPriorMsgToApp(dwDstThreadID,
                                  dwDstAppID,
@@ -230,10 +226,8 @@ inline WORD32 SendLowPriorMsg(E_AppClass  eDstClass,
                               WORD16      wLen,
                               const VOID *ptMsg)
 {
-    CAppCntrl *pAppCntrl = CAppCntrl::GetInstance();
-
-    WORD32 dwDstAppID    = pAppCntrl->GetAppIDByAppClass(eDstClass, dwDstAssocID);
-    WORD32 dwDstThreadID = pAppCntrl->GetThreadIDByAppID(dwDstAppID);
+    WORD32 dwDstAppID    = g_pAppCntrl->GetAppIDByAppClass(eDstClass, dwDstAssocID);
+    WORD32 dwDstThreadID = g_pAppCntrl->GetThreadIDByAppID(dwDstAppID);
 
     return SendLowPriorMsgToApp(dwDstThreadID,
                                 dwDstAppID,
@@ -278,10 +272,8 @@ inline WORD32 SendMultiRingMsg(E_AppClass  eDstClass,
                                WORD16      wLen,
                                const VOID *ptMsg)
 {
-    CAppCntrl *pAppCntrl = CAppCntrl::GetInstance();
-
-    WORD32 dwDstAppID    = pAppCntrl->GetAppIDByAppClass(eDstClass, dwDstAssocID);
-    WORD32 dwDstThreadID = pAppCntrl->GetThreadIDByAppID(dwDstAppID);
+    WORD32 dwDstAppID    = g_pAppCntrl->GetAppIDByAppClass(eDstClass, dwDstAssocID);
+    WORD32 dwDstThreadID = g_pAppCntrl->GetThreadIDByAppID(dwDstAppID);
 
     return SendMultiRingMsgToApp(dwDstThreadID,
                                  dwDstAppID,

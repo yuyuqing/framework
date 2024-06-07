@@ -35,6 +35,7 @@ CLogInfo      *g_pLogger      = NULL;
 COamApp       *g_pOamApp      = NULL;
 CTimerApp     *g_pTimerApp    = NULL;
 CBaseThread   *g_pLogThread   = NULL;
+CAppCntrl     *g_pAppCntrl    = NULL;
 CThreadCntrl  *g_pThreadPool  = NULL;
 CShmMgr       *g_pShmMgr      = NULL;
 
