@@ -1,8 +1,8 @@
 
 
-#include "base_mem_trunk.h"
 #include "base_sort.h"
 #include "base_log.h"
+#include "base_mem_mgr.h"
 
 
 CMemPools * CMemPools::s_pInstance = NULL;
@@ -365,6 +365,9 @@ CMemPools::CMemPools (CCentralMemPool &rCentralMemPool)
         m_tMeasure.alwMallocStat[dwIndex] = 0;
         m_tMeasure.alwFreeStat[dwIndex]   = 0;
     }
+
+    T_MemMetaHead *pMetaHead = CMemMgr::GetInstance()->GetMetaHead();
+    pMetaHead->lwMemPools    = (WORD64)this;
 }
 
 

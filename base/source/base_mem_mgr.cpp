@@ -577,6 +577,7 @@ WORD32 CMemMgr::InitContext(BOOL           bMaster,
         ptHead->lwShareMemSize    = lwMemSize;
         ptHead->lwAppCntrlAddr    = 0;
         ptHead->lwThreadCntrlAddr = 0;
+        ptHead->lwMemPools        = 0;
 
         LockGlobal(*ptHead);
 

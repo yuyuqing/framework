@@ -112,6 +112,7 @@ typedef struct tagT_MemMetaHead
 
     volatile WORD64  lwAppCntrlAddr;     /* CAppCntrl实例地址 */
     volatile WORD64  lwThreadCntrlAddr;  /* CThreadCntrl实例地址 */
+    volatile WORD64  lwMemPools;         /* CMemPools实例地址 */
 }T_MemMetaHead;
 
 

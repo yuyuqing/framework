@@ -18,10 +18,9 @@
 #include "base_thread_pool.h"
 
 
-VOID PrintThreadCntrl(WORD64 lwThreadCntrlAddr)
+VOID PrintDataZone(CDataZone &rDataZone)
 {
-    CThreadCntrl *pCntrl = (CThreadCntrl *)lwThreadCntrlAddr;
-    pCntrl->Printf();
+    rDataZone.Printf();
 }
 
 
@@ -32,9 +31,10 @@ VOID PrintAppCntrl(WORD64 lwAppCntrlAddr)
 }
 
 
-VOID PrintDataZone(CDataZone &rDataZone)
+VOID PrintThreadCntrl(WORD64 lwThreadCntrlAddr)
 {
-    rDataZone.Printf();
+    CThreadCntrl *pCntrl = (CThreadCntrl *)lwThreadCntrlAddr;
+    pCntrl->Printf();
 }
 
 
@@ -51,18 +51,21 @@ int main(int argc, char **argv)
     CDataZone       *pDataZone       = pMemMgr->GetDataZone();
     CCentralMemPool *pCentralMemPool = pMemMgr->GetCentralMemPool();
 
-    printf("pMetaHead = %lu, pMemMgr = %lu, pDataZone = %lu, pCentralMemPool = %lu\n",
-           (WORD64)pMetaHead,
-           (WORD64)pMemMgr,
-           (WORD64)pDataZone,
-           (WORD64)pCentralMemPool);
+    WORD64  lwMetaAddr     = pMetaHead->lwMetaAddr;
+    WORD64  lwHugeAddr     = pMetaHead->lwHugeAddr;
+    WORD64  lwDataZoneAddr = (WORD64)pDataZone;
+    WORD64  lwCtrlMemPool  = (WORD64)pCentralMemPool;
+    WORD64  lwMemPools     = pMetaHead->lwMemPools;
+    WORD64  lwAppCntrlAddr = pMetaHead->lwAppCntrlAddr;
+    WORD64  lwThdCntrlAddr = pMetaHead->lwThreadCntrlAddr;
 
     printf("lwMagic : %lu, dwVersion : %u, dwHeadSize : %u, "
            "lwMasterLock : %lu, iGlobalLock : %d, bInitFlag : %d, "
            "iMLock : %d, dwHugeNum : %d, iPrimaryFileID : %d, "
            "iSecondaryFileID : %d, lwHugeAddr : %lu, aucHugePath : %s, "
            "lwMetaAddr : %lu, lwMetaSize : %lu, lwHugeAddr : %lu, "
-           "lwShareMemSize : %lu, lwAppCntrlAddr : %lu, lwThreadCntrlAddr : %lu\n",
+           "lwShareMemSize : %lu, lwAppCntrlAddr : %lu, "
+           "lwThreadCntrlAddr : %lu, lwMemPools : %lu\n",
            pMetaHead->lwMagic,
            pMetaHead->dwVersion,
            pMetaHead->dwHeadSize,
@@ -80,17 +83,29 @@ int main(int argc, char **argv)
            pMetaHead->lwHugeAddr,
            pMetaHead->lwShareMemSize,
            pMetaHead->lwAppCntrlAddr,
-           pMetaHead->lwThreadCntrlAddr);
+           pMetaHead->lwThreadCntrlAddr,
+           pMetaHead->lwMemPools);
 
-    WORD64 lwAddr = 0;
+    printf("lwMetaAddr     = %lu\n", lwMetaAddr);
+    printf("lwHugeAddr     = %lu\n", lwHugeAddr);
+    printf("lwDataZoneAddr = %lu\n", lwDataZoneAddr);
+    printf("lwCtrlMemPool  = %lu\n", lwCtrlMemPool);
+    printf("lwMemPools     = %lu\n", lwMemPools);
+    printf("lwAppCntrlAddr = %lu\n", lwAppCntrlAddr);
+    printf("lwThdCntrlAddr = %lu\n", lwThdCntrlAddr);
+
+    WORD32 dwOptions = 0;
 
     while (TRUE)
     {
-        printf("Options[ 1 : PrintDataZone, 2 : PrintApps, 3 : PrintThreads ]\n");
-        std::cin >> lwAddr;
+        printf("Options[ 0 : Exit, 1 : PrintDataZone, 2 : PrintApps, 3 : PrintThreads ]\n");
+        std::cin >> dwOptions;
 
-        switch (lwAddr)
+        switch (dwOptions)
         {
+        case 0 :
+            return SUCCESS;
+
         case 1 : 
             PrintDataZone(*pDataZone);
             break ;
