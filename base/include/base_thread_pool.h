@@ -21,13 +21,8 @@ public :
     WORD32 __attribute__((used)) __dwThread_##V##_ = CFactoryThread::DefineProduct<V, T_ThreadParam>(#V)
 
 
-class CThreadCntrl : public CBaseData
+class CThreadCntrl : public CSingleton<CThreadCntrl>, public CBaseData
 {
-public :
-    static CThreadCntrl * GetInstance(BYTE *pMem);
-    static CThreadCntrl * GetInstance();
-    static VOID Destroy();
-
 public :
     CThreadCntrl ();
     virtual ~CThreadCntrl();
@@ -73,16 +68,7 @@ protected :
     CCentralMemPool      *m_pMemInterface;    /* CentralÄÚ´æ³Ø */
     WORD32                m_dwThreadNum;
     T_ThreadInfo          m_atThreadInfo[MAX_WORKER_NUM];
-
-private :
-    static CThreadCntrl  *s_pInstance;
 };
-
-
-inline CThreadCntrl * CThreadCntrl::GetInstance()
-{
-    return s_pInstance;
-}
 
 
 inline CBaseThread * CThreadCntrl::operator[] (WORD32 dwIndex)

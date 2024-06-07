@@ -12,9 +12,6 @@ DEFINE_THREAD(CWorkThread);
 DEFINE_THREAD(CMultiThread);
 
 
-CThreadCntrl * CThreadCntrl::s_pInstance = NULL;
-
-
 WORD32 ExitThreadCtrl(VOID *pArg)
 {    
     CThreadCntrl::Destroy();
@@ -71,36 +68,9 @@ VOID CFactoryThread::Dump()
 }
 
 
-CThreadCntrl * CThreadCntrl::GetInstance(BYTE *pMem)
-{
-    if (likely(NULL != s_pInstance))
-    {
-        return s_pInstance;
-    }
-
-    if (NULL == pMem)
-    {
-        return NULL;
-    }
-
-    s_pInstance = new (pMem) CThreadCntrl();
-
-    return s_pInstance;
-}
-
-
-VOID CThreadCntrl::Destroy()
-{
-    if (NULL != s_pInstance)
-    {
-        delete s_pInstance;
-        s_pInstance = NULL;
-    }
-}
-
-
 CThreadCntrl::CThreadCntrl ()
 {
+    g_pThreadPool   = this;
     m_pMemInterface = NULL;
     m_dwThreadNum   = 0;
 
@@ -125,6 +95,7 @@ CThreadCntrl::~CThreadCntrl()
         }
     }
 
+    g_pThreadPool   = NULL;
     m_pMemInterface = NULL;
     m_dwThreadNum   = 0;
     memset((BYTE *)(&(m_atThreadInfo[0])), 0x00, sizeof(m_atThreadInfo));
@@ -134,7 +105,6 @@ CThreadCntrl::~CThreadCntrl()
 /* 按ThreadID从小到大排序创建线程实例(启动顺序依赖创建顺序) */
 WORD32 CThreadCntrl::Initialize(CCentralMemPool *pMemInterface, WORD32 dwProcID)
 {
-    g_pThreadPool   = this;
     m_pMemInterface = pMemInterface;
 
     FetchJsonConfig();
@@ -168,7 +138,6 @@ WORD32 CThreadCntrl::Initialize(CCentralMemPool *pMemInterface, WORD32 dwProcID)
 
         LoadApp(m_atThreadInfo[dwIndex]);
     }
-
 
     return SUCCESS;
 }
