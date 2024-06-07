@@ -11,6 +11,8 @@
 class CMultiThread : public CWorkThread
 {
 public :
+    friend class CThreadCntrl;
+
     static WORD32 ProcMultiMessage(VOID *pObj, VOID *pMsg);
 
 public :

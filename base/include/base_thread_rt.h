@@ -10,6 +10,9 @@
 class CRTThread : public CPollingThread
 {
 public :
+    friend class CThreadCntrl;
+
+public :
     CRTThread (const T_ThreadParam &rtParam);
     virtual ~CRTThread();
 

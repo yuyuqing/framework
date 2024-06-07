@@ -316,7 +316,7 @@ VOID CMemPools::Destroy()
 
     if (NULL != s_pInstance)
     {
-        pCentralMemPool = &(s_pInstance->GetCentralMemPool());
+        pCentralMemPool = &(s_pInstance->m_rCentralMemPool);
         delete s_pInstance;
         pCentralMemPool->Free((BYTE *)s_pInstance);
     }

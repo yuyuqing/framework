@@ -86,11 +86,26 @@ int main(int argc, char **argv)
 
     while (TRUE)
     {
+        printf("Options[ 1 : PrintDataZone, 2 : PrintApps, 3 : PrintThreads ]\n");
         std::cin >> lwAddr;
 
-        PrintThreadCntrl(pMetaHead->lwThreadCntrlAddr);
-        PrintAppCntrl(pMetaHead->lwAppCntrlAddr);
-        PrintDataZone(*pDataZone);
+        switch (lwAddr)
+        {
+        case 1 : 
+            PrintDataZone(*pDataZone);
+            break ;
+
+        case 2 : 
+            PrintAppCntrl(pMetaHead->lwAppCntrlAddr);
+            break ;
+
+        case 3 : 
+            PrintThreadCntrl(pMetaHead->lwThreadCntrlAddr);
+            break ;
+
+        default :
+            break ;
+        }
     }
 
     return SUCCESS;

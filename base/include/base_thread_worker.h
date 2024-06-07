@@ -10,6 +10,9 @@
 class CWorkThread : public CRTThread
 {
 public :
+    friend class CThreadCntrl;
+
+public :
     CWorkThread (const T_ThreadParam &rtParam);
     virtual ~CWorkThread ();
 

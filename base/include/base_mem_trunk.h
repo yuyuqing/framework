@@ -179,8 +179,6 @@ public :
 
     VOID Dump();
 
-    CCentralMemPool & GetCentralMemPool();
-
 protected :
     CMemPools (CCentralMemPool &rCentralMemPool);
     virtual ~CMemPools();
@@ -208,12 +206,6 @@ protected :
 private :
     static CMemPools    *s_pInstance;
 };
-
-
-inline CCentralMemPool & CMemPools::GetCentralMemPool()
-{
-    return m_rCentralMemPool;
-}
 
 
 inline BYTE * CMemPools::Malloc(WORD32 dwPoolID,

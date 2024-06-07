@@ -532,57 +532,6 @@ VOID CBaseThread::Dump()
 }
 
 
-VOID CBaseThread::Printf()
-{
-    CMessageRing    *pRingH = GetMsgRingH();
-    CMessageRing    *pRingL = GetMsgRingL();
-    CDataPlaneRing  *pRingD = GetMsgRingD();
-
-    if (NULL != pRingH)
-    {
-        T_RingHeadTail tProd;
-        T_RingHeadTail tCons;
-
-        pRingH->SnapShot(tProd, tCons);
-
-        printf("HRing : Prod[%d, %d] Cons[%d, %d]\n",
-               tProd.dwHead, tProd.dwTail,
-               tCons.dwHead, tCons.dwTail);
-    }
-
-    if (NULL != pRingL)
-    {
-        T_RingHeadTail tProd;
-        T_RingHeadTail tCons;
-
-        pRingL->SnapShot(tProd, tCons);
-
-        printf("LRing : Prod[%d, %d] Cons[%d, %d]\n",
-               tProd.dwHead, tProd.dwTail,
-               tCons.dwHead, tCons.dwTail);
-    }
-
-    if (NULL != pRingD)
-    {
-        WORD32         dwRingNum = 0;
-        T_RingHeadTail atProd[PACKET_RING_NUM];
-        T_RingHeadTail atCons[PACKET_RING_NUM];
-
-        pRingD->SnapShot(dwRingNum, atProd, atCons);
-
-        for (WORD32 dwIndex = 0; dwIndex < dwRingNum; dwIndex++)
-        {
-            printf("DRingID[%d] : Prod[%d, %d] Cons[%d, %d]\n",
-                   dwIndex,
-                   atProd[dwIndex].dwHead,
-                   atProd[dwIndex].dwTail,
-                   atCons[dwIndex].dwHead,
-                   atCons[dwIndex].dwTail);
-        }
-    }
-}
-
-
 /* 更新定时器线程+线程池线程日志文件配置 */
 VOID CBaseThread::UpdateGlobalSwitch(BOOL bFlag)
 {

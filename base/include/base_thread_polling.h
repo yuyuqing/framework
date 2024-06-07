@@ -17,6 +17,8 @@ typedef struct tagT_AppContext
 class CPollingThread : public CBaseThread
 {
 public :
+    friend class CThreadCntrl;
+
     enum { MAX_EVENT_NUM  = 64 };
     enum { MAX_LOOP_COUNT = 10000 };
     enum { PACKET_RING_BURST_NUM = 16 };

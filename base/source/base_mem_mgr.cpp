@@ -216,10 +216,9 @@ VOID CDataZone::Printf()
 
         printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
 
-        printf("Index : %3d, ThrdIdx : %3d, ThrdType : %2d, ThrdID : %d, "
-               "LogMemPool : %15lu, LogRing : %15lu, "
-               "Logger : %15lu, Thread : %15lu, TThrdID : %ld, Name : %s, \n",
-               dwIndex,
+        printf("Idx : %3d, Type : %d, ID : %d, LogMemPool : %12lu, "
+               "LogRing : %12lu, Logger : %12lu, Thread : %12lu, "
+               "TThrdID : %ld, Name : %s, \n",
                ptData->dwThreadIdx,
                ptData->dwThreadType,
                ptData->dwThreadID,

@@ -212,20 +212,154 @@ VOID CThreadCntrl::Printf()
 {
     printf("m_dwThreadNum : %d\n", m_dwThreadNum);
 
+    E_ThreadClass   eThrdClass  = E_THREAD_INVALID;
+    CBaseThread    *pBaseThread = NULL;
+    CPollingThread *pPollThread = NULL;
+    CRTThread      *pRTThread   = NULL;
+    CWorkThread    *pWorkThread = NULL;
+    CMsgMemPool    *pMsgMemPool = NULL;
+    T_MsgMemMeasure tMsgMemMeas;
+    T_RingHeadTail  tProd;
+    T_RingHeadTail  tCons;    
+    WORD32          dwRingNum = 0;
+    T_RingHeadTail  atProd[PACKET_RING_NUM];
+    T_RingHeadTail  atCons[PACKET_RING_NUM];
+
     for (WORD32 dwIndex = 0; dwIndex < m_dwThreadNum; dwIndex++)
     {
+        memset(&tMsgMemMeas, 0x00, sizeof(tMsgMemMeas));
+
         printf("===========================================================\n");
 
         printf("dwThreadID : %3d, dwLogicalID : %2d, dwPolicy : %d, "
-               "dwPriority : %2d, dwMemSize : %9d, dwAppNum : %2d\n",
+               "dwPriority : %2d, dwMemSize : %9d, dwAppNum : %2d, "
+               "Addr : %lu, Name : %s\n",
                m_atThreadInfo[dwIndex].dwThreadID,
                m_atThreadInfo[dwIndex].dwLogicalID,
                m_atThreadInfo[dwIndex].dwPolicy,
                m_atThreadInfo[dwIndex].dwPriority,
                m_atThreadInfo[dwIndex].dwMemSize,
-               m_atThreadInfo[dwIndex].dwAppNum);
+               m_atThreadInfo[dwIndex].dwAppNum,
+               (WORD64)(m_atThreadInfo[dwIndex].pWorker),
+               m_atThreadInfo[dwIndex].aucName);
 
-        m_atThreadInfo[dwIndex].pWorker->Printf();
+        pBaseThread = m_atThreadInfo[dwIndex].pWorker;
+        eThrdClass  = pBaseThread->GetThreadClass();
+        pMsgMemPool = pBaseThread->GetMsgMemPool();
+
+        pMsgMemPool->GetMeasure(tMsgMemMeas);
+        for (WORD32 dwIndex1 = 0; dwIndex1 < tMsgMemMeas.dwTypeNum; dwIndex1++)
+        {
+            printf("MsgMemPool[type : %d, Used : %15lu, Free : %15lu]\n",
+                   dwIndex1,
+                   tMsgMemMeas.alwUsedCount[dwIndex1],
+                   tMsgMemMeas.alwFreeCount[dwIndex1]);
+        }
+
+        switch (eThrdClass)
+        {
+        case E_THREAD_POLLING :
+            {
+                pPollThread = (CPollingThread *)pBaseThread;
+
+                CMessageRing   &rRingH = (pPollThread->m_MsgRingH);
+                CMessageRing   &rRingL = (pPollThread->m_MsgRingL);
+                CDataPlaneRing &rRingD = (pPollThread->m_MsgRingD);
+
+                rRingH.SnapShot(tProd, tCons);
+                
+                printf("HRing      : Prod[%10u, %10u] Cons[%10u, %10u]\n",
+                       tProd.dwHead, tProd.dwTail,
+                       tCons.dwHead, tCons.dwTail);
+
+                rRingL.SnapShot(tProd, tCons);
+
+                printf("LRing      : Prod[%10u, %10u] Cons[%10u, %10u]\n",
+                       tProd.dwHead, tProd.dwTail,
+                       tCons.dwHead, tCons.dwTail);
+
+                rRingD.SnapShot(dwRingNum, atProd, atCons);
+
+                for (WORD32 dwIndex1 = 0; dwIndex1 < dwRingNum; dwIndex1++)
+                {
+                    printf("DRingID[%d] : Prod[%10u, %10u] Cons[%10u, %10u]\n",
+                           dwIndex1,
+                           atProd[dwIndex1].dwHead,
+                           atProd[dwIndex1].dwTail,
+                           atCons[dwIndex1].dwHead,
+                           atCons[dwIndex1].dwTail);
+                }
+            }
+            break ;
+
+        case E_THREAD_RT :
+            {
+                pRTThread = (CRTThread *)pBaseThread;
+
+                CMessageRing   &rRingH = (pRTThread->m_MsgRingH);
+                CMessageRing   &rRingL = (pRTThread->m_MsgRingL);
+                CDataPlaneRing &rRingD = (pRTThread->m_MsgRingD);
+
+                rRingH.SnapShot(tProd, tCons);
+
+                printf("HRing      : Prod[%10u, %10u] Cons[%10u, %10u]\n",
+                       tProd.dwHead, tProd.dwTail,
+                       tCons.dwHead, tCons.dwTail);
+
+                rRingL.SnapShot(tProd, tCons);
+
+                printf("LRing      : Prod[%10u, %10u] Cons[%10u, %10u]\n",
+                       tProd.dwHead, tProd.dwTail,
+                       tCons.dwHead, tCons.dwTail);
+
+                rRingD.SnapShot(dwRingNum, atProd, atCons);
+
+                for (WORD32 dwIndex1 = 0; dwIndex1 < dwRingNum; dwIndex1++)
+                {
+                    printf("DRingID[%d] : Prod[%10u, %10u] Cons[%10u, %10u]\n",
+                           dwIndex1,
+                           atProd[dwIndex1].dwHead,
+                           atProd[dwIndex1].dwTail,
+                           atCons[dwIndex1].dwHead,
+                           atCons[dwIndex1].dwTail);
+                }
+            }
+            break ;
+
+        case E_THREAD_WORK :
+            {
+                pWorkThread = (CWorkThread *)pBaseThread;
+
+                CMessageRing   &rRingH = (pWorkThread->m_MsgRingH);
+                CMessageRing   &rRingL = (pWorkThread->m_MsgRingL);
+                CDataPlaneRing &rRingD = (pWorkThread->m_MsgRingD);
+
+                rRingH.SnapShot(tProd, tCons);
+
+                printf("HRing      : Prod[%10u, %10u] Cons[%10u, %10u]\n",
+                       tProd.dwHead, tProd.dwTail,
+                       tCons.dwHead, tCons.dwTail);
+
+                rRingL.SnapShot(tProd, tCons);
+
+                printf("LRing      : Prod[%10u, %10u] Cons[%10u, %10u]\n",
+                       tProd.dwHead, tProd.dwTail,
+                       tCons.dwHead, tCons.dwTail);
+
+                rRingD.SnapShot(dwRingNum, atProd, atCons);
+
+                for (WORD32 dwIndex1 = 0; dwIndex1 < dwRingNum; dwIndex1++)
+                {
+                    printf("DRingID[%d] : Prod[%10u, %10u] Cons[%10u, %10u]\n",
+                           dwIndex1,
+                           atProd[dwIndex1].dwHead,
+                           atProd[dwIndex1].dwTail,
+                           atCons[dwIndex1].dwHead,
+                           atCons[dwIndex1].dwTail);
+                }
+            }
+            break ;
+        }
 
         printf("===========================================================\n");
     }

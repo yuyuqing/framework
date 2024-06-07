@@ -140,6 +140,8 @@ inline WORD32 CCpuCoreInfo::GetCoreNum()
 class CBaseThread : public CCBObject
 {
 protected :
+    friend class CThreadCntrl;
+
     static WORD32 RegistThread(T_DataZone &rtThreadZone, VOID *pThread);
     static WORD32 RemoveThread(T_DataZone &rtThreadZone, VOID *pThread);
 
@@ -256,8 +258,6 @@ public :
     VOID GetMsgMemMeasure(T_MsgMemMeasure &rtMeasure);
 
     virtual VOID Dump();
-
-    VOID Printf();
 
     /* 更新线程日志文件配置 */
     VOID UpdateGlobalSwitch(BOOL bFlag);
