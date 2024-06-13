@@ -232,6 +232,33 @@ VOID CGlobalClock::GetTime(WORD64 &lwSeconds, WORD64 &lwMicroSec, WORD64 &lwCycl
 }
 
 
+/* 获取当前系统时间(年/月/日/时/分/秒/微秒) */
+VOID CGlobalClock::GetTime2(T_BaseSystemTime &rtTime)
+{
+    WORD64 lwSeconds  = 0;
+    WORD64 lwMicroSec = 0;
+    WORD64 lwCycle    = 0;
+
+    GetTime3(lwMicroSec, lwCycle);
+
+    lwSeconds  = lwMicroSec / 1000000;
+    lwMicroSec = lwMicroSec % 1000000;
+
+    time_t  tSec = lwSeconds;
+    tm      tTime;
+    LocalTime(&tSec, tTime);
+
+    rtTime.wYear   = (WORD16)(tTime.tm_year + BaseTimeYear);
+    rtTime.ucMon   = (BYTE)(tTime.tm_mon + 1);
+    rtTime.ucMDay  = (BYTE)(tTime.tm_mday);
+    rtTime.ucWDay  = (BYTE)(tTime.tm_wday);
+    rtTime.ucHour  = (BYTE)(tTime.tm_hour);
+    rtTime.ucMin   = (BYTE)(tTime.tm_min);
+    rtTime.ucSec   = (BYTE)(tTime.tm_sec);
+    rtTime.dwMicro = (WORD32)(lwMicroSec);
+}
+
+
 VOID CGlobalClock::CalcCpuFreq(WORD64 lwLastCycle,
                                WORD64 lwLastMicroSec,
                                WORD32 dwLastCpuFreq)

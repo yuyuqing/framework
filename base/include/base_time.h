@@ -124,6 +124,9 @@ public :
     /* 获取当前秒部+微秒部+Cycle, 本接口仅日志线程使用 */
     VOID GetTime(WORD64 &lwSeconds, WORD64 &lwMicroSec, WORD64 &lwCycle);
 
+    /* 获取当前系统时间(年/月/日/时/分/秒/微秒) */
+    VOID GetTime2(T_BaseSystemTime &rtTime);
+
     /* 获取当前系统时间(单位:微秒) */
     VOID GetTime3(WORD64 &lwMicroSec, WORD64 &lwCycle);
 
