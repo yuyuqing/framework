@@ -143,7 +143,7 @@ public :
     enum { MEM_META_SLAVE_INIT_WAIT = 128 };
     enum { HUGE_MOUNTS_LINE_LEN     = 256 };
 
-    const static WORD64  s_lwVirBassAddr  = 0x2000000000UL;
+    const static WORD64  s_lwVirBassAddr  = 0x4000000000UL;
     const static WORD64  s_lwAlign2M      = 0x200000UL;            /* 2M */
     const static WORD64  s_lwAlign1G      = 0x40000000UL;          /* 1G */
     const static WORD64  s_lwMaxSize      = 0x100000000UL;         /* 4G */
