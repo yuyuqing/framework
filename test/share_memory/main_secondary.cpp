@@ -99,6 +99,7 @@ int main(int argc, char **argv)
     while (TRUE)
     {
         printf("Options[ 0 : Exit, 1 : PrintDataZone, 2 : PrintApps, 3 : PrintThreads ]\n");
+        printf("Input[0/1/2/3] : ");
         std::cin >> dwOptions;
 
         switch (dwOptions)
