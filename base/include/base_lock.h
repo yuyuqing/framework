@@ -160,68 +160,26 @@ public :
     CUserSemaphore();
     virtual ~CUserSemaphore();
 
-    /* lwTick单位us */
-    WORD32 TimeWait(WORD32 dwTick);  
-
     WORD32 Wait();
     WORD32 Post();
 
 protected :
-    volatile BOOL    m_bStatus;
+    std::atomic<WORD32>  m_dwCount;
 };
-
-
-/* lwTick单位us */
-inline WORD32 CUserSemaphore::TimeWait(WORD32 dwTick)
-{
-    SWORD32 iValue   = 1;
-    BOOL    bTimeOut = FALSE;
-
-    /* 如果bStatus==TRUE, 则将bStatus置位为FALSE */
-    /* 如果bStatus已经为FALSE, 则等待bStatus被更新为TRUE */
-    while (!__atomic_compare_exchange_n(&(m_bStatus),
-                                        &iValue,
-                                        0, 0,
-                                        __ATOMIC_ACQUIRE,
-                                        __ATOMIC_RELAXED))
-    {
-        iValue = 1;
-        if (bTimeOut)
-        {
-            break ;
-        }
-
-        usleep(dwTick);
-        bTimeOut = TRUE;
-    }
-
-    return SUCCESS;
-}
 
 
 inline WORD32 CUserSemaphore::Wait()
 {
-    SWORD32 iValue = 1;
-
-    /* 如果bStatus==TRUE, 则将bStatus置位为FALSE */
-    /* 如果bStatus已经为FALSE, 则等待bStatus被更新为TRUE */
-    while (!__atomic_compare_exchange_n(&(m_bStatus),
-                                        &iValue,
-                                        0, 0,
-                                        __ATOMIC_ACQUIRE,
-                                        __ATOMIC_RELAXED))
+    while (0 == m_dwCount.load(std::memory_order_relaxed))
     {
-        while (!__atomic_load_n(&(m_bStatus), __ATOMIC_RELAXED))
-        {
-        #ifdef ARCH_ARM64    
-            asm volatile("yield" ::: "memory");
-        #else
-            _mm_pause();
-        #endif
-        }
-
-        iValue = 1;
+    #ifdef ARCH_ARM64
+        asm volatile("yield" ::: "memory");
+    #else
+        _mm_pause();
+    #endif
     }
+
+    m_dwCount.fetch_sub(1, std::memory_order_relaxed);
 
     return SUCCESS;
 }
@@ -229,7 +187,7 @@ inline WORD32 CUserSemaphore::Wait()
 
 inline WORD32 CUserSemaphore::Post()
 {
-    __atomic_store_n(&(m_bStatus), 1, __ATOMIC_RELEASE);
+    m_dwCount.fetch_add(1, std::memory_order_relaxed);
 
     return SUCCESS;
 }
@@ -365,7 +323,7 @@ public :
             WORD16  wNext;
         } s;
     }T_TicketLock;
-    
+
 public :
     CTicketLock ();
     virtual ~CTicketLock();

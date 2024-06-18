@@ -158,13 +158,13 @@ WORD32 CSemaphore::TimeWait(WORD64 lwTick)
 
 CUserSemaphore::CUserSemaphore()
 {
-    m_bStatus = FALSE;
+    m_dwCount = 0;
 }
 
 
 CUserSemaphore::~CUserSemaphore()
 {
-    m_bStatus = FALSE;
+    m_dwCount = 0;
 }
 
 
