@@ -4,7 +4,7 @@
 #define _BASE_TIMER_APP_H_
 
 
-#include "base_tree_array.h"
+#include "base_tree.h"
 #include "base_app_interface.h"
 #include "base_timer_wrapper.h"
 
@@ -73,9 +73,9 @@ inline CTimerNode * CTimerTreeNode::GetTimer()
 }
 
 
-#define TIMER_NODE_POWER_NUM        ((WORD32)(12))
+#define TIMER_TREE_POWER_NUM        ((WORD32)(12))
 
-typedef CBTreeArray<CTimerTreeNode, WORD32, TIMER_NODE_POWER_NUM>  CTimerTree;
+typedef CBTreeTpl<CTimerTreeNode, WORD32, TIMER_TREE_POWER_NUM>  CTimerTree;
 
 
 class CTimerApp : public CAppInterface

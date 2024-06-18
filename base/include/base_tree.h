@@ -8,9 +8,9 @@
 #pragma GCC diagnostic ignored "-Wsign-compare"
 
 
-#include "base_data_container.h"
 #include "base_util.h"
 #include "base_sort.h"
+#include "base_numeral_generate.h"
 
 
 #define BTREE_LEAF_NODE         ((BYTE)(0))
@@ -50,12 +50,12 @@ inline SWORD32 BTreeCompare(T &rLeft, T &rRight)
 
 
 /* VT : 构建树的Key */
-template<typename T, typename VT, WORD32 INST_NUM>
+template<typename T, typename VT, WORD32 POWER_NUM>
 class CBTreeTpl
 {
 public :
-
-    static const WORD32 s_dwSize = ROUND_UP((INST_NUM / BTREE_NODE_NUM_ENTRY), BTREE_NODE_NUM_ALIGN);
+    static const WORD32 s_dwNodeNum = (1 << POWER_NUM);
+    static const WORD32 s_dwSize    = ROUND_UP((s_dwNodeNum / BTREE_NODE_NUM_ENTRY), BTREE_NODE_NUM_ALIGN);
 
     class CTreeData : public CBaseData
     {
@@ -95,8 +95,9 @@ public :
         T_TreeData     *apData[BTREE_MAX_NUM_ENTRY];     /* Leaf时有效 */
     }T_TreeNode;
 
-    typedef CBaseDataContainer<T_TreeNode, s_dwSize >  CTreeNodeList;
-    
+    typedef CNumeralArray<POWER_NUM>                  CIDGenerator;
+    typedef CBaseDataContainer<T_TreeNode, s_dwSize>  CTreeNodeList;
+
 public :
     CBTreeTpl (PTreeCmpFunc<VT> pFunc = &BTreeCompare);
     virtual ~CBTreeTpl();
@@ -109,8 +110,8 @@ public :
     /* 根据树的Key(CRNTI)值查询实例 */
     T * Find(VT &rKey);
 
-    /* 根据数组下标(UEID)+Key(CRNTI)创建实例 */
-    T * Create(WORD32 dwInstID, VT &rKey);
+    /* 创建实例(创建成功时, 返回创建实例所处的数组下标) */
+    T * Create(WORD32 &rdwInstID, VT &rKey);
 
     /* 根据数组下标(UEID)删除实例 */
     WORD32 DeleteByInstID(WORD32 dwInstID);
@@ -149,16 +150,16 @@ protected :
 
 protected :
     PTreeCmpFunc<VT>    m_pCmpFunc;
-    
+
+    CIDGenerator        m_cIDGenerator;
     T_TreeNode         *m_pRoot;
     CTreeNodeList       m_cNodeList;
-    
-    T_TreeData          m_atData[INST_NUM];
+    T_TreeData          m_atData[s_dwNodeNum];
 };
 
 
-template<typename T, typename VT, WORD32 INST_NUM>
-CBTreeTpl<T, VT, INST_NUM>::CBTreeTpl (PTreeCmpFunc<VT> pFunc)
+template<typename T, typename VT, WORD32 POWER_NUM>
+CBTreeTpl<T, VT, POWER_NUM>::CBTreeTpl (PTreeCmpFunc<VT> pFunc)
 {
     m_pCmpFunc = pFunc;
     m_pRoot    = NULL;
@@ -167,8 +168,8 @@ CBTreeTpl<T, VT, INST_NUM>::CBTreeTpl (PTreeCmpFunc<VT> pFunc)
 }
 
 
-template<typename T, typename VT, WORD32 INST_NUM>
-CBTreeTpl<T, VT, INST_NUM>::~CBTreeTpl()
+template<typename T, typename VT, WORD32 POWER_NUM>
+CBTreeTpl<T, VT, POWER_NUM>::~CBTreeTpl()
 {
     Clear(m_pRoot);
 
@@ -177,26 +178,27 @@ CBTreeTpl<T, VT, INST_NUM>::~CBTreeTpl()
 }
 
 
-template<typename T, typename VT, WORD32 INST_NUM>
-WORD32 CBTreeTpl<T, VT, INST_NUM>::Initialize()
+template<typename T, typename VT, WORD32 POWER_NUM>
+WORD32 CBTreeTpl<T, VT, POWER_NUM>::Initialize()
 {
+    m_cIDGenerator.Initialize();
     m_cNodeList.Initialize();
-    
-    for (WORD32 dwIndex = 0; dwIndex < INST_NUM; dwIndex++)
+
+    for (WORD32 dwIndex = 0; dwIndex < s_dwNodeNum; dwIndex++)
     {
         m_atData[dwIndex].dwInstID = dwIndex;
         m_atData[dwIndex].bFree    = TRUE;
     }
-    
+
     return SUCCESS;
 }
 
 
 /* 根据数组下标(UEID)查询实例 */
-template<typename T, typename VT, WORD32 INST_NUM>
-inline T * CBTreeTpl<T, VT, INST_NUM>::FindByInstID(WORD32 dwInstID)
+template<typename T, typename VT, WORD32 POWER_NUM>
+inline T * CBTreeTpl<T, VT, POWER_NUM>::FindByInstID(WORD32 dwInstID)
 {
-    if (unlikely(dwInstID >= INST_NUM))
+    if (unlikely(dwInstID >= s_dwNodeNum))
     {
         return NULL;
     }
@@ -213,8 +215,8 @@ inline T * CBTreeTpl<T, VT, INST_NUM>::FindByInstID(WORD32 dwInstID)
 
 
 /* 根据树的Key(CRNTI)值查询实例 */
-template<typename T, typename VT, WORD32 INST_NUM>
-inline T * CBTreeTpl<T, VT, INST_NUM>::Find(VT &rKey)
+template<typename T, typename VT, WORD32 POWER_NUM>
+inline T * CBTreeTpl<T, VT, POWER_NUM>::Find(VT &rKey)
 {
     if (unlikely(NULL == m_pRoot))
     {
@@ -225,27 +227,26 @@ inline T * CBTreeTpl<T, VT, INST_NUM>::Find(VT &rKey)
 }
 
 
-/* 根据数组下标(UEID)+Key(CRNTI)创建实例 */
-template<typename T, typename VT, WORD32 INST_NUM>
-inline T * CBTreeTpl<T, VT, INST_NUM>::Create(WORD32 dwInstID, VT &rKey)
+template<typename T, typename VT, WORD32 POWER_NUM>
+inline T * CBTreeTpl<T, VT, POWER_NUM>::Create(WORD32 &rdwInstID, VT &rKey)
 {
-    if (unlikely(dwInstID >= INST_NUM))
+    rdwInstID = m_cIDGenerator.Generate();
+    if (INVALID_DWORD == rdwInstID)
     {
         return NULL;
     }
 
-    T_TreeData *pDNode = &(m_atData[dwInstID]);
     CTreeData  *pData  = NULL;
-
-    /* UEID重复 */
+    T_TreeData *pDNode = &(m_atData[rdwInstID]);
     if (TRUE != pDNode->bFree)
     {
+        m_cIDGenerator.Retrieve(rdwInstID);
         return NULL;
     }
 
-    pDNode->bFree = FALSE;
-    pDNode->tKey  = rKey;
-    pData         = new (pDNode->aucData) CTreeData();
+    pDNode->dwInstID = rdwInstID;
+    pDNode->tKey     = rKey;
+    pData            = new (pDNode->aucData) CTreeData();
 
     if (NULL == m_pRoot)
     {
@@ -279,10 +280,10 @@ inline T * CBTreeTpl<T, VT, INST_NUM>::Create(WORD32 dwInstID, VT &rKey)
 
 
 /* 根据数组下标(UEID)删除实例 */
-template<typename T, typename VT, WORD32 INST_NUM>
-inline WORD32 CBTreeTpl<T, VT, INST_NUM>::DeleteByInstID(WORD32 dwInstID)
+template<typename T, typename VT, WORD32 POWER_NUM>
+inline WORD32 CBTreeTpl<T, VT, POWER_NUM>::DeleteByInstID(WORD32 dwInstID)
 {
-    if (unlikely(dwInstID >= INST_NUM))
+    if (unlikely(dwInstID >= s_dwNodeNum))
     {
         return FAIL;
     }
@@ -299,8 +300,8 @@ inline WORD32 CBTreeTpl<T, VT, INST_NUM>::DeleteByInstID(WORD32 dwInstID)
 
 
 /* 根据Key(CRNTI)删除实例 */
-template<typename T, typename VT, WORD32 INST_NUM>
-inline WORD32 CBTreeTpl<T, VT, INST_NUM>::Delete(VT &rKey)
+template<typename T, typename VT, WORD32 POWER_NUM>
+inline WORD32 CBTreeTpl<T, VT, POWER_NUM>::Delete(VT &rKey)
 {
     if (unlikely(NULL == m_pRoot))
     {
@@ -334,8 +335,8 @@ inline WORD32 CBTreeTpl<T, VT, INST_NUM>::Delete(VT &rKey)
 
 
 /* 根据Key(CRNTI)删除实例, 并获取删除的节点ID */
-template<typename T, typename VT, WORD32 INST_NUM>
-inline WORD32 CBTreeTpl<T, VT, INST_NUM>::Delete(VT &rKey, WORD32 &rdwInstID)
+template<typename T, typename VT, WORD32 POWER_NUM>
+inline WORD32 CBTreeTpl<T, VT, POWER_NUM>::Delete(VT &rKey, WORD32 &rdwInstID)
 {
     if (unlikely(NULL == m_pRoot))
     {
@@ -368,8 +369,8 @@ inline WORD32 CBTreeTpl<T, VT, INST_NUM>::Delete(VT &rKey, WORD32 &rdwInstID)
 }
 
 
-template<typename T, typename VT, WORD32 INST_NUM>
-inline VOID CBTreeTpl<T, VT, INST_NUM>::Dump(PTreeDump<T, VT> pFunc)
+template<typename T, typename VT, WORD32 POWER_NUM>
+inline VOID CBTreeTpl<T, VT, POWER_NUM>::Dump(PTreeDump<T, VT> pFunc)
 {
     if (unlikely(NULL == m_pRoot))
     {
@@ -380,9 +381,9 @@ inline VOID CBTreeTpl<T, VT, INST_NUM>::Dump(PTreeDump<T, VT> pFunc)
 }
 
 
-template<typename T, typename VT, WORD32 INST_NUM>
-WORD32 CBTreeTpl<T, VT, INST_NUM>::Clear(
-    typename CBTreeTpl<T, VT, INST_NUM>::T_TreeNode *pNode)
+template<typename T, typename VT, WORD32 POWER_NUM>
+WORD32 CBTreeTpl<T, VT, POWER_NUM>::Clear(
+    typename CBTreeTpl<T, VT, POWER_NUM>::T_TreeNode *pNode)
 {
     if (NULL == pNode)
     {
@@ -404,9 +405,9 @@ WORD32 CBTreeTpl<T, VT, INST_NUM>::Clear(
 
 
 /* 分配必然不会失败, 如出现失败, 则强制跑死 */
-template<typename T, typename VT, WORD32 INST_NUM>
-inline typename CBTreeTpl<T, VT, INST_NUM>::T_TreeNode * 
-CBTreeTpl<T, VT, INST_NUM>::Malloc(BYTE ucType)
+template<typename T, typename VT, WORD32 POWER_NUM>
+inline typename CBTreeTpl<T, VT, POWER_NUM>::T_TreeNode * 
+CBTreeTpl<T, VT, POWER_NUM>::Malloc(BYTE ucType)
 {
     T_TreeNode *pNode = m_cNodeList.Malloc();
 
@@ -419,19 +420,19 @@ CBTreeTpl<T, VT, INST_NUM>::Malloc(BYTE ucType)
 }
 
 
-template<typename T, typename VT, WORD32 INST_NUM>
-inline VOID CBTreeTpl<T, VT, INST_NUM>::Free(
-    typename CBTreeTpl<T, VT, INST_NUM>::T_TreeNode *pNode)
+template<typename T, typename VT, WORD32 POWER_NUM>
+inline VOID CBTreeTpl<T, VT, POWER_NUM>::Free(
+    typename CBTreeTpl<T, VT, POWER_NUM>::T_TreeNode *pNode)
 {
     m_cNodeList.Free(pNode);
 }
 
 
 /* 当Child满时, 将其进行分裂; wPos : Parent指向Child指针的位置下标(0...) */
-template<typename T, typename VT, WORD32 INST_NUM>
-inline WORD32 CBTreeTpl<T, VT, INST_NUM>::SplitChild(
-    typename CBTreeTpl<T, VT, INST_NUM>::T_TreeNode &rParent, WORD16 wPos, 
-    typename CBTreeTpl<T, VT, INST_NUM>::T_TreeNode &rChild)
+template<typename T, typename VT, WORD32 POWER_NUM>
+inline WORD32 CBTreeTpl<T, VT, POWER_NUM>::SplitChild(
+    typename CBTreeTpl<T, VT, POWER_NUM>::T_TreeNode &rParent, WORD16 wPos, 
+    typename CBTreeTpl<T, VT, POWER_NUM>::T_TreeNode &rChild)
 {
     T_TreeNode *pNewChild = Malloc(rChild.ucType);
 
@@ -475,12 +476,12 @@ inline WORD32 CBTreeTpl<T, VT, INST_NUM>::SplitChild(
 }
 
 
-template<typename T, typename VT, WORD32 INST_NUM>
-VOID CBTreeTpl<T, VT, INST_NUM>::MergeChild(
-    typename CBTreeTpl<T, VT, INST_NUM>::T_TreeNode &rParent, 
+template<typename T, typename VT, WORD32 POWER_NUM>
+VOID CBTreeTpl<T, VT, POWER_NUM>::MergeChild(
+    typename CBTreeTpl<T, VT, POWER_NUM>::T_TreeNode &rParent, 
     WORD16      wPos, 
-    typename CBTreeTpl<T, VT, INST_NUM>::T_TreeNode *pChild1,
-    typename CBTreeTpl<T, VT, INST_NUM>::T_TreeNode *pChild2)
+    typename CBTreeTpl<T, VT, POWER_NUM>::T_TreeNode *pChild1,
+    typename CBTreeTpl<T, VT, POWER_NUM>::T_TreeNode *pChild2)
 {
     WORD32 dwPos = pChild1->ucNumEntry;
 
@@ -524,11 +525,11 @@ VOID CBTreeTpl<T, VT, INST_NUM>::MergeChild(
 }
 
 
-template<typename T, typename VT, WORD32 INST_NUM>
-WORD32 CBTreeTpl<T, VT, INST_NUM>::Add(
-    typename CBTreeTpl<T, VT, INST_NUM>::T_TreeNode *pNode, 
+template<typename T, typename VT, WORD32 POWER_NUM>
+WORD32 CBTreeTpl<T, VT, POWER_NUM>::Add(
+    typename CBTreeTpl<T, VT, POWER_NUM>::T_TreeNode *pNode, 
     const VT &rKey, 
-    typename CBTreeTpl<T, VT, INST_NUM>::T_TreeData &rData)
+    typename CBTreeTpl<T, VT, POWER_NUM>::T_TreeData &rData)
 {
     SWORD16 swPos     = 0;
     SWORD32 swCompare = 0;
@@ -609,16 +610,16 @@ WORD32 CBTreeTpl<T, VT, INST_NUM>::Add(
 }
 
 
-template<typename T, typename VT, WORD32 INST_NUM>
-WORD32 CBTreeTpl<T, VT, INST_NUM>::Delete(
-    typename CBTreeTpl<T, VT, INST_NUM>::T_TreeNode *pNode, const VT &rKey)
+template<typename T, typename VT, WORD32 POWER_NUM>
+WORD32 CBTreeTpl<T, VT, POWER_NUM>::Delete(
+    typename CBTreeTpl<T, VT, POWER_NUM>::T_TreeNode *pNode, const VT &rKey)
 {
     SWORD16 swPos     = 0;
     SWORD32 swCompare = 0;
     WORD32  dwResult  = INVALID_DWORD;
 
     CTreeData *pData  = NULL;
-    
+
     if (BTREE_LEAF_NODE == pNode->ucType)
     {
         while (swPos < pNode->ucNumEntry)
@@ -630,6 +631,8 @@ WORD32 CBTreeTpl<T, VT, INST_NUM>::Delete(
             }
             else if (swCompare == 0)
             {
+                m_cIDGenerator.Retrieve(pNode->apData[swPos]->dwInstID);
+
                 /* 找到待删除数据, 析构对象并修改标志位为释放状态 */
                 pData = (CTreeData *)(pNode->apData[swPos]->aucData);
                 delete pData;
@@ -738,9 +741,9 @@ WORD32 CBTreeTpl<T, VT, INST_NUM>::Delete(
 }
 
 
-template<typename T, typename VT, WORD32 INST_NUM>
-WORD32 CBTreeTpl<T, VT, INST_NUM>::Delete(
-    typename CBTreeTpl<T, VT, INST_NUM>::T_TreeNode *pNode,
+template<typename T, typename VT, WORD32 POWER_NUM>
+WORD32 CBTreeTpl<T, VT, POWER_NUM>::Delete(
+    typename CBTreeTpl<T, VT, POWER_NUM>::T_TreeNode *pNode,
     const VT &rKey,
     WORD32   &rdwInstID)
 {
@@ -749,7 +752,7 @@ WORD32 CBTreeTpl<T, VT, INST_NUM>::Delete(
     WORD32  dwResult  = INVALID_DWORD;
 
     CTreeData *pData  = NULL;
-    
+
     if (BTREE_LEAF_NODE == pNode->ucType)
     {
         while (swPos < pNode->ucNumEntry)
@@ -761,11 +764,12 @@ WORD32 CBTreeTpl<T, VT, INST_NUM>::Delete(
             }
             else if (swCompare == 0)
             {
+                rdwInstID = pNode->apData[swPos]->dwInstID;
+                m_cIDGenerator.Retrieve(rdwInstID);
+
                 /* 找到待删除数据, 析构对象并修改标志位为释放状态 */
                 pData = (CTreeData *)(pNode->apData[swPos]->aucData);
                 delete pData;
-
-                rdwInstID = pNode->apData[swPos]->dwInstID;
                 pNode->apData[swPos]->bFree = TRUE;
 
                 /* 将待删除节点从树中抹除 */
@@ -871,9 +875,9 @@ WORD32 CBTreeTpl<T, VT, INST_NUM>::Delete(
 }
 
 
-template<typename T, typename VT, WORD32 INST_NUM>
-T * CBTreeTpl<T, VT, INST_NUM>::Search(
-    typename CBTreeTpl<T, VT, INST_NUM>::T_TreeNode *pNode, const VT &rKey)
+template<typename T, typename VT, WORD32 POWER_NUM>
+T * CBTreeTpl<T, VT, POWER_NUM>::Search(
+    typename CBTreeTpl<T, VT, POWER_NUM>::T_TreeNode *pNode, const VT &rKey)
 {
     SWORD16 swPos     = 0;
     SWORD32 swCompare = 0;
@@ -917,9 +921,9 @@ T * CBTreeTpl<T, VT, INST_NUM>::Search(
 }
 
 
-template<typename T, typename VT, WORD32 INST_NUM>
-VOID CBTreeTpl<T, VT, INST_NUM>::LevelDump(
-    typename CBTreeTpl<T, VT, INST_NUM>::T_TreeNode *pNode, 
+template<typename T, typename VT, WORD32 POWER_NUM>
+VOID CBTreeTpl<T, VT, POWER_NUM>::LevelDump(
+    typename CBTreeTpl<T, VT, POWER_NUM>::T_TreeNode *pNode, 
     PTreeDump<T, VT> pFunc)
 {
     if (BTREE_LEAF_NODE == pNode->ucType)

@@ -514,7 +514,7 @@ VOID COamApp::ProcCBRegistMsg(const VOID *pIn, WORD32 dwLen)
         return ;
     }
 
-    pNode = m_cCBTable.Create(ptMsg->dwTaskID, dwInstID);
+    pNode = m_cCBTable.Create(dwInstID, ptMsg->dwTaskID);
     if (NULL == pNode)
     {
         return ;
@@ -565,7 +565,7 @@ VOID COamApp::ProcCBRemoveMsg(const VOID *pIn, WORD32 dwLen)
     dwTimerID = pNode->m_dwTimerID;
 
     KillTimer(dwTimerID);
-    m_cCBTable.Remove(dwTaskID);
+    m_cCBTable.Delete(dwTaskID);
 }
 
 

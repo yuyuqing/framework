@@ -4,7 +4,7 @@
 #define _BASE_OAM_APP_H_
 
 
-#include "base_tree_array.h"
+#include "base_tree.h"
 #include "base_app_interface.h"
 
 
@@ -33,7 +33,7 @@ typedef struct tagT_OamRemoveCallBack
 }T_OamRemoveCallBack;
 
 
-#define OAM_CB_TABLE_NODE_POWER_NUM        ((WORD32)(10))
+#define OAM_CB_TABLE_POWER_NUM        ((WORD32)(10))
 
 
 class COamCBNode
@@ -58,7 +58,7 @@ public :
 };
 
 
-typedef CBTreeArray<COamCBNode, WORD32, OAM_CB_TABLE_NODE_POWER_NUM>  COamCBTable;
+typedef CBTreeTpl<COamCBNode, WORD32, OAM_CB_TABLE_POWER_NUM>  COamCBTable;
 
 
 #define DISABLE_SYNC_FLAG       ((BYTE)(0))

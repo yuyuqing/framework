@@ -544,7 +544,7 @@ VOID CTimerApp::DumpMeasure(const VOID *pIn, WORD32 dwLen)
 WORD32 CTimerApp::InnerDelete(WORD32 dwKey)
 {
     /* 在删除树叶节点时会自动删除定时器节点 */
-    return m_cTree.Remove(dwKey);
+    return m_cTree.Delete(dwKey);
 }
 
 
@@ -564,7 +564,7 @@ WORD32 CTimerApp::InnerCreate(WORD32          dwKey,
     WORD32 dwInstID  = INVALID_DWORD;
 
     CTimerNode     *pTimer = NULL;
-    CTimerTreeNode *pNode  = m_cTree.Create(dwKey, dwInstID);
+    CTimerTreeNode *pNode  = m_cTree.Create(dwInstID, dwKey);
     if (NULL == pNode)
     {
         return FAIL;
@@ -582,7 +582,7 @@ WORD32 CTimerApp::InnerCreate(WORD32          dwKey,
                                                  pUserData);
     if (INVALID_DWORD == dwTimerID)
     {
-        m_cTree.RemoveByInstID(dwInstID);
+        m_cTree.DeleteByInstID(dwInstID);
         return FAIL;
     }
 

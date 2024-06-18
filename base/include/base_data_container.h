@@ -152,12 +152,15 @@ public :
     WORD32 Initialize();
 
     T * Malloc(WORD32 *pdwIndex = NULL);
+    T * Malloc(WORD32 &rdwIndex);
 
     VOID Free(T *ptr);
     VOID Free(WORD32 dwIndex);
 
     CDataNode & operator[] (WORD32 dwIndex);
+    T * operator() (WORD32 dwIndex);
 
+    BOOL IsFree(WORD32 dwIndex);
     BOOL IsValid(VOID *pAddr);
 
 protected :
@@ -244,6 +247,28 @@ inline T * CBaseDataContainer<T, NODE_NUM>::Malloc(WORD32 *pdwIndex)
 
 
 template <class T, WORD32 NODE_NUM>
+inline T * CBaseDataContainer<T, NODE_NUM>::Malloc(WORD32 &rdwIndex)
+{
+    T_DataHeader *pCurHead = m_pFreeHeader;
+
+    if (pCurHead)
+    {
+        m_pFreeHeader     = pCurHead->m_pNext;
+        pCurHead->m_pNext = NULL;
+        pCurHead->m_bFree = FALSE;
+
+        rdwIndex = pCurHead->m_dwIndex;
+
+        return (T *)((WORD64)(pCurHead) - s_dwHeadOffset + s_dwDataOffset);
+    }
+    else
+    {
+        return NULL;
+    }
+}
+
+
+template <class T, WORD32 NODE_NUM>
 inline VOID CBaseDataContainer<T, NODE_NUM>::Free(T *ptr)
 {
     if (!IsValid(ptr))
@@ -289,12 +314,44 @@ template <class T, WORD32 NODE_NUM>
 inline typename CBaseDataContainer<T, NODE_NUM>::CDataNode & 
 CBaseDataContainer<T, NODE_NUM>::operator[] (WORD32 dwIndex)
 {
-    if (dwIndex >= NODE_NUM)
+    if (unlikely(dwIndex >= NODE_NUM))
     {
         return *(CDataNode *)NULL;
     }
 
     return *((CDataNode *)(m_lwBegin + (s_dwNodeSize * dwIndex)));
+}
+
+
+template <class T, WORD32 NODE_NUM>
+inline T * CBaseDataContainer<T, NODE_NUM>::operator() (WORD32 dwIndex)
+{
+    if (unlikely(dwIndex >= NODE_NUM))
+    {
+        return NULL;
+    }
+
+    CDataNode *pNode = ((CDataNode *)(m_lwBegin + (s_dwNodeSize * dwIndex)));
+    if (pNode->m_tHeader.m_bFree)
+    {
+        return NULL;
+    }
+
+    return (T *)(*pNode);
+}
+
+
+template <class T, WORD32 NODE_NUM>
+inline BOOL CBaseDataContainer<T, NODE_NUM>::IsFree(WORD32 dwIndex)
+{
+    if (unlikely(dwIndex >= NODE_NUM))
+    {
+        return FALSE;
+    }
+
+    CDataNode *pNode = ((CDataNode *)(m_lwBegin + (s_dwNodeSize * dwIndex)));
+
+    return pNode->m_tHeader.m_bFree;
 }
 
 
