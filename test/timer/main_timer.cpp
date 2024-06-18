@@ -72,12 +72,14 @@ int main(int argc, char **argv)
                                    dwTransID++, dwTick, 0,
                                    0, NULL, NULL);
         }
+
+        usleep(5000);
     }
 
     LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_DEBUG, TRUE,
                "===============================================\n");
 
-    for (WORD32 dwIndex = 0; dwIndex < 1000; dwIndex++)
+    for (WORD32 dwIndex = 0; dwIndex < 1000000; dwIndex++)
     {
         /* Stop Timer UseCase */
         for (WORD32 dwIndex1 = 0; dwIndex1 < TEST_MAX_TIMER_NUM; dwIndex1++)
