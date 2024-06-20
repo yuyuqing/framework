@@ -57,8 +57,13 @@ public :
     static const WORD32 s_dwNodeSize = ROUND_UP(sizeof(CDataNode), CACHE_SIZE);
     static const WORD32 s_dwSize     = (s_dwNodeSize * NODE_NUM) + CACHE_SIZE;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winvalid-offsetof"
+
     static const WORD32 s_dwHeadOffset = offsetof(CDataNode, m_tHeader);
     static const WORD32 s_dwDataOffset = offsetof(CDataNode, m_tData);
+
+#pragma GCC diagnostic pop
 
 public :
     CDoubleLink ();
