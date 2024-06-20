@@ -69,7 +69,7 @@ public :
         {
             return m_tData;
         }
-        
+
         operator T* ()
         {
             return &m_tData;

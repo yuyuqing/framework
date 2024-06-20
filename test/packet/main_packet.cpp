@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include <fstream>
 
+#include "base_sequence.h"
 #include "base_init_component.h"
 #include "base_app_cntrl.h"
 #include "base_oam_app.h"
@@ -321,8 +322,28 @@ DEFINE_APP(CTestRlcApp);
 DEFINE_APP(CTestDMacApp);
 
 
+#define TEST_NODE_NUM    ((WORD32)(1024))
+
+
+typedef CBaseList<T_TestPacketBuffer, TEST_NODE_NUM>  CPacketBufferList;
+
+
 int main(int argc, char **argv)
 {
+    CPacketBufferList  cList;
+
+    cList.Initialize();
+
+    T_TestPacketBuffer *pBuf1 = cList.Create();
+    T_TestPacketBuffer *pBuf2 = cList.Create();
+    T_TestPacketBuffer *pBuf3 = cList.Create();
+    T_TestPacketBuffer *pBuf4 = cList.FrontCreate();
+
+    cList.Remove(pBuf2);
+    cList.Remove(pBuf1);
+    cList.Remove(pBuf4);
+    cList.Remove(pBuf3);
+
     CInitList::GetInstance()->InitComponent((WORD32)E_PROC_DU);
 
     g_pOamApp->NotifyOamStartUP();

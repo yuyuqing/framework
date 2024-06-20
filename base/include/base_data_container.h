@@ -169,7 +169,7 @@ protected :
 protected :
     WORD64         m_lwBegin;
     WORD64         m_lwEnd;
-    
+
     T_DataHeader  *m_pFreeHeader;
     BYTE           m_aucData[s_dwSize];
 };
@@ -209,7 +209,7 @@ WORD32 CBaseDataContainer<T, NODE_NUM>::Initialize()
         dwIndex--;
         lwAddr  -= s_dwNodeSize;
         pCurNode = (T_DataHeader *)(lwAddr + s_dwHeadOffset);
-        
+
         pCurNode->m_dwIndex = dwIndex;
         pCurNode->m_bFree   = TRUE;
         pCurNode->m_pNext   = pNextNode;
