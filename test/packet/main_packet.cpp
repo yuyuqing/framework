@@ -12,7 +12,7 @@
 #include <pthread.h>
 #include <fstream>
 
-#include "base_sequence.h"
+#include "base_list.h"
 #include "base_init_component.h"
 #include "base_app_cntrl.h"
 #include "base_oam_app.h"
@@ -330,19 +330,35 @@ typedef CBaseList<T_TestPacketBuffer, TEST_NODE_NUM>  CPacketBufferList;
 
 int main(int argc, char **argv)
 {
+    WORD32             dwIndex = 0;
     CPacketBufferList  cList;
 
     cList.Initialize();
 
-    T_TestPacketBuffer *pBuf1 = cList.Create();
-    T_TestPacketBuffer *pBuf2 = cList.Create();
-    T_TestPacketBuffer *pBuf3 = cList.Create();
-    T_TestPacketBuffer *pBuf4 = cList.FrontCreate();
+    T_TestPacketBuffer *pBuf1 = cList.CreateTail();
+    T_TestPacketBuffer *pBuf2 = cList.CreateTail();
+    T_TestPacketBuffer *pBuf3 = cList.CreateTail();
+    T_TestPacketBuffer *pBuf4 = cList.CreateHead();
+    T_TestPacketBuffer *pBuf5 = cList.Malloc(dwIndex);
+    T_TestPacketBuffer *pBuf6 = cList.Malloc(dwIndex);
+    T_TestPacketBuffer *pBuf7 = cList.Malloc(dwIndex);
+    T_TestPacketBuffer *pBuf8 = cList.Malloc(dwIndex);
 
     cList.Remove(pBuf2);
     cList.Remove(pBuf1);
+
+    cList.InsertHead(pBuf5);
+    cList.InsertHead(pBuf6);
+    cList.InsertTail(pBuf7);
+    cList.InsertTail(pBuf8);
+
     cList.Remove(pBuf4);
     cList.Remove(pBuf3);
+
+    cList.Remove(pBuf7);
+    cList.Remove(pBuf6);
+    cList.Remove(pBuf5);
+    cList.Remove(pBuf8);
 
     CInitList::GetInstance()->InitComponent((WORD32)E_PROC_DU);
 

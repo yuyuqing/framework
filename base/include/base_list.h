@@ -1,7 +1,7 @@
 
 
-#ifndef _BASE_SEQUENCE_H_
-#define _BASE_SEQUENCE_H_
+#ifndef _BASE_LIST_H_
+#define _BASE_LIST_H_
 
 
 #include <assert.h>
@@ -19,49 +19,16 @@ public :
         BOOL              m_bFree;
         tagT_DataHeader  *m_pNext;
         tagT_DataHeader  *m_pPrev;
+        BYTE              m_aucData[sizeof(T)];
     }T_DataHeader;
 
-    class CDataNode : public CBaseData
-    {
-    public :
-        T_DataHeader  m_tHeader;
-        T             m_tData;
-
-        CDataNode ()
-        {
-            m_tHeader.m_dwIndex = INVALID_DWORD;
-            m_tHeader.m_bFree   = TRUE;
-            m_tHeader.m_pNext   = NULL;
-            m_tHeader.m_pPrev   = NULL;
-        }
-
-        ~CDataNode ()
-        {
-            m_tHeader.m_dwIndex = INVALID_DWORD;
-            m_tHeader.m_bFree   = TRUE;
-            m_tHeader.m_pNext   = NULL;
-            m_tHeader.m_pPrev   = NULL;
-        }
-
-        operator T& ()
-        {
-            return m_tData;
-        }
-
-        operator T* ()
-        {
-            return &m_tData;
-        }
-    };
-
-    static const WORD32 s_dwNodeSize = ROUND_UP(sizeof(CDataNode), CACHE_SIZE);
+    static const WORD32 s_dwNodeSize = ROUND_UP(sizeof(T_DataHeader), CACHE_SIZE);
     static const WORD32 s_dwSize     = (s_dwNodeSize * NODE_NUM) + CACHE_SIZE;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Winvalid-offsetof"
 
-    static const WORD32 s_dwHeadOffset = offsetof(CDataNode, m_tHeader);
-    static const WORD32 s_dwDataOffset = offsetof(CDataNode, m_tData);
+    static const WORD32 s_dwDataOffset = offsetof(T_DataHeader, m_aucData);
 
 #pragma GCC diagnostic pop
 
@@ -69,21 +36,20 @@ public :
     CDoubleLink ();
     virtual ~CDoubleLink();
 
-    WORD32 Initialize();
+    virtual WORD32 Initialize();
 
     T * Malloc(WORD32 &rdwIndex);
 
     VOID Free(T *ptr);
     VOID Free(WORD32 dwIndex);
 
-    CDataNode & operator[] (WORD32 dwIndex);
     T * operator() (WORD32 dwIndex);
 
     BOOL IsFree(WORD32 dwIndex);
     BOOL IsValid(VOID *pAddr);
 
 protected :
-    VOID Free(CDataNode *pNode);
+    VOID Free(T_DataHeader *pData);
 
 protected :
     WORD64         m_lwBegin;
@@ -116,7 +82,7 @@ CDoubleLink<T, NODE_NUM>::~CDoubleLink()
 template <class T, WORD32 NODE_NUM>
 WORD32 CDoubleLink<T, NODE_NUM>::Initialize()
 {
-    m_pFreeHeader = (T_DataHeader *)(m_lwBegin + s_dwHeadOffset);
+    m_pFreeHeader = (T_DataHeader *)(m_lwBegin);
 
     WORD32        dwIndex   = NODE_NUM;
     WORD64        lwAddr    = m_lwEnd;
@@ -127,7 +93,7 @@ WORD32 CDoubleLink<T, NODE_NUM>::Initialize()
     {
         dwIndex--;
         lwAddr  -= s_dwNodeSize;
-        pCurNode = (T_DataHeader *)(lwAddr + s_dwHeadOffset);
+        pCurNode = (T_DataHeader *)(lwAddr);
 
         pCurNode->m_dwIndex = dwIndex;
         pCurNode->m_bFree   = TRUE;
@@ -159,7 +125,7 @@ inline T * CDoubleLink<T, NODE_NUM>::Malloc(WORD32 &rdwIndex)
 
         rdwIndex = pCurHead->m_dwIndex;
 
-        return (T *)((WORD64)(pCurHead) - s_dwHeadOffset + s_dwDataOffset);
+        return (T *)(pCurHead->m_aucData);
     }
     else
     {
@@ -176,50 +142,37 @@ inline VOID CDoubleLink<T, NODE_NUM>::Free(T *ptr)
         return ;
     }
 
-    CDataNode *pCur = (CDataNode *)((WORD64)(ptr) - s_dwDataOffset);
-    if ((pCur->m_tHeader.m_dwIndex >= NODE_NUM) || (pCur->m_tHeader.m_bFree))
+    T_DataHeader *pCur = (T_DataHeader *)((WORD64)(ptr) - s_dwDataOffset);
+    if ((pCur->m_dwIndex >= NODE_NUM) || (pCur->m_bFree))
     {
         return ;
     }
 
-    CDataNode *pNode = (CDataNode *)(m_lwBegin + (s_dwNodeSize * (pCur->m_tHeader.m_dwIndex)));
-    if (unlikely(pCur != pNode))
+    T_DataHeader *pData = (T_DataHeader *)(m_lwBegin + (s_dwNodeSize * (pCur->m_dwIndex)));
+    if (unlikely(pCur != pData))
     {
         return ;
     }
 
-    Free(pNode);
+    Free(pData);
 }
 
 
 template <class T, WORD32 NODE_NUM>
 inline VOID CDoubleLink<T, NODE_NUM>::Free(WORD32 dwIndex)
 {
-    CDataNode *pNode = &((*this)[dwIndex]);
-    if (unlikely(NULL == pNode))
-    {
-        return ;
-    }
-
-    if (pNode->m_tHeader.m_bFree)
-    {
-        return ;
-    }
-
-    Free(pNode);
-}
-
-
-template <class T, WORD32 NODE_NUM>
-inline typename CDoubleLink<T, NODE_NUM>::CDataNode & 
-CDoubleLink<T, NODE_NUM>::operator[] (WORD32 dwIndex)
-{
     if (unlikely(dwIndex >= NODE_NUM))
     {
-        return *(CDataNode *)NULL;
+        return ;
     }
 
-    return *((CDataNode *)(m_lwBegin + (s_dwNodeSize * dwIndex)));
+    T_DataHeader *pData = (T_DataHeader *)(m_lwBegin + (s_dwNodeSize * dwIndex));
+    if (pData->m_bFree)
+    {
+        return ;
+    }
+
+    Free(pData);
 }
 
 
@@ -231,13 +184,13 @@ inline T * CDoubleLink<T, NODE_NUM>::operator() (WORD32 dwIndex)
         return NULL;
     }
 
-    CDataNode *pNode = ((CDataNode *)(m_lwBegin + (s_dwNodeSize * dwIndex)));
-    if (pNode->m_tHeader.m_bFree)
+    T_DataHeader *pData = (T_DataHeader *)(m_lwBegin + (s_dwNodeSize * dwIndex));
+    if (pData->m_bFree)
     {
         return NULL;
     }
 
-    return (T *)(*pNode);
+    return (T *)(pData->m_aucData);
 }
 
 
@@ -249,9 +202,9 @@ inline BOOL CDoubleLink<T, NODE_NUM>::IsFree(WORD32 dwIndex)
         return FALSE;
     }
 
-    CDataNode *pNode = ((CDataNode *)(m_lwBegin + (s_dwNodeSize * dwIndex)));
+    T_DataHeader *pData = (T_DataHeader *)(m_lwBegin + (s_dwNodeSize * dwIndex));
 
-    return pNode->m_tHeader.m_bFree;
+    return pData->m_bFree;
 }
 
 
@@ -275,26 +228,25 @@ inline BOOL CDoubleLink<T, NODE_NUM>::IsValid(VOID *pAddr)
 
 
 template <class T, WORD32 NODE_NUM>
-inline VOID CDoubleLink<T, NODE_NUM>::Free(CDataNode *pNode)
+inline VOID CDoubleLink<T, NODE_NUM>::Free(T_DataHeader *pData)
 {
-    if (unlikely(NULL == pNode))
+    if (unlikely(NULL == pData))
     {
         return ;
     }
 
-    m_pFreeHeader->m_pPrev   = &(pNode->m_tHeader);
-    pNode->m_tHeader.m_bFree = TRUE;
-    pNode->m_tHeader.m_pNext = m_pFreeHeader;
-    m_pFreeHeader = &(pNode->m_tHeader);
+    m_pFreeHeader->m_pPrev = pData;
+    pData->m_bFree         = TRUE;
+    pData->m_pNext         = m_pFreeHeader;
+    m_pFreeHeader          = pData;
 }
 
 
 template <class T, WORD32 NODE_NUM>
-class CBaseList
+class CBaseList : public CDoubleLink<T, NODE_NUM>
 {
 public :
-    typedef CDoubleLink<T, NODE_NUM>          CLinkList;
-    typedef typename CLinkList::T_DataHeader  T_LinkHeader;
+    typedef typename CDoubleLink<T, NODE_NUM>::T_DataHeader  T_LinkHeader;
 
 public :
     CBaseList ();
@@ -304,12 +256,19 @@ public :
 
     T * operator[] (WORD32 dwIndex);
 
-    /* 添加到尾部 */
-    T * Create();
+    /* 创建节点并添加到尾部 */
+    T * CreateTail();
 
-    /* 添加到首部 */
-    T * FrontCreate();
+    /* 创建节点并添加到首部 */
+    T * CreateHead();
 
+    /* 将节点添加到尾部 */
+    WORD32 InsertTail(T *pInst);
+
+    /* 将节点添加到首部 */
+    WORD32 InsertHead(T *pInst);
+
+    /* 从链表中移除节点并释放节点 */
     WORD32 Remove(T *pInst);
 
     WORD32 GetCount();
@@ -318,7 +277,6 @@ protected :
     WORD32         m_dwCount;
     T_LinkHeader  *m_ptHeader;
     T_LinkHeader  *m_ptTailer;
-    CLinkList      m_cList;
 };
 
 
@@ -343,7 +301,7 @@ CBaseList<T, NODE_NUM>::~CBaseList()
 template <class T, WORD32 NODE_NUM>
 WORD32 CBaseList<T, NODE_NUM>::Initialize()
 {
-    m_cList.Initialize();
+    CDoubleLink<T, NODE_NUM>::Initialize();
 
     return SUCCESS;
 }
@@ -365,7 +323,7 @@ inline T * CBaseList<T, NODE_NUM>::operator[] (WORD32 dwIndex)
     {
         if (dwTmpIdx == dwIndex)
         {
-            pData = m_cList(pCurHead->m_dwIndex);
+            pData = (*this)(pCurHead->m_dwIndex);
             break ;
         }
 
@@ -382,14 +340,14 @@ inline T * CBaseList<T, NODE_NUM>::operator[] (WORD32 dwIndex)
 }
 
 
-/* 添加到尾部 */
+/* 创建节点并添加到尾部 */
 template <class T, WORD32 NODE_NUM>
-inline T * CBaseList<T, NODE_NUM>::Create()
+inline T * CBaseList<T, NODE_NUM>::CreateTail()
 {
     WORD32 dwInstID = INVALID_DWORD;
     WORD64 lwAddr   = 0;
 
-    T *pData = m_cList.Malloc(dwInstID);
+    T *pData = this->Malloc(dwInstID);
     if (NULL == pData)
     {
         return NULL;
@@ -397,7 +355,7 @@ inline T * CBaseList<T, NODE_NUM>::Create()
 
     lwAddr = (WORD64)pData;
 
-    T_LinkHeader *pCurHead = (T_LinkHeader *)(lwAddr - (CLinkList::s_dwDataOffset) + (CLinkList::s_dwHeadOffset));
+    T_LinkHeader *pCurHead = (T_LinkHeader *)(lwAddr - this->s_dwDataOffset);
     if (NULL == m_ptTailer)
     {
         m_ptHeader = pCurHead;
@@ -418,12 +376,12 @@ inline T * CBaseList<T, NODE_NUM>::Create()
 
 /* 添加到首部 */
 template <class T, WORD32 NODE_NUM>
-inline T * CBaseList<T, NODE_NUM>::FrontCreate()
+inline T * CBaseList<T, NODE_NUM>::CreateHead()
 {
     WORD32 dwInstID = INVALID_DWORD;
     WORD64 lwAddr   = 0;
 
-    T *pData = m_cList.Malloc(dwInstID);
+    T *pData = this->Malloc(dwInstID);
     if (NULL == pData)
     {
         return NULL;
@@ -431,7 +389,7 @@ inline T * CBaseList<T, NODE_NUM>::FrontCreate()
 
     lwAddr = (WORD64)pData;
 
-    T_LinkHeader *pCurHead = (T_LinkHeader *)(lwAddr - (CLinkList::s_dwDataOffset) + (CLinkList::s_dwHeadOffset));
+    T_LinkHeader *pCurHead = (T_LinkHeader *)(lwAddr - this->s_dwDataOffset);
     if (NULL == m_ptHeader)
     {
         m_ptHeader = pCurHead;
@@ -450,6 +408,67 @@ inline T * CBaseList<T, NODE_NUM>::FrontCreate()
 }
 
 
+/* 将节点添加到尾部 */
+template <class T, WORD32 NODE_NUM>
+inline WORD32 CBaseList<T, NODE_NUM>::InsertTail(T *pInst)
+{
+    if (FALSE == this->IsValid(pInst))
+    {
+        return FAIL;
+    }
+
+    WORD64 lwAddr = (WORD64)pInst;
+
+    T_LinkHeader *pCurHead = (T_LinkHeader *)(lwAddr - this->s_dwDataOffset);
+    if (NULL == m_ptTailer)
+    {
+        m_ptHeader = pCurHead;
+        m_ptTailer = pCurHead;
+    }
+    else
+    {
+        pCurHead->m_pPrev   = m_ptTailer;
+        m_ptTailer->m_pNext = pCurHead;
+        m_ptTailer          = pCurHead;
+    }
+
+    m_dwCount++;
+
+    return SUCCESS;
+}
+
+
+/* 将节点添加到首部 */
+template <class T, WORD32 NODE_NUM>
+inline WORD32 CBaseList<T, NODE_NUM>::InsertHead(T *pInst)
+{
+    if (FALSE == this->IsValid(pInst))
+    {
+        return FAIL;
+    }
+
+    WORD64 lwAddr = (WORD64)pInst;
+
+    T_LinkHeader *pCurHead = (T_LinkHeader *)(lwAddr - this->s_dwDataOffset);
+    if (NULL == m_ptHeader)
+    {
+        m_ptHeader = pCurHead;
+        m_ptTailer = pCurHead;
+    }
+    else
+    {
+        pCurHead->m_pNext   = m_ptHeader;
+        m_ptHeader->m_pPrev = pCurHead;
+        m_ptHeader          = pCurHead;
+    }
+
+    m_dwCount++;
+
+    return SUCCESS;
+}
+
+
+/* 从链表中移除节点并释放节点 */
 template <class T, WORD32 NODE_NUM>
 inline WORD32 CBaseList<T, NODE_NUM>::Remove(T *pInst)
 {
@@ -462,7 +481,7 @@ inline WORD32 CBaseList<T, NODE_NUM>::Remove(T *pInst)
     while (pCurHead)
     {
         dwInstID = pCurHead->m_dwIndex;
-        pData    = m_cList(dwInstID);
+        pData    = (*this)(dwInstID);
         if (unlikely(NULL == pData))
         {
             assert(0);
@@ -498,7 +517,7 @@ inline WORD32 CBaseList<T, NODE_NUM>::Remove(T *pInst)
 
             m_dwCount--;
 
-            m_cList.Free(dwInstID);
+            this->Free(dwInstID);
 
             return SUCCESS;
         }
@@ -562,12 +581,13 @@ public :
     T * Find(const K &rKey);
     T * operator[] (WORD32 dwIndex);
 
-    /* 添加到尾部 */
-    T * Create(const K &rKey);
+    /* 创建节点并添加到尾部 */
+    T * CreateTail(const K &rKey);
 
-    /* 添加到首部 */
-    T * FrontCreate(const K &rKey);
+    /* 创建节点并添加到首部 */
+    T * CreateHead(const K &rKey);
 
+    /* 从链表中移除节点并释放节点 */
     WORD32 Remove(const K &rKey);
 
     WORD32 GetCount();
@@ -666,9 +686,9 @@ inline T * CBaseSequence<K, T, NODE_NUM>::operator[] (WORD32 dwIndex)
 }
 
 
-/* 添加到尾部 */
+/* 创建节点并添加到尾部 */
 template <typename K, class T, WORD32 NODE_NUM>
-inline T * CBaseSequence<K, T, NODE_NUM>::Create(const K &rKey)
+inline T * CBaseSequence<K, T, NODE_NUM>::CreateTail(const K &rKey)
 {
     WORD32 dwInstID = INVALID_DWORD;
     WORD64 lwAddr   = 0;
@@ -681,7 +701,7 @@ inline T * CBaseSequence<K, T, NODE_NUM>::Create(const K &rKey)
 
     lwAddr = (WORD64)pData;
 
-    T_SequenceHeader *pCurHead = (T_SequenceHeader *)(lwAddr - (CSequenceList::s_dwDataOffset) + (CSequenceList::s_dwHeadOffset));
+    T_SequenceHeader *pCurHead = (T_SequenceHeader *)(lwAddr - (CSequenceList::s_dwDataOffset));
     if (NULL == m_ptTailer)
     {
         m_ptHeader = pCurHead;
@@ -702,9 +722,9 @@ inline T * CBaseSequence<K, T, NODE_NUM>::Create(const K &rKey)
 }
 
 
-/* 添加到首部 */
+/* 创建节点并添加到首部 */
 template <typename K, class T, WORD32 NODE_NUM>
-inline T * CBaseSequence<K, T, NODE_NUM>::FrontCreate(const K &rKey)
+inline T * CBaseSequence<K, T, NODE_NUM>::CreateHead(const K &rKey)
 {
     WORD32 dwInstID = INVALID_DWORD;
     WORD64 lwAddr   = 0;
@@ -717,7 +737,7 @@ inline T * CBaseSequence<K, T, NODE_NUM>::FrontCreate(const K &rKey)
 
     lwAddr = (WORD64)pData;
 
-    T_SequenceHeader *pCurHead = (T_SequenceHeader *)(lwAddr - (CSequenceList::s_dwDataOffset) + (CSequenceList::s_dwHeadOffset));
+    T_SequenceHeader *pCurHead = (T_SequenceHeader *)(lwAddr - (CSequenceList::s_dwDataOffset));
     if (NULL == m_ptHeader)
     {
         m_ptHeader = pCurHead;
@@ -738,6 +758,7 @@ inline T * CBaseSequence<K, T, NODE_NUM>::FrontCreate(const K &rKey)
 }
 
 
+/* 从链表中移除节点并释放节点 */
 template <typename K, class T, WORD32 NODE_NUM>
 inline WORD32 CBaseSequence<K, T, NODE_NUM>::Remove(const K &rKey)
 {
