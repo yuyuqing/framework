@@ -572,6 +572,8 @@ public :
     typedef CDoubleLink<CSequenceData, NODE_NUM>  CSequenceList;
     typedef typename CSequenceList::T_DataHeader  T_SequenceHeader;
 
+    static const WORD32 s_dwValueOffset = offsetof(CSequenceData, m_tData);
+
 public :
     CBaseSequence ();
     virtual ~CBaseSequence();
@@ -586,6 +588,15 @@ public :
 
     /* 创建节点并添加到首部 */
     T * CreateHead(const K &rKey);
+
+    /* 仅创建节点 */
+    T * Create(const K &rKey);
+
+    /* 将节点添加到尾部 */
+    WORD32 InsertTail(T *pInst);
+
+    /* 将节点添加到首部 */
+    WORD32 InsertHead(T *pInst);
 
     /* 从链表中移除节点并释放节点 */
     WORD32 Remove(const K &rKey);
@@ -755,6 +766,84 @@ inline T * CBaseSequence<K, T, NODE_NUM>::CreateHead(const K &rKey)
     m_dwCount++;
 
     return *pData;
+}
+
+
+/* 仅创建节点 */
+template <typename K, class T, WORD32 NODE_NUM>
+inline T * CBaseSequence<K, T, NODE_NUM>::Create(const K &rKey)
+{
+    WORD32 dwInstID = INVALID_DWORD;
+
+    CSequenceData *pData = m_cList.Malloc(dwInstID);
+    if (NULL == pData)
+    {
+        return NULL;
+    }
+
+    new (pData) CSequenceData(rKey);
+
+    return *pData;
+}
+
+
+/* 将节点添加到尾部 */
+template <typename K, class T, WORD32 NODE_NUM>
+inline WORD32 CBaseSequence<K, T, NODE_NUM>::InsertTail(T *pInst)
+{
+    WORD64 lwAddr = (WORD64)(pInst) - s_dwValueOffset;
+
+    if (FALSE == m_cList.IsValid((VOID *)lwAddr))
+    {
+        return FAIL;
+    }
+
+    T_SequenceHeader *pCurHead = (T_SequenceHeader *)(lwAddr - (CSequenceList::s_dwDataOffset));
+    if (NULL == m_ptTailer)
+    {
+        m_ptHeader = pCurHead;
+        m_ptTailer = pCurHead;
+    }
+    else
+    {
+        pCurHead->m_pPrev   = m_ptTailer;
+        m_ptTailer->m_pNext = pCurHead;
+        m_ptTailer          = pCurHead;
+    }
+
+    m_dwCount++;
+
+    return SUCCESS;
+}
+
+
+/* 将节点添加到首部 */
+template <typename K, class T, WORD32 NODE_NUM>
+inline WORD32 CBaseSequence<K, T, NODE_NUM>::InsertHead(T *pInst)
+{
+    WORD64 lwAddr = (WORD64)(pInst) - s_dwValueOffset;
+
+    if (FALSE == m_cList.IsValid((VOID *)lwAddr))
+    {
+        return FAIL;
+    }
+
+    T_SequenceHeader *pCurHead = (T_SequenceHeader *)(lwAddr - (CSequenceList::s_dwDataOffset));
+    if (NULL == m_ptHeader)
+    {
+        m_ptHeader = pCurHead;
+        m_ptTailer = pCurHead;
+    }
+    else
+    {
+        pCurHead->m_pNext   = m_ptHeader;
+        m_ptHeader->m_pPrev = pCurHead;
+        m_ptHeader          = pCurHead;
+    }
+
+    m_dwCount++;
+
+    return SUCCESS;
 }
 
 
