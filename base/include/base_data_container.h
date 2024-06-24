@@ -88,8 +88,18 @@ public :
 };
 
 
+/* ALIGN_FLAG : 按CACHE_SIZE对齐标志 */
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+class CLinkTpl
+{
+public :
+    CLinkTpl() {}
+    virtual ~CLinkTpl() = 0;
+};
+
+
 template <class T, WORD32 NODE_NUM>
-class CBaseDataContainer
+class CLinkTpl<T, NODE_NUM, TRUE>
 {
 public :
     enum { HEAD_PAD_SIZE = 48 };
@@ -99,7 +109,7 @@ public :
         WORD32            m_dwIndex;
         BOOL              m_bFree;
         tagT_DataHeader  *m_pNext;
-        BYTE              aucPad[HEAD_PAD_SIZE];
+        BYTE              m_aucPad[HEAD_PAD_SIZE];
         BYTE              m_aucData[sizeof(T)];
 
         operator T & ()
@@ -112,12 +122,47 @@ public :
             return (T *)(m_aucData);
         }
     }T_DataHeader;
+    static_assert(offsetof(T_DataHeader, m_aucData) == CACHE_SIZE, "unexpected layout");
+};
+
+
+template <class T, WORD32 NODE_NUM>
+class CLinkTpl<T, NODE_NUM, FALSE>
+{
+public :
+    enum { HEAD_PAD_SIZE = 48 };
+
+    typedef struct tagT_DataHeader
+    {
+        WORD32            m_dwIndex;
+        BOOL              m_bFree;
+        tagT_DataHeader  *m_pNext;
+        BYTE              m_aucData[sizeof(T)];
+
+        operator T & ()
+        {
+            return *((T *)(m_aucData));
+        }
+
+        operator T * ()
+        {
+            return (T *)(m_aucData);
+        }
+    }T_DataHeader;
+    static_assert(offsetof(T_DataHeader, m_aucData) == 16, "unexpected layout");
+};
+
+
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG = FALSE>
+class CBaseDataContainer : public CLinkTpl<T, NODE_NUM, ALIGN_FLAG>
+{
+public :
+    typedef typename CLinkTpl<T, NODE_NUM, ALIGN_FLAG>::T_DataHeader  T_DataHeader;
 
     static const WORD32 s_dwNodeSize = ROUND_UP(sizeof(T_DataHeader), CACHE_SIZE);
     static const WORD32 s_dwSize     = (s_dwNodeSize * NODE_NUM) + CACHE_SIZE;
 
     static const WORD32 s_dwDataOffset = offsetof(T_DataHeader, m_aucData);
-    static_assert(s_dwDataOffset == CACHE_SIZE, "unexpected CDataNode layout");
 
 public :        
     CBaseDataContainer ();
@@ -149,8 +194,8 @@ protected :
 };
 
 
-template <class T, WORD32 NODE_NUM>
-CBaseDataContainer<T, NODE_NUM>::CBaseDataContainer ()
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+CBaseDataContainer<T, NODE_NUM, ALIGN_FLAG>::CBaseDataContainer ()
 {
     WORD64 lwAlign = CACHE_SIZE;
     WORD64 lwBegin = (WORD64)(&(m_aucData[0]));
@@ -161,15 +206,15 @@ CBaseDataContainer<T, NODE_NUM>::CBaseDataContainer ()
 }
 
 
-template <class T, WORD32 NODE_NUM>
-CBaseDataContainer<T, NODE_NUM>::~CBaseDataContainer ()
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+CBaseDataContainer<T, NODE_NUM, ALIGN_FLAG>::~CBaseDataContainer ()
 {
     m_pFreeHeader = NULL;
 }
 
 
-template <class T, WORD32 NODE_NUM>
-WORD32 CBaseDataContainer<T, NODE_NUM>::Initialize()
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+WORD32 CBaseDataContainer<T, NODE_NUM, ALIGN_FLAG>::Initialize()
 {
     m_pFreeHeader = (T_DataHeader *)(m_lwBegin);
 
@@ -195,8 +240,8 @@ WORD32 CBaseDataContainer<T, NODE_NUM>::Initialize()
 }
 
 
-template <class T, WORD32 NODE_NUM>
-inline T * CBaseDataContainer<T, NODE_NUM>::Malloc(WORD32 *pdwIndex)
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline T * CBaseDataContainer<T, NODE_NUM, ALIGN_FLAG>::Malloc(WORD32 *pdwIndex)
 {
     T_DataHeader *pCurHead = m_pFreeHeader;
 
@@ -220,8 +265,8 @@ inline T * CBaseDataContainer<T, NODE_NUM>::Malloc(WORD32 *pdwIndex)
 }
 
 
-template <class T, WORD32 NODE_NUM>
-inline T * CBaseDataContainer<T, NODE_NUM>::Malloc(WORD32 &rdwIndex)
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline T * CBaseDataContainer<T, NODE_NUM, ALIGN_FLAG>::Malloc(WORD32 &rdwIndex)
 {
     T_DataHeader *pCurHead = m_pFreeHeader;
 
@@ -242,8 +287,8 @@ inline T * CBaseDataContainer<T, NODE_NUM>::Malloc(WORD32 &rdwIndex)
 }
 
 
-template <class T, WORD32 NODE_NUM>
-inline VOID CBaseDataContainer<T, NODE_NUM>::Free(T *ptr)
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline VOID CBaseDataContainer<T, NODE_NUM, ALIGN_FLAG>::Free(T *ptr)
 {
     if (!IsValid(ptr))
     {
@@ -266,8 +311,8 @@ inline VOID CBaseDataContainer<T, NODE_NUM>::Free(T *ptr)
 }
 
 
-template <class T, WORD32 NODE_NUM>
-inline VOID CBaseDataContainer<T, NODE_NUM>::Free(WORD32 dwIndex)
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline VOID CBaseDataContainer<T, NODE_NUM, ALIGN_FLAG>::Free(WORD32 dwIndex)
 {
     if (unlikely(dwIndex >= NODE_NUM))
     {
@@ -284,9 +329,9 @@ inline VOID CBaseDataContainer<T, NODE_NUM>::Free(WORD32 dwIndex)
 }
 
 
-template <class T, WORD32 NODE_NUM>
-inline typename CBaseDataContainer<T, NODE_NUM>::T_DataHeader & 
-CBaseDataContainer<T, NODE_NUM>::operator[] (WORD32 dwIndex)
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline typename CBaseDataContainer<T, NODE_NUM, ALIGN_FLAG>::T_DataHeader & 
+CBaseDataContainer<T, NODE_NUM, ALIGN_FLAG>::operator[] (WORD32 dwIndex)
 {
     if (unlikely(dwIndex >= NODE_NUM))
     {
@@ -299,8 +344,8 @@ CBaseDataContainer<T, NODE_NUM>::operator[] (WORD32 dwIndex)
 }
 
 
-template <class T, WORD32 NODE_NUM>
-inline T * CBaseDataContainer<T, NODE_NUM>::operator() (WORD32 dwIndex)
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline T * CBaseDataContainer<T, NODE_NUM, ALIGN_FLAG>::operator() (WORD32 dwIndex)
 {
     if (unlikely(dwIndex >= NODE_NUM))
     {
@@ -317,8 +362,8 @@ inline T * CBaseDataContainer<T, NODE_NUM>::operator() (WORD32 dwIndex)
 }
 
 
-template <class T, WORD32 NODE_NUM>
-inline BOOL CBaseDataContainer<T, NODE_NUM>::IsFree(WORD32 dwIndex)
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline BOOL CBaseDataContainer<T, NODE_NUM, ALIGN_FLAG>::IsFree(WORD32 dwIndex)
 {
     if (unlikely(dwIndex >= NODE_NUM))
     {
@@ -331,8 +376,8 @@ inline BOOL CBaseDataContainer<T, NODE_NUM>::IsFree(WORD32 dwIndex)
 }
 
 
-template <class T, WORD32 NODE_NUM>
-inline BOOL CBaseDataContainer<T, NODE_NUM>::IsValid(VOID *pAddr)
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline BOOL CBaseDataContainer<T, NODE_NUM, ALIGN_FLAG>::IsValid(VOID *pAddr)
 {
     if (unlikely(NULL == pAddr))
     {
@@ -350,8 +395,8 @@ inline BOOL CBaseDataContainer<T, NODE_NUM>::IsValid(VOID *pAddr)
 }
 
 
-template <class T, WORD32 NODE_NUM>
-inline VOID CBaseDataContainer<T, NODE_NUM>::Free(T_DataHeader *pData)
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline VOID CBaseDataContainer<T, NODE_NUM, ALIGN_FLAG>::Free(T_DataHeader *pData)
 {
     if (unlikely(NULL == pData))
     {

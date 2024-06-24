@@ -9,10 +9,41 @@
 #include "base_data_container.h"
 
 
-template <class T, WORD32 NODE_NUM>
-class CDoubleLink
+/* ALIGN_FLAG : 按CACHE_SIZE对齐标志 */
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+class CDoubleLinkTpl
 {
 public :
+    CDoubleLinkTpl() {}
+    virtual ~CDoubleLinkTpl() = 0;
+};
+
+
+template <class T, WORD32 NODE_NUM>
+class CDoubleLinkTpl<T, NODE_NUM, TRUE>
+{
+public :
+    enum { HEAD_PAD_SIZE = 40 };
+
+    typedef struct tagT_DataHeader
+    {
+        WORD32            m_dwIndex;
+        BOOL              m_bFree;
+        tagT_DataHeader  *m_pNext;
+        tagT_DataHeader  *m_pPrev;
+        BYTE              m_aucPad[HEAD_PAD_SIZE];
+        BYTE              m_aucData[sizeof(T)];
+    }T_DataHeader;
+    static_assert(offsetof(T_DataHeader, m_aucData) == CACHE_SIZE, "unexpected layout");
+};
+
+
+template <class T, WORD32 NODE_NUM>
+class CDoubleLinkTpl<T, NODE_NUM, FALSE>
+{
+public :
+    enum { HEAD_PAD_SIZE = 40 };
+
     typedef struct tagT_DataHeader
     {
         WORD32            m_dwIndex;
@@ -21,6 +52,15 @@ public :
         tagT_DataHeader  *m_pPrev;
         BYTE              m_aucData[sizeof(T)];
     }T_DataHeader;
+    static_assert(offsetof(T_DataHeader, m_aucData) == 24, "unexpected layout");
+};
+
+
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+class CDoubleLink : public CDoubleLinkTpl<T, NODE_NUM, ALIGN_FLAG>
+{
+public :
+    typedef typename CDoubleLinkTpl<T, NODE_NUM, ALIGN_FLAG>::T_DataHeader  T_DataHeader;
 
     static const WORD32 s_dwNodeSize = ROUND_UP(sizeof(T_DataHeader), CACHE_SIZE);
     static const WORD32 s_dwSize     = (s_dwNodeSize * NODE_NUM) + CACHE_SIZE;
@@ -55,8 +95,8 @@ protected :
 };
 
 
-template <class T, WORD32 NODE_NUM>
-CDoubleLink<T, NODE_NUM>::CDoubleLink ()
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+CDoubleLink<T, NODE_NUM, ALIGN_FLAG>::CDoubleLink ()
 {
     WORD64 lwAlign = CACHE_SIZE;
     WORD64 lwBegin = (WORD64)(&(m_aucData[0]));
@@ -67,15 +107,15 @@ CDoubleLink<T, NODE_NUM>::CDoubleLink ()
 }
 
 
-template <class T, WORD32 NODE_NUM>
-CDoubleLink<T, NODE_NUM>::~CDoubleLink()
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+CDoubleLink<T, NODE_NUM, ALIGN_FLAG>::~CDoubleLink()
 {
     m_pFreeHeader = NULL;
 }
 
 
-template <class T, WORD32 NODE_NUM>
-WORD32 CDoubleLink<T, NODE_NUM>::Initialize()
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+WORD32 CDoubleLink<T, NODE_NUM, ALIGN_FLAG>::Initialize()
 {
     m_pFreeHeader = (T_DataHeader *)(m_lwBegin);
 
@@ -106,8 +146,8 @@ WORD32 CDoubleLink<T, NODE_NUM>::Initialize()
 }
 
 
-template <class T, WORD32 NODE_NUM>
-inline T * CDoubleLink<T, NODE_NUM>::Malloc(WORD32 &rdwIndex)
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline T * CDoubleLink<T, NODE_NUM, ALIGN_FLAG>::Malloc(WORD32 &rdwIndex)
 {
     T_DataHeader *pCurHead = m_pFreeHeader;
 
@@ -129,8 +169,8 @@ inline T * CDoubleLink<T, NODE_NUM>::Malloc(WORD32 &rdwIndex)
 }
 
 
-template <class T, WORD32 NODE_NUM>
-inline VOID CDoubleLink<T, NODE_NUM>::Free(T *ptr)
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline VOID CDoubleLink<T, NODE_NUM, ALIGN_FLAG>::Free(T *ptr)
 {
     if (!IsValid(ptr))
     {
@@ -153,8 +193,8 @@ inline VOID CDoubleLink<T, NODE_NUM>::Free(T *ptr)
 }
 
 
-template <class T, WORD32 NODE_NUM>
-inline VOID CDoubleLink<T, NODE_NUM>::Free(WORD32 dwIndex)
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline VOID CDoubleLink<T, NODE_NUM, ALIGN_FLAG>::Free(WORD32 dwIndex)
 {
     if (unlikely(dwIndex >= NODE_NUM))
     {
@@ -171,8 +211,8 @@ inline VOID CDoubleLink<T, NODE_NUM>::Free(WORD32 dwIndex)
 }
 
 
-template <class T, WORD32 NODE_NUM>
-inline T * CDoubleLink<T, NODE_NUM>::operator() (WORD32 dwIndex)
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline T * CDoubleLink<T, NODE_NUM, ALIGN_FLAG>::operator() (WORD32 dwIndex)
 {
     if (unlikely(dwIndex >= NODE_NUM))
     {
@@ -189,8 +229,8 @@ inline T * CDoubleLink<T, NODE_NUM>::operator() (WORD32 dwIndex)
 }
 
 
-template <class T, WORD32 NODE_NUM>
-inline BOOL CDoubleLink<T, NODE_NUM>::IsFree(WORD32 dwIndex)
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline BOOL CDoubleLink<T, NODE_NUM, ALIGN_FLAG>::IsFree(WORD32 dwIndex)
 {
     if (unlikely(dwIndex >= NODE_NUM))
     {
@@ -203,8 +243,8 @@ inline BOOL CDoubleLink<T, NODE_NUM>::IsFree(WORD32 dwIndex)
 }
 
 
-template <class T, WORD32 NODE_NUM>
-inline BOOL CDoubleLink<T, NODE_NUM>::IsValid(VOID *pAddr)
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline BOOL CDoubleLink<T, NODE_NUM, ALIGN_FLAG>::IsValid(VOID *pAddr)
 {
     if (unlikely(NULL == pAddr))
     {
@@ -222,8 +262,8 @@ inline BOOL CDoubleLink<T, NODE_NUM>::IsValid(VOID *pAddr)
 }
 
 
-template <class T, WORD32 NODE_NUM>
-inline VOID CDoubleLink<T, NODE_NUM>::Free(T_DataHeader *pData)
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline VOID CDoubleLink<T, NODE_NUM, ALIGN_FLAG>::Free(T_DataHeader *pData)
 {
     if (unlikely(NULL == pData))
     {
@@ -237,11 +277,11 @@ inline VOID CDoubleLink<T, NODE_NUM>::Free(T_DataHeader *pData)
 }
 
 
-template <class T, WORD32 NODE_NUM>
-class CBaseList : public CDoubleLink<T, NODE_NUM>
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG = FALSE>
+class CBaseList : public CDoubleLink<T, NODE_NUM, ALIGN_FLAG>
 {
 public :
-    typedef typename CDoubleLink<T, NODE_NUM>::T_DataHeader  T_LinkHeader;
+    typedef typename CDoubleLink<T, NODE_NUM, ALIGN_FLAG>::T_DataHeader  T_LinkHeader;
 
 public :
     CBaseList ();
@@ -275,8 +315,8 @@ protected :
 };
 
 
-template <class T, WORD32 NODE_NUM>
-CBaseList<T, NODE_NUM>::CBaseList ()
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+CBaseList<T, NODE_NUM, ALIGN_FLAG>::CBaseList ()
 {
     m_dwCount  = 0;
     m_ptHeader = NULL;
@@ -284,8 +324,8 @@ CBaseList<T, NODE_NUM>::CBaseList ()
 }
 
 
-template <class T, WORD32 NODE_NUM>
-CBaseList<T, NODE_NUM>::~CBaseList()
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+CBaseList<T, NODE_NUM, ALIGN_FLAG>::~CBaseList()
 {
     m_dwCount  = 0;
     m_ptHeader = NULL;
@@ -293,17 +333,17 @@ CBaseList<T, NODE_NUM>::~CBaseList()
 }
 
 
-template <class T, WORD32 NODE_NUM>
-WORD32 CBaseList<T, NODE_NUM>::Initialize()
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+WORD32 CBaseList<T, NODE_NUM, ALIGN_FLAG>::Initialize()
 {
-    CDoubleLink<T, NODE_NUM>::Initialize();
+    CDoubleLink<T, NODE_NUM, ALIGN_FLAG>::Initialize();
 
     return SUCCESS;
 }
 
 
-template <class T, WORD32 NODE_NUM>
-inline T * CBaseList<T, NODE_NUM>::operator[] (WORD32 dwIndex)
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline T * CBaseList<T, NODE_NUM, ALIGN_FLAG>::operator[] (WORD32 dwIndex)
 {
     if (unlikely(dwIndex >= m_dwCount))
     {
@@ -336,8 +376,8 @@ inline T * CBaseList<T, NODE_NUM>::operator[] (WORD32 dwIndex)
 
 
 /* 创建节点并添加到尾部 */
-template <class T, WORD32 NODE_NUM>
-inline T * CBaseList<T, NODE_NUM>::CreateTail()
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline T * CBaseList<T, NODE_NUM, ALIGN_FLAG>::CreateTail()
 {
     WORD32 dwInstID = INVALID_DWORD;
     WORD64 lwAddr   = 0;
@@ -370,8 +410,8 @@ inline T * CBaseList<T, NODE_NUM>::CreateTail()
 
 
 /* 添加到首部 */
-template <class T, WORD32 NODE_NUM>
-inline T * CBaseList<T, NODE_NUM>::CreateHead()
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline T * CBaseList<T, NODE_NUM, ALIGN_FLAG>::CreateHead()
 {
     WORD32 dwInstID = INVALID_DWORD;
     WORD64 lwAddr   = 0;
@@ -404,8 +444,8 @@ inline T * CBaseList<T, NODE_NUM>::CreateHead()
 
 
 /* 将节点添加到尾部 */
-template <class T, WORD32 NODE_NUM>
-inline WORD32 CBaseList<T, NODE_NUM>::InsertTail(T *pInst)
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline WORD32 CBaseList<T, NODE_NUM, ALIGN_FLAG>::InsertTail(T *pInst)
 {
     if (FALSE == this->IsValid(pInst))
     {
@@ -434,8 +474,8 @@ inline WORD32 CBaseList<T, NODE_NUM>::InsertTail(T *pInst)
 
 
 /* 将节点添加到首部 */
-template <class T, WORD32 NODE_NUM>
-inline WORD32 CBaseList<T, NODE_NUM>::InsertHead(T *pInst)
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline WORD32 CBaseList<T, NODE_NUM, ALIGN_FLAG>::InsertHead(T *pInst)
 {
     if (FALSE == this->IsValid(pInst))
     {
@@ -464,8 +504,8 @@ inline WORD32 CBaseList<T, NODE_NUM>::InsertHead(T *pInst)
 
 
 /* 从链表中移除节点并释放节点 */
-template <class T, WORD32 NODE_NUM>
-inline WORD32 CBaseList<T, NODE_NUM>::Remove(T *pInst)
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline WORD32 CBaseList<T, NODE_NUM, ALIGN_FLAG>::Remove(T *pInst)
 {
     WORD32        dwInstID = INVALID_DWORD;
     T            *pData    = NULL;
@@ -524,8 +564,8 @@ inline WORD32 CBaseList<T, NODE_NUM>::Remove(T *pInst)
 }
 
 
-template <class T, WORD32 NODE_NUM>
-inline WORD32 CBaseList<T, NODE_NUM>::GetCount()
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline WORD32 CBaseList<T, NODE_NUM, ALIGN_FLAG>::GetCount()
 {
     return m_dwCount;
 }
@@ -564,8 +604,8 @@ public :
         }
     };
 
-    typedef CDoubleLink<CSequenceData, NODE_NUM>  CSequenceList;
-    typedef typename CSequenceList::T_DataHeader  T_SequenceHeader;
+    typedef CDoubleLink<CSequenceData, NODE_NUM, FALSE>  CSequenceList;
+    typedef typename CSequenceList::T_DataHeader         T_SequenceHeader;
 
     static const WORD32 s_dwValueOffset = offsetof(CSequenceData, m_tData);
 
