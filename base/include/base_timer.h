@@ -279,7 +279,7 @@ inline WORD32 CTimerList<TIMER_NODE_NUM>::RegisterTimer(WORD32     dwTick,
 
     WORD32 dwTimerID = INVALID_DWORD;
 
-    CTimerNode *pTimer = m_List.Malloc(&dwTimerID);
+    CTimerNode *pTimer = m_List.Malloc(dwTimerID);
     if (unlikely(NULL == pTimer))
     {
         return INVALID_DWORD;
@@ -328,7 +328,7 @@ inline WORD32 CTimerList<TIMER_NODE_NUM>::RegisterTimer(WORD32       dwTick,
 
     WORD32 dwTimerID = INVALID_DWORD;
 
-    CTimerNode *pTimer = m_List.Malloc(&dwTimerID);
+    CTimerNode *pTimer = m_List.Malloc(dwTimerID);
     if (unlikely(NULL == pTimer))
     {
         return INVALID_DWORD;
@@ -376,7 +376,7 @@ inline WORD32 CTimerList<TIMER_NODE_NUM>::RegisterTimer(BYTE       ucHour,
 
     WORD32 dwTimerID = INVALID_DWORD;
 
-    CTimerNode *pNode = m_List.Malloc(&dwTimerID);
+    CTimerNode *pNode = m_List.Malloc(dwTimerID);
     if (unlikely(NULL == pNode))
     {
         return INVALID_DWORD;
@@ -403,7 +403,7 @@ inline WORD32 CTimerList<TIMER_NODE_NUM>::KillTimer(WORD32 dwTimerID)
         return FAIL;
     }
 
-    CTimerNode *pNode = (m_List[dwTimerID]);
+    CTimerNode *pNode = (m_List(dwTimerID));
     CTimerNode *pPrev = NULL;
     CTimerNode *pNext = NULL;
 

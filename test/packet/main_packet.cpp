@@ -331,6 +331,12 @@ typedef CBaseList<T_TestPacketBuffer, TEST_NODE_NUM>  CPacketBufferList;
 
 int main(int argc, char **argv)
 {
+    CInitList::GetInstance()->InitComponent((WORD32)E_PROC_DU);
+
+    g_pOamApp->NotifyOamStartUP();
+
+    sleep(5);
+
     WORD32             dwIndex = 0;
     CPacketBufferList  cList;
     CTokenBucket       cTokenBucket(10000, 100);
@@ -361,12 +367,6 @@ int main(int argc, char **argv)
     cList.Remove(pBuf6);
     cList.Remove(pBuf5);
     cList.Remove(pBuf8);
-
-    CInitList::GetInstance()->InitComponent((WORD32)E_PROC_DU);
-
-    g_pOamApp->NotifyOamStartUP();
-
-    sleep(5);
 
     CInitList::Destroy();
 

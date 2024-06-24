@@ -92,7 +92,7 @@ template <class T, WORD32 NODE_NUM>
 class CBaseDataContainer
 {
 public :
-    enum { HEAD_PAD_SIZE = 40 };
+    enum { HEAD_PAD_SIZE = 48 };
 
     typedef struct tagT_DataHeader
     {
@@ -100,50 +100,24 @@ public :
         BOOL              m_bFree;
         tagT_DataHeader  *m_pNext;
         BYTE              aucPad[HEAD_PAD_SIZE];
+        BYTE              m_aucData[sizeof(T)];
+
+        operator T & ()
+        {
+            return *((T *)(m_aucData));
+        }
+
+        operator T * ()
+        {
+            return (T *)(m_aucData);
+        }
     }T_DataHeader;
 
-    class CDataNode : public CBaseData
-    {
-    public :
-        T_DataHeader  m_tHeader;
-        T             m_tData;
-
-        CDataNode ()
-        {
-            m_tHeader.m_dwIndex = INVALID_DWORD;
-            m_tHeader.m_bFree   = TRUE;
-            m_tHeader.m_pNext   = NULL;
-        }
-
-        ~CDataNode()
-        {
-            m_tHeader.m_bFree = TRUE;
-            m_tHeader.m_pNext = NULL;
-        }
-
-        operator T& ()
-        {
-            return m_tData;
-        }
-
-        operator T* ()
-        {
-            return &m_tData;
-        }
-    };
-
-    static const WORD32 s_dwNodeSize = ROUND_UP(sizeof(CDataNode), CACHE_SIZE);
+    static const WORD32 s_dwNodeSize = ROUND_UP(sizeof(T_DataHeader), CACHE_SIZE);
     static const WORD32 s_dwSize     = (s_dwNodeSize * NODE_NUM) + CACHE_SIZE;
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Winvalid-offsetof"
-
-    static const WORD32 s_dwHeadOffset = offsetof(CDataNode, m_tHeader);
-    static const WORD32 s_dwDataOffset = offsetof(CDataNode, m_tData);
+    static const WORD32 s_dwDataOffset = offsetof(T_DataHeader, m_aucData);
     static_assert(s_dwDataOffset == CACHE_SIZE, "unexpected CDataNode layout");
-
-#pragma GCC diagnostic pop
-
 
 public :        
     CBaseDataContainer ();
@@ -157,14 +131,14 @@ public :
     VOID Free(T *ptr);
     VOID Free(WORD32 dwIndex);
 
-    CDataNode & operator[] (WORD32 dwIndex);
+    T_DataHeader & operator[] (WORD32 dwIndex);
     T * operator() (WORD32 dwIndex);
 
     BOOL IsFree(WORD32 dwIndex);
     BOOL IsValid(VOID *pAddr);
 
 protected :
-    VOID Free(CDataNode *pNode);
+    VOID Free(T_DataHeader *pData);
 
 protected :
     WORD64         m_lwBegin;
@@ -197,7 +171,7 @@ CBaseDataContainer<T, NODE_NUM>::~CBaseDataContainer ()
 template <class T, WORD32 NODE_NUM>
 WORD32 CBaseDataContainer<T, NODE_NUM>::Initialize()
 {
-    m_pFreeHeader = (T_DataHeader *)(m_lwBegin + s_dwHeadOffset);
+    m_pFreeHeader = (T_DataHeader *)(m_lwBegin);
 
     WORD32        dwIndex   = NODE_NUM;
     WORD64        lwAddr    = m_lwEnd;
@@ -208,7 +182,7 @@ WORD32 CBaseDataContainer<T, NODE_NUM>::Initialize()
     {
         dwIndex--;
         lwAddr  -= s_dwNodeSize;
-        pCurNode = (T_DataHeader *)(lwAddr + s_dwHeadOffset);
+        pCurNode = (T_DataHeader *)(lwAddr);
 
         pCurNode->m_dwIndex = dwIndex;
         pCurNode->m_bFree   = TRUE;
@@ -237,7 +211,7 @@ inline T * CBaseDataContainer<T, NODE_NUM>::Malloc(WORD32 *pdwIndex)
             *pdwIndex = pCurHead->m_dwIndex;
         }
 
-        return (T *)((WORD64)(pCurHead) - s_dwHeadOffset + s_dwDataOffset);
+        return (T *)(pCurHead->m_aucData);
     }
     else
     {
@@ -259,7 +233,7 @@ inline T * CBaseDataContainer<T, NODE_NUM>::Malloc(WORD32 &rdwIndex)
 
         rdwIndex = pCurHead->m_dwIndex;
 
-        return (T *)((WORD64)(pCurHead) - s_dwHeadOffset + s_dwDataOffset);
+        return (T *)(pCurHead->m_aucData);
     }
     else
     {
@@ -276,13 +250,13 @@ inline VOID CBaseDataContainer<T, NODE_NUM>::Free(T *ptr)
         return ;
     }
 
-    CDataNode *pCur = (CDataNode *)((WORD64)(ptr) - s_dwDataOffset);
-    if ((pCur->m_tHeader.m_dwIndex >= NODE_NUM) || (pCur->m_tHeader.m_bFree))
+    T_DataHeader *pCur = (T_DataHeader *)((WORD64)(ptr) - s_dwDataOffset);
+    if ((pCur->m_dwIndex >= NODE_NUM) || (pCur->m_bFree))
     {
         return ;
     }
 
-    CDataNode *pNode = (CDataNode *)(m_lwBegin + (s_dwNodeSize * (pCur->m_tHeader.m_dwIndex)));
+    T_DataHeader *pNode = (T_DataHeader *)(m_lwBegin + (s_dwNodeSize * (pCur->m_dwIndex)));
     if (unlikely(pCur != pNode))
     {
         return ;
@@ -295,31 +269,33 @@ inline VOID CBaseDataContainer<T, NODE_NUM>::Free(T *ptr)
 template <class T, WORD32 NODE_NUM>
 inline VOID CBaseDataContainer<T, NODE_NUM>::Free(WORD32 dwIndex)
 {
-    CDataNode *pNode = &((*this)[dwIndex]);
-    if (unlikely(NULL == pNode))
+    if (unlikely(dwIndex >= NODE_NUM))
     {
         return ;
     }
 
-    if (pNode->m_tHeader.m_bFree)
+    T_DataHeader *pData = (T_DataHeader *)(m_lwBegin + (s_dwNodeSize * dwIndex));
+    if (pData->m_bFree)
     {
         return ;
     }
 
-    Free(pNode);
+    Free(pData);
 }
 
 
 template <class T, WORD32 NODE_NUM>
-inline typename CBaseDataContainer<T, NODE_NUM>::CDataNode & 
+inline typename CBaseDataContainer<T, NODE_NUM>::T_DataHeader & 
 CBaseDataContainer<T, NODE_NUM>::operator[] (WORD32 dwIndex)
 {
     if (unlikely(dwIndex >= NODE_NUM))
     {
-        return *(CDataNode *)NULL;
+        return *(T_DataHeader *)NULL;
     }
 
-    return *((CDataNode *)(m_lwBegin + (s_dwNodeSize * dwIndex)));
+    T_DataHeader *pData = (T_DataHeader *)(m_lwBegin + (s_dwNodeSize * dwIndex));
+
+    return *pData;
 }
 
 
@@ -331,13 +307,13 @@ inline T * CBaseDataContainer<T, NODE_NUM>::operator() (WORD32 dwIndex)
         return NULL;
     }
 
-    CDataNode *pNode = ((CDataNode *)(m_lwBegin + (s_dwNodeSize * dwIndex)));
-    if (pNode->m_tHeader.m_bFree)
+    T_DataHeader *pData = (T_DataHeader *)(m_lwBegin + (s_dwNodeSize * dwIndex));
+    if (pData->m_bFree)
     {
         return NULL;
     }
 
-    return (T *)(*pNode);
+    return (T *)(pData->m_aucData);
 }
 
 
@@ -349,9 +325,9 @@ inline BOOL CBaseDataContainer<T, NODE_NUM>::IsFree(WORD32 dwIndex)
         return FALSE;
     }
 
-    CDataNode *pNode = ((CDataNode *)(m_lwBegin + (s_dwNodeSize * dwIndex)));
+    T_DataHeader *pData = (T_DataHeader *)(m_lwBegin + (s_dwNodeSize * dwIndex));
 
-    return pNode->m_tHeader.m_bFree;
+    return pData->m_bFree;
 }
 
 
@@ -375,17 +351,16 @@ inline BOOL CBaseDataContainer<T, NODE_NUM>::IsValid(VOID *pAddr)
 
 
 template <class T, WORD32 NODE_NUM>
-inline VOID CBaseDataContainer<T, NODE_NUM>::Free(
-    typename CBaseDataContainer<T, NODE_NUM>::CDataNode *pNode)
+inline VOID CBaseDataContainer<T, NODE_NUM>::Free(T_DataHeader *pData)
 {
-    if (unlikely(NULL == pNode))
+    if (unlikely(NULL == pData))
     {
         return ;
     }
 
-    pNode->m_tHeader.m_bFree = TRUE;
-    pNode->m_tHeader.m_pNext = m_pFreeHeader;
-    m_pFreeHeader = &(pNode->m_tHeader);
+    pData->m_bFree = TRUE;
+    pData->m_pNext = m_pFreeHeader;
+    m_pFreeHeader  = pData;
 }
 
 
