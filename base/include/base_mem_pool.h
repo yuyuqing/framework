@@ -272,8 +272,6 @@ class CMultiMemPool : public CBaseData
 public :
     enum { SINGLE_POOL_NUM = 128 };
 
-    typedef CBaseArray<T, SINGLE_POOL_NUM>    CSTMemPoolArray;
-
 public :
     CMultiMemPool (CCentralMemPool &rCentralMemPool);
     virtual ~CMultiMemPool();

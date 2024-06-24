@@ -13,6 +13,7 @@
 #include <fstream>
 
 #include "base_list.h"
+#include "base_token_bucket.h"
 #include "base_init_component.h"
 #include "base_app_cntrl.h"
 #include "base_oam_app.h"
@@ -332,6 +333,7 @@ int main(int argc, char **argv)
 {
     WORD32             dwIndex = 0;
     CPacketBufferList  cList;
+    CTokenBucket       cTokenBucket(10000, 100);
 
     cList.Initialize();
 

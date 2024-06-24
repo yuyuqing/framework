@@ -99,7 +99,7 @@ inline WORD64 GetCycle()
 #ifdef ARCH_ARM64
     asm volatile("isb" : : : "memory");
 
-    /* cntvct_el0  可以在用户态下直接调用, 单精度可能不够 */
+    /* cntvct_el0  可以在用户态下直接调用, 但精度可能不够 */
     /* pmccntr_el0 需要在内核中使能PMU用户态访问开关 */
     asm volatile("mrs %0, cntvct_el0" : "=r" (lwTsc));
     //asm volatile("mrs %0, pmccntr_el0" : "=r"(lwTsc));
