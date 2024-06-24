@@ -57,15 +57,15 @@ BOOL CTokenBucket::Consume(WORD64 lwTokens)
     WORD64 lwCycle    = 0;
     WORD64 lwNowCLock = 0;
     WORD64 lwMinTime  = 0;
+    WORD64 lwNewTime  = 0;
     WORD64 lwOldTime  = m_lwBurstTime;
-    WORD64 lwNewTime  = m_lwBurstTime;
     WORD64 lwTimeNeed = lwTokens * m_lwTimePerToken;
 
     g_pGlobalClock->GetTime3(lwNowCLock, lwCycle);
 
     lwNowCLock = lwNowCLock * 1000;
     lwMinTime  = lwNowCLock - m_lwTimePerBurst;
-    lwNewTime  = (lwMinTime > lwNewTime) ? lwMinTime : lwNewTime;
+    lwNewTime  = (lwMinTime > lwOldTime) ? lwMinTime : lwOldTime;
     lwNewTime += lwTimeNeed;
 
     if (lwNewTime > lwNowCLock)
