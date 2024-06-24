@@ -102,13 +102,14 @@ template <class T, WORD32 NODE_NUM>
 class CLinkTpl<T, NODE_NUM, TRUE>
 {
 public :
-    enum { HEAD_PAD_SIZE = 48 };
+    enum { HEAD_PAD_SIZE = 40 };
 
     typedef struct tagT_DataHeader
     {
         WORD32            m_dwIndex;
         BOOL              m_bFree;
         tagT_DataHeader  *m_pNext;
+        tagT_DataHeader  *m_pPrev;
         BYTE              m_aucPad[HEAD_PAD_SIZE];
         BYTE              m_aucData[sizeof(T)];
 
@@ -130,13 +131,14 @@ template <class T, WORD32 NODE_NUM>
 class CLinkTpl<T, NODE_NUM, FALSE>
 {
 public :
-    enum { HEAD_PAD_SIZE = 48 };
+    enum { HEAD_PAD_SIZE = 40 };
 
     typedef struct tagT_DataHeader
     {
         WORD32            m_dwIndex;
         BOOL              m_bFree;
         tagT_DataHeader  *m_pNext;
+        tagT_DataHeader  *m_pPrev;
         BYTE              m_aucData[sizeof(T)];
 
         operator T & ()
@@ -149,7 +151,7 @@ public :
             return (T *)(m_aucData);
         }
     }T_DataHeader;
-    static_assert(offsetof(T_DataHeader, m_aucData) == 16, "unexpected layout");
+    static_assert(offsetof(T_DataHeader, m_aucData) == 24, "unexpected layout");
 };
 
 
@@ -164,7 +166,7 @@ public :
 
     static const WORD32 s_dwDataOffset = offsetof(T_DataHeader, m_aucData);
 
-public :        
+public :
     CBaseDataContainer ();
     virtual ~CBaseDataContainer();
 
@@ -232,6 +234,12 @@ WORD32 CBaseDataContainer<T, NODE_NUM, ALIGN_FLAG>::Initialize()
         pCurNode->m_dwIndex = dwIndex;
         pCurNode->m_bFree   = TRUE;
         pCurNode->m_pNext   = pNextNode;
+        pCurNode->m_pPrev   = NULL;
+
+        if (NULL != pNextNode)
+        {
+            pNextNode->m_pPrev = pCurNode;
+        }
 
         pNextNode = pCurNode;
     }
@@ -247,9 +255,10 @@ inline T * CBaseDataContainer<T, NODE_NUM, ALIGN_FLAG>::Malloc(WORD32 *pdwIndex)
 
     if (pCurHead)
     {
-        m_pFreeHeader     = pCurHead->m_pNext;
-        pCurHead->m_pNext = NULL;
-        pCurHead->m_bFree = FALSE;
+        m_pFreeHeader          = pCurHead->m_pNext;
+        pCurHead->m_pNext      = NULL;
+        pCurHead->m_bFree      = FALSE;
+        m_pFreeHeader->m_pPrev = NULL;
 
         if (NULL != pdwIndex)
         {
@@ -272,9 +281,10 @@ inline T * CBaseDataContainer<T, NODE_NUM, ALIGN_FLAG>::Malloc(WORD32 &rdwIndex)
 
     if (pCurHead)
     {
-        m_pFreeHeader     = pCurHead->m_pNext;
-        pCurHead->m_pNext = NULL;
-        pCurHead->m_bFree = FALSE;
+        m_pFreeHeader          = pCurHead->m_pNext;
+        pCurHead->m_pNext      = NULL;
+        pCurHead->m_bFree      = FALSE;
+        m_pFreeHeader->m_pPrev = NULL;
 
         rdwIndex = pCurHead->m_dwIndex;
 
@@ -403,9 +413,10 @@ inline VOID CBaseDataContainer<T, NODE_NUM, ALIGN_FLAG>::Free(T_DataHeader *pDat
         return ;
     }
 
-    pData->m_bFree = TRUE;
-    pData->m_pNext = m_pFreeHeader;
-    m_pFreeHeader  = pData;
+    m_pFreeHeader->m_pPrev = pData;
+    pData->m_bFree         = TRUE;
+    pData->m_pNext         = m_pFreeHeader;
+    m_pFreeHeader          = pData;
 }
 
 

@@ -326,40 +326,71 @@ DEFINE_APP(CTestDMacApp);
 #define TEST_NODE_NUM    ((WORD32)(1024))
 
 
-typedef CBaseList<T_TestPacketBuffer, TEST_NODE_NUM, TRUE>  CPacketBufferList;
+typedef CBaseDataContainer<T_TestPacketBuffer, TEST_NODE_NUM, TRUE>  CPacketBufferContainer;
+typedef CBaseList<T_TestPacketBuffer, TEST_NODE_NUM, TRUE>    CPacketBufferList;
+typedef CShareList<T_TestPacketBuffer, TEST_NODE_NUM, TRUE>   CPacketBufferShareList;
 
 
 int main(int argc, char **argv)
 {
-    WORD32             dwIndex = 0;
-    CPacketBufferList  cList;
+    WORD32                  dwIndex = 0;
+    CPacketBufferContainer  cContainer;
+    CPacketBufferList       cList;
+    CPacketBufferShareList  cList1(cContainer);
+    CPacketBufferShareList  cList2(cContainer);
 
+    cContainer.Initialize();
     cList.Initialize();
 
-    T_TestPacketBuffer *pBuf1 = cList.CreateTail();
-    T_TestPacketBuffer *pBuf2 = cList.CreateTail();
-    T_TestPacketBuffer *pBuf3 = cList.CreateTail();
-    T_TestPacketBuffer *pBuf4 = cList.CreateHead();
-    T_TestPacketBuffer *pBuf5 = cList.Malloc(dwIndex);
-    T_TestPacketBuffer *pBuf6 = cList.Malloc(dwIndex);
-    T_TestPacketBuffer *pBuf7 = cList.Malloc(dwIndex);
-    T_TestPacketBuffer *pBuf8 = cList.Malloc(dwIndex);
+    T_TestPacketBuffer *pBuf11 = cList1.CreateTail();
+    T_TestPacketBuffer *pBuf12 = cList1.CreateTail();
+    T_TestPacketBuffer *pBuf13 = cList1.CreateTail();
+    T_TestPacketBuffer *pBuf14 = cList1.CreateHead();
+    T_TestPacketBuffer *pBuf15 = cContainer.Malloc(dwIndex);
+    T_TestPacketBuffer *pBuf16 = cContainer.Malloc(dwIndex);
+    T_TestPacketBuffer *pBuf17 = cContainer.Malloc(dwIndex);
+    T_TestPacketBuffer *pBuf18 = cContainer.Malloc(dwIndex);
 
-    cList.Remove(pBuf2);
-    cList.Remove(pBuf1);
+    cList1.Remove(pBuf12);
+    cList1.Remove(pBuf11);
 
-    cList.InsertHead(pBuf5);
-    cList.InsertHead(pBuf6);
-    cList.InsertTail(pBuf7);
-    cList.InsertTail(pBuf8);
+    cList1.InsertHead(pBuf15);
+    cList1.InsertHead(pBuf16);
+    cList1.InsertTail(pBuf17);
+    cList1.InsertTail(pBuf18);
 
-    cList.Remove(pBuf4);
-    cList.Remove(pBuf3);
+    cList1.Remove(pBuf14);
+    cList1.Remove(pBuf13);
 
-    cList.Remove(pBuf7);
-    cList.Remove(pBuf6);
-    cList.Remove(pBuf5);
-    cList.Remove(pBuf8);
+    cList1.Remove(pBuf17);
+    cList1.Remove(pBuf16);
+    cList1.Remove(pBuf15);
+    cList1.Remove(pBuf18);
+
+    T_TestPacketBuffer *pBuf21 = cList2.CreateTail();
+    T_TestPacketBuffer *pBuf22 = cList2.CreateTail();
+    T_TestPacketBuffer *pBuf23 = cList2.CreateTail();
+    T_TestPacketBuffer *pBuf24 = cList2.CreateHead();
+    T_TestPacketBuffer *pBuf25 = cContainer.Malloc(dwIndex);
+    T_TestPacketBuffer *pBuf26 = cContainer.Malloc(dwIndex);
+    T_TestPacketBuffer *pBuf27 = cContainer.Malloc(dwIndex);
+    T_TestPacketBuffer *pBuf28 = cContainer.Malloc(dwIndex);
+
+    cList2.Remove(pBuf22);
+    cList2.Remove(pBuf21);
+
+    cList2.InsertHead(pBuf25);
+    cList2.InsertHead(pBuf26);
+    cList2.InsertTail(pBuf27);
+    cList2.InsertTail(pBuf28);
+
+    cList2.Remove(pBuf24);
+    cList2.Remove(pBuf23);
+
+    cList2.Remove(pBuf27);
+    cList2.Remove(pBuf26);
+    cList2.Remove(pBuf25);
+    cList2.Remove(pBuf28);
 
     CInitList::GetInstance()->InitComponent((WORD32)E_PROC_DU);
 
