@@ -456,5 +456,20 @@
                 }
             ]
         }
-    ]
+    ],
+
+    "dpdk" :
+    {
+        "init_flag"        : false,             //是否配置DPDK标志
+        "lcore_arg"        : "-c 0x02",         //DPDK不启动LCore线程
+        "interface"        :
+        [
+        ],
+        "bbdev"            :
+        [
+        ],
+        "ethdev"           :
+        [
+        ]
+    }
 }

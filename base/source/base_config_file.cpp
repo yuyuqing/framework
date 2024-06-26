@@ -449,22 +449,41 @@ WORD32 ParseDpdk(T_DpdkJsonCfg &tConfig, CJsonValue &rRoot)
     CString<EAL_CORE_ARG_LEN> cCoreArg(rRoot["lcore_arg"].AsString());
     memcpy(tConfig.aucCoreArg, cCoreArg.toChar(), cCoreArg.Length());
 
-    CJsonValue &rIntf = rRoot["interface"];
-    tConfig.dwEthNum = rIntf.size();
+    CJsonValue &rIntf   = rRoot["interface"];
+    CJsonValue &rBBDev  = rRoot["bbdev"];
+    CJsonValue &rEthDev = rRoot["ethdev"];
 
+    tConfig.dwDevNum = rIntf.size();
+    tConfig.dwBBNum  = rBBDev.size();
+    tConfig.dwEthNum = rEthDev.size();
+
+    tConfig.dwDevNum = MIN(tConfig.dwDevNum, MAX_DEV_PORT_NUM);
+    tConfig.dwBBNum  = MIN(tConfig.dwBBNum,  MAX_DEV_PORT_NUM);
     tConfig.dwEthNum = MIN(tConfig.dwEthNum, MAX_DEV_PORT_NUM);
+
+    for (WORD32 dwIndex = 0; dwIndex < tConfig.dwDevNum; dwIndex++)
+    {
+        CJsonValue        &rDevice  = rIntf[dwIndex];
+        T_DpdkDevJsonCfg  &rtDevCfg = tConfig.atDevice[dwIndex];
+
+        CString<DEV_NAME_LEN> cType(rDevice["type"].AsString());
+        memcpy(rtDevCfg.aucType, cType.toChar(), cType.Length());
+
+        rtDevCfg.dwDeviceID = rDevice["dev_id"].AsDWORD();
+        rtDevCfg.dwPortID   = rDevice["port"].AsDWORD();
+        rtDevCfg.dwQueueNum = rDevice["queue_num"].AsDWORD();
+    }
 
     for (WORD32 dwIndex = 0; dwIndex < tConfig.dwEthNum; dwIndex++)
     {
-        CJsonValue &rEthDev = rIntf[dwIndex];
-        CJsonValue &rIPs    = rEthDev["ip_cfg"];
-        CJsonValue &rVlans  = rEthDev["vlan_cfg"];
+        CJsonValue &rEthItem = rEthDev[dwIndex];
+        CJsonValue &rIPs     = rEthItem["ip_cfg"];
+        CJsonValue &rVlans   = rEthItem["vlan_cfg"];
 
         T_DpdkEthDevJsonCfg &rtEthCfg = tConfig.atEthDev[dwIndex];
 
-        rtEthCfg.dwPort     = (WORD32)(rEthDev["port"].AsDWORD());
-        rtEthCfg.dwQueueNum = (WORD32)(rEthDev["queue_num"].AsDWORD());
-        rtEthCfg.dwLinkType = (WORD32)(rEthDev["link_type"].AsDWORD());
+        rtEthCfg.dwDeviceID = rEthItem["dev_id"].AsDWORD();
+        rtEthCfg.dwLinkType = rEthItem["link_type"].AsDWORD();
         rtEthCfg.dwIpNum    = rIPs.size();
         rtEthCfg.dwVlanNum  = rVlans.size();
 
@@ -600,6 +619,23 @@ T_DpdkJsonCfg & CBaseConfigFile::GetDpdkJsonCfg()
 T_RootJsonCfg & CBaseConfigFile::GetRootJsonCfg()
 {
     return m_tRootConfig;
+}
+
+
+T_DpdkEthDevJsonCfg * CBaseConfigFile::GetEthDevJsonCfg(WORD32 dwDeviceID)
+{
+    T_DpdkJsonCfg &rtDpdkCfg = m_tRootConfig.tDpdkConfig;
+
+    for (WORD32 dwIndex = 0; dwIndex < rtDpdkCfg.dwEthNum; dwIndex++)
+    {
+        T_DpdkEthDevJsonCfg &rtEthCfg = rtDpdkCfg.atEthDev[dwIndex];
+        if (dwDeviceID == rtEthCfg.dwDeviceID)
+        {
+            return &rtEthCfg;
+        }
+    }
+
+    return NULL;
 }
 
 

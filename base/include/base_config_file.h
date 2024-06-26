@@ -28,6 +28,7 @@
 #define MAX_ASSOCIATE_NUM_PER_APP    ((WORD32)(16))
 
 #define EAL_CORE_ARG_LEN             ((WORD32)(64))
+#define DEV_NAME_LEN                 ((WORD32)(32))
 #define MAX_DEV_PORT_NUM             ((WORD32)(4))
 #define IPV4_STRING_LEN              ((WORD32)(16))
 #define IPV6_STRING_LEN              ((WORD32)(40))
@@ -184,8 +185,7 @@ typedef struct tagT_DpdkEthIPJsonCfg
 
 typedef struct tagT_DpdkEthDevJsonCfg
 {
-    WORD32               dwPort;
-    WORD32               dwQueueNum;
+    WORD32               dwDeviceID;
     WORD32               dwLinkType;    /* 上联网络类型(0:Access, 1:Trunk, 2:Hybrid) */
     WORD32               dwIpNum;
     WORD32               dwVlanNum;
@@ -194,11 +194,23 @@ typedef struct tagT_DpdkEthDevJsonCfg
 }T_DpdkEthDevJsonCfg;
 
 
+typedef struct tagT_DpdkDevJsonCfg
+{
+    CHAR          aucType[DEV_NAME_LEN];
+    WORD32        dwDeviceID;
+    WORD32        dwPortID;
+    WORD32        dwQueueNum;
+}T_DpdkDevJsonCfg;
+
+
 typedef struct tagT_DpdkJsonCfg
 {
     BOOL                 bInitFlag;
+    WORD32               dwDevNum;
+    WORD32               dwBBNum;
     WORD32               dwEthNum;
     CHAR                 aucCoreArg[EAL_CORE_ARG_LEN];
+    T_DpdkDevJsonCfg     atDevice[MAX_DEV_PORT_NUM];
     T_DpdkEthDevJsonCfg  atEthDev[MAX_DEV_PORT_NUM];
 }T_DpdkJsonCfg;
 
@@ -229,6 +241,8 @@ public :
     T_ThreadPoolJsonCfg & GetWorkerJsonCfg();
     T_DpdkJsonCfg       & GetDpdkJsonCfg();
     T_RootJsonCfg       & GetRootJsonCfg();
+
+    T_DpdkEthDevJsonCfg * GetEthDevJsonCfg(WORD32 dwDeviceID);
 
 protected :
     T_RootJsonCfg    m_tRootConfig;

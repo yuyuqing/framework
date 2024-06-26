@@ -37,7 +37,7 @@ public :
         {
             return m_tData;
         }
-        
+
         operator T* ()
         {
             return &m_tData;
@@ -54,7 +54,7 @@ public :
     static const WORD32 s_dwOffset   = offsetof(CArrayData, m_tData) + offsetof(T_ArrayData, aucData);
     static const WORD32 s_dwNodeSize = ROUND_UP(sizeof(T_ArrayData), CACHE_SIZE);
     static const WORD32 s_dwSize     = (s_dwNodeSize * INST_NUM) + CACHE_SIZE;
-    
+
 public :
     CBaseArray ();
     virtual ~CBaseArray();
@@ -75,9 +75,9 @@ public :
 
 protected :
     BOOL IsValid(T *pData);
-    
+
     VOID Clear();
-    
+
 protected :
     WORD64         m_lwBegin;
     WORD64         m_lwEnd;
@@ -107,7 +107,7 @@ template <class T, WORD32 INST_NUM>
 CBaseArray<T, INST_NUM>::~CBaseArray()
 {
     Clear();
-    
+
     m_dwNum = 0;
 }
 
@@ -116,7 +116,7 @@ template <class T, WORD32 INST_NUM>
 WORD32 CBaseArray<T, INST_NUM>::Initialize()
 {
     WORD64 lwAddr = m_lwBegin;
-    
+
     for (WORD32 dwIndex = 0; dwIndex < INST_NUM; dwIndex++)
     {
         m_apData[dwIndex]          = (T_ArrayData *)(lwAddr);
@@ -125,7 +125,7 @@ WORD32 CBaseArray<T, INST_NUM>::Initialize()
 
         lwAddr += s_dwNodeSize;
     }
-    
+
     return SUCCESS;
 }
 
@@ -287,7 +287,7 @@ template <class T, WORD32 INST_NUM>
 VOID CBaseArray<T, INST_NUM>::Clear()
 {
     CArrayData *pData = NULL;
-    
+
     for (WORD32 dwIndex = 0; dwIndex < INST_NUM; dwIndex++)
     {
         if (m_apData[dwIndex]->bFree)
@@ -309,7 +309,7 @@ class CRingArray
 {
 public :
     typedef typename CBaseArray<T, INST_NUM>::T_ArrayData  T_RingObject;
-    
+
 public :
     CRingArray ();
     virtual ~CRingArray();
@@ -351,7 +351,7 @@ WORD32 CRingArray<T, INST_NUM, POWER_NUM>::Initialize()
         pObj = m_cArray[dwIndex];
         m_cRing.Enqueue((VOID *)pObj);
     }
-    
+
     return SUCCESS;
 }
 
