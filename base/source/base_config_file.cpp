@@ -446,8 +446,26 @@ WORD32 ParseDpdk(T_DpdkJsonCfg &tConfig, CJsonValue &rRoot)
 {
     tConfig.bInitFlag = (BOOL)(rRoot["init_flag"].AsBOOL());
 
-    CString<EAL_CORE_ARG_LEN> cCoreArg(rRoot["lcore_arg"].AsString());
+    CString<EAL_ARG_LEN> cCoreArg(rRoot["lcore_arg"].AsString());
     memcpy(tConfig.aucCoreArg, cCoreArg.toChar(), cCoreArg.Length());
+
+    CString<EAL_ARG_LEN> cMemArg(rRoot["socket_mem"].AsString());
+    memcpy(tConfig.aucMemArg, cMemArg.toChar(), cMemArg.Length());
+
+    CString<EAL_ARG_LEN> cChannelArg(rRoot["channel_num"].AsString());
+    memcpy(tConfig.aucChannelArg, cChannelArg.toChar(), cChannelArg.Length());
+
+    CString<EAL_ARG_LEN> cFileArg(rRoot["file_prefix"].AsString());
+    memcpy(tConfig.aucFilePrefixArg, cFileArg.toChar(), cFileArg.Length());
+
+    CString<EAL_ARG_LEN> cProcArg(rRoot["proc_type"].AsString());
+    memcpy(tConfig.aucProcTypeArg, cProcArg.toChar(), cProcArg.Length());
+
+    CString<EAL_ARG_LEN> cIovaArg(rRoot["iova_mode"].AsString());
+    memcpy(tConfig.aucIovaModeArg, cIovaArg.toChar(), cIovaArg.Length());
+
+    CString<EAL_ARG_LEN> cVirtArg(rRoot["virt_net"].AsString());
+    memcpy(tConfig.aucVirtNetArg, cVirtArg.toChar(), cVirtArg.Length());
 
     CJsonValue &rIntf   = rRoot["interface"];
     CJsonValue &rBBDev  = rRoot["bbdev"];
@@ -469,9 +487,21 @@ WORD32 ParseDpdk(T_DpdkJsonCfg &tConfig, CJsonValue &rRoot)
         CString<DEV_NAME_LEN> cType(rDevice["type"].AsString());
         memcpy(rtDevCfg.aucType, cType.toChar(), cType.Length());
 
+        CString<DEV_NAME_LEN> cAddr(rDevice["pci_addr"].AsString());
+        memcpy(rtDevCfg.aucAddr, cAddr.toChar(), cAddr.Length());
+
         rtDevCfg.dwDeviceID = rDevice["dev_id"].AsDWORD();
-        rtDevCfg.dwPortID   = rDevice["port"].AsDWORD();
+        rtDevCfg.dwPortID   = INVALID_DWORD;
         rtDevCfg.dwQueueNum = rDevice["queue_num"].AsDWORD();
+    }
+
+    for (WORD32 dwIndex = 0; dwIndex < tConfig.dwBBNum; dwIndex++)
+    {
+        CJsonValue &rBBItem = rBBDev[dwIndex];
+
+        T_DpdkBBDevJsonCfg &rtBBCfg = tConfig.atBBDev[dwIndex];
+
+        rtBBCfg.dwDeviceID = rBBItem["dev_id"].AsDWORD();
     }
 
     for (WORD32 dwIndex = 0; dwIndex < tConfig.dwEthNum; dwIndex++)
@@ -619,6 +649,23 @@ T_DpdkJsonCfg & CBaseConfigFile::GetDpdkJsonCfg()
 T_RootJsonCfg & CBaseConfigFile::GetRootJsonCfg()
 {
     return m_tRootConfig;
+}
+
+
+T_DpdkBBDevJsonCfg  * CBaseConfigFile::GetBBDevJsonCfg(WORD32 dwDeviceID)
+{
+    T_DpdkJsonCfg &rtDpdkCfg = m_tRootConfig.tDpdkConfig;
+
+    for (WORD32 dwIndex = 0; dwIndex < rtDpdkCfg.dwBBNum; dwIndex++)
+    {
+        T_DpdkBBDevJsonCfg &rtBBCfg = rtDpdkCfg.atBBDev[dwIndex];
+        if (dwDeviceID == rtBBCfg.dwDeviceID)
+        {
+            return &rtBBCfg;
+        }
+    }
+
+    return NULL;
 }
 
 

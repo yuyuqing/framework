@@ -7,7 +7,7 @@
 #include "dpdk_device.h"
 
 
-#define EAL_ARG_NUM             ((WORD32)(2))
+#define EAL_ARG_NUM             ((WORD32)(8))
 
 
 class CDpdkMgr : public CSingleton<CDpdkMgr>, public CBaseData
@@ -29,7 +29,15 @@ public :
     VOID Dump();
 
 protected :
-    WORD32 InitDpdkEal(const CHAR *pArg0, CHAR *pArgCore);
+    WORD32 InitDpdkEal(const CHAR *pArg0,
+                       CHAR       *pArgCore,
+                       CHAR       *pArgMem,
+                       CHAR       *pArgChannel,
+                       CHAR       *pArgFilePrefix,
+                       CHAR       *pArgProcType,
+                       CHAR       *pArgIovaMode,
+                       CHAR       *pArgVirtNet);
+
     WORD32 InitDevice(T_DpdkJsonCfg &rtCfg);
 
     T_DeviceInfo * CreateInfo(WORD32            dwDeviceID,
@@ -42,6 +50,55 @@ protected :
     WORD32              m_dwDevNum;
     T_DeviceInfo        m_atDevInfo[MAX_DEV_PORT_NUM];
 };
+
+
+inline T_DeviceInfo * CDpdkMgr::FindDevInfo(WORD32 dwDeviceID)
+{
+    for (WORD32 dwIndex = 0; dwIndex < m_dwDevNum; dwIndex++)
+    {
+        if (dwDeviceID == m_atDevInfo[dwIndex].dwDeviceID)
+        {
+            return &(m_atDevInfo[dwIndex]);
+        }
+    }
+
+    return NULL;
+}
+
+
+inline CBaseDevice * CDpdkMgr::FindDevice(WORD32 dwDeviceID)
+{
+    for (WORD32 dwIndex = 0; dwIndex < m_dwDevNum; dwIndex++)
+    {
+        if (dwDeviceID == m_atDevInfo[dwIndex].dwDeviceID)
+        {
+            return m_atDevInfo[dwIndex].pDevice;
+        }
+    }
+
+    return NULL;
+}
+
+
+inline CBaseDevice * CDpdkMgr::FindDevice(E_DeviceType eType, WORD16 wPortID)
+{
+    for (WORD32 dwIndex = 0; dwIndex < m_dwDevNum; dwIndex++)
+    {
+        if ( (wPortID == m_atDevInfo[dwIndex].dwPortID)
+          && (eType == m_atDevInfo[dwIndex].pDevice->GetType()))
+        {
+            return m_atDevInfo[dwIndex].pDevice;
+        }
+    }
+
+    return NULL;
+}
+
+
+inline WORD32 CDpdkMgr::GetDeviceNum()
+{
+    return m_dwDevNum;
+}
 
 
 extern CDpdkMgr *g_pDpdkMgr;

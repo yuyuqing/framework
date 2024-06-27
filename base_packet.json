@@ -460,8 +460,14 @@
 
     "dpdk" :
     {
-        "init_flag"        : false,             //是否配置DPDK标志
-        "lcore_arg"        : "-c 0x02",         //DPDK不启动LCore线程
+        "init_flag"        : false,                               //是否配置DPDK标志
+        "lcore_arg"        : "-c 0x02",                           //DPDK不启动LCore线程
+        "socket_mem"       : "-m 1024",                           //DPDK启动时为每个Socket分配大页内存数量(若为双Socket系统, 1024,1024), 单位:MB
+        "channel_num"      : "-n 1",                              //DPDK启动时为每个Socket设置的内存通道数
+        "file_prefix"      : "--file-prefix=ft",                  //DPDK设置共享内存文件前缀
+        "proc_type"        : "--proc-type=auto",                  //DPDK设置进程类型(primary/secondary/auto)
+        "iova_mode"        : "--iova-mode=pa",                    //DPDK设置IOVA模式(pa/va)
+        "virt_net"         : "--vdev=net_tap0,iface=cm0",         //DPDK设置虚拟网络设备
         "interface"        :
         [
         ],

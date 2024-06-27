@@ -196,15 +196,21 @@
 
     "dpdk" :
     {
-        "init_flag"        : true,              //是否配置DPDK标志
-        "lcore_arg"        : "-c 0x02",         //DPDK不启动LCore线程
+        "init_flag"        : true,                                //是否配置DPDK标志
+        "lcore_arg"        : "-c 0x02",                           //DPDK不启动LCore线程
+        "socket_mem"       : "-m 1024",                           //DPDK启动时为每个Socket分配大页内存数量(若为双Socket系统, 1024,1024), 单位:MB
+        "channel_num"      : "-n 1",                              //DPDK启动时为每个Socket设置的内存通道数
+        "file_prefix"      : "--file-prefix=ft",                  //DPDK设置共享内存文件前缀
+        "proc_type"        : "--proc-type=auto",                  //DPDK设置进程类型(primary/secondary/auto)
+        "iova_mode"        : "--iova-mode=pa",                    //DPDK设置IOVA模式(pa/va)
+        "virt_net"         : "--vdev=net_tap0,iface=cm0",         //DPDK设置虚拟网络设备
         "interface"        :
         [
             {
-                "type"            : "CEthDevice",  //DPDK设备类型名
-                "dev_id"          : 0,             //DPDK设备ID(内部唯一标识)
-                "port"            : 0,             //DPDK PCI设备端口号
-                "queue_num"       : 1              //网卡队列数量(收发包队列数量保持一致)
+                "type"            : "CEthDevice",                 //DPDK设备类型名
+                "pci_addr"        : "0000:13:00.0",               //DPDK设备地址
+                "dev_id"          : 0,                            //DPDK设备ID(内部唯一标识)
+                "queue_num"       : 1                             //网卡队列数量(收发包队列数量保持一致)
             }
         ],
         "bbdev"            :
@@ -213,17 +219,17 @@
         "ethdev"           :
         [
             {
-                "dev_id"          : 0,             //DPDK设备ID(内部内部唯一标识)
-                "link_type"       : 0,             //当类型为网卡设备时, 指示上联网络类型(0:Access, 1:Trunk, 2:Hybrid)
-                                                   //当link_type取值为0时, 只需要配置IP地址, 不需要配置VLAN
-                                                   //当link_type取值为1时, 不需要配置IP地址(配置0.0.0.0), 只需要配置VLAN
-                                                   //当link_type取值为2时, 既需要配置IP地址, 也需要配置VLAN
-                "ip_cfg"          :                //暂不支持多IP配置(多个IP配置时, 需要考虑路由)
+                "dev_id"          : 0,                            //DPDK设备ID(内部内部唯一标识)
+                "link_type"       : 0,                            //当类型为网卡设备时, 指示上联网络类型(0:Access, 1:Trunk, 2:Hybrid)
+                                                                  //当link_type取值为0时, 只需要配置IP地址, 不需要配置VLAN
+                                                                  //当link_type取值为1时, 不需要配置IP地址(配置0.0.0.0), 只需要配置VLAN
+                                                                  //当link_type取值为2时, 既需要配置IP地址, 也需要配置VLAN
+                "ip_cfg"          :                               //暂不支持多IP配置(多个IP配置时, 需要考虑路由)
                 [
                     {
-                        "addr_type"      : 0,                //0:IPv4, 1:IPv6(暂不支持)
-                        "ipv4_addr"      : "172.16.10.8",    //网卡IP地址(当addr_type为1时, 本字段设置为0.0.0.0)
-                        "ipv4_gate_way"  : "172.16.10.1",    //网关IP地址(当addr_type为1时, 本字段设置为0.0.0.0)
+                        "addr_type"      : 0,                     //0:IPv4, 1:IPv6(暂不支持)
+                        "ipv4_addr"      : "172.16.10.8",         //网卡IP地址(当addr_type为1时, 本字段设置为0.0.0.0)
+                        "ipv4_gate_way"  : "172.16.10.1",         //网关IP地址(当addr_type为1时, 本字段设置为0.0.0.0)
                         "ipv6_addr"      : "0000:0000:0000:0000:0000:0000:0000:0000",
                         "ipv6_gate_way"  : "0000:0000:0000:0000:0000:0000:0000:0000"
                     }
@@ -231,14 +237,14 @@
                 "vlan_cfg"        :
                 [
                     {
-                        "vlan_id"        : 20,             //vlan id, 用于标识一个VLAN(1~4095为普通VLAN, >4095为QinQ)
-                        "priority"       : 7,              //vlan优先级(0~7), 7为最高优先级
+                        "vlan_id"        : 20,                    //vlan id, 用于标识一个VLAN(1~4095为普通VLAN, >4095为QinQ)
+                        "priority"       : 7,                     //vlan优先级(0~7), 7为最高优先级
                         "ipv4_addr"      : "172.16.20.8",
                         "ipv4_gate_way"  : "172.16.20.1"
                     },
                     {
-                        "vlan_id"        : 30,             //vlan id, 用于标识一个VLAN(1~4095为普通VLAN, >4095为QinQ)
-                        "priority"       : 7,              //vlan优先级(0~7), 7为最高优先级
+                        "vlan_id"        : 30,                    //vlan id, 用于标识一个VLAN(1~4095为普通VLAN, >4095为QinQ)
+                        "priority"       : 7,                     //vlan优先级(0~7), 7为最高优先级
                         "ipv4_addr"      : "172.16.30.8",
                         "ipv4_gate_way"  : "172.16.30.1"
                     }

@@ -107,25 +107,24 @@ WORD32 CDpdkMgr::Initialize(CCentralMemPool *pMemInterface,
     m_pMemInterface = pMemInterface;
 
     WORD32 dwResult   = INVALID_DWORD;
-    WORD32 dwEthCount = 0;
-    WORD32 dwBBCount  = 0;
+    WORD32 dwDevCount = 0;
 
     /* Æô¶¯DPDK */
-    dwResult = InitDpdkEal(pArg0, rtCfg.aucCoreArg);
+    dwResult = InitDpdkEal(pArg0,
+                           rtCfg.aucCoreArg,
+                           rtCfg.aucMemArg,
+                           rtCfg.aucChannelArg,
+                           rtCfg.aucFilePrefixArg,
+                           rtCfg.aucProcTypeArg,
+                           rtCfg.aucIovaModeArg,
+                           rtCfg.aucVirtNetArg);
     if (SUCCESS != dwResult)
     {
         return FAIL;
     }
 
-    dwEthCount = rte_eth_dev_count_avail();
-    dwBBCount  = rte_bbdev_count();
-
-    if ((0 != rtCfg.dwEthNum) && (rtCfg.dwEthNum > dwEthCount))
-    {
-        return FAIL;
-    }
-
-    if ((0 != rtCfg.dwBBNum) && (rtCfg.dwBBNum > dwBBCount))
+    dwDevCount = rte_eth_dev_count_avail();
+    if ((rtCfg.dwEthNum + rtCfg.dwBBNum) > dwDevCount)
     {
         return FAIL;
     }
@@ -138,55 +137,6 @@ WORD32 CDpdkMgr::Initialize(CCentralMemPool *pMemInterface,
     }
 
     return SUCCESS;
-}
-
-
-T_DeviceInfo * CDpdkMgr::FindDevInfo(WORD32 dwDeviceID)
-{
-    for (WORD32 dwIndex = 0; dwIndex < m_dwDevNum; dwIndex++)
-    {
-        if (dwDeviceID == m_atDevInfo[dwIndex].dwDeviceID)
-        {
-            return &(m_atDevInfo[dwIndex]);
-        }
-    }
-
-    return NULL;
-}
-
-
-CBaseDevice * CDpdkMgr::FindDevice(WORD32 dwDeviceID)
-{
-    for (WORD32 dwIndex = 0; dwIndex < m_dwDevNum; dwIndex++)
-    {
-        if (dwDeviceID == m_atDevInfo[dwIndex].dwDeviceID)
-        {
-            return m_atDevInfo[dwIndex].pDevice;
-        }
-    }
-
-    return NULL;
-}
-
-
-CBaseDevice * CDpdkMgr::FindDevice(E_DeviceType eType, WORD16 wPortID)
-{
-    for (WORD32 dwIndex = 0; dwIndex < m_dwDevNum; dwIndex++)
-    {
-        if ( (wPortID == m_atDevInfo[dwIndex].dwPortID)
-          && (eType == m_atDevInfo[dwIndex].pDevice->GetType()))
-        {
-            return m_atDevInfo[dwIndex].pDevice;
-        }
-    }
-
-    return NULL;
-}
-
-
-WORD32 CDpdkMgr::GetDeviceNum()
-{
-    return m_dwDevNum;
 }
 
 
@@ -205,9 +155,23 @@ VOID CDpdkMgr::Dump()
 }
 
 
-WORD32 CDpdkMgr::InitDpdkEal(const CHAR *pArg0, CHAR *pArgCore)
+WORD32 CDpdkMgr::InitDpdkEal(const CHAR *pArg0,
+                             CHAR       *pArgCore,
+                             CHAR       *pArgMem,
+                             CHAR       *pArgChannel,
+                             CHAR       *pArgFilePrefix,
+                             CHAR       *pArgProcType,
+                             CHAR       *pArgIovaMode,
+                             CHAR       *pArgVirtNet)
 {
-    CHAR *pArgs[EAL_ARG_NUM] = {(CHAR *)pArg0, pArgCore};
+    CHAR *pArgs[EAL_ARG_NUM] = {(CHAR *)pArg0,
+                                pArgCore,
+                                pArgMem,
+                                pArgChannel,
+                                pArgFilePrefix,
+                                pArgProcType,
+                                pArgIovaMode,
+                                pArgVirtNet};
 
     SWORD32 iResult = rte_eal_init((SWORD32)(EAL_ARG_NUM), pArgs);
     if (iResult < 0)
@@ -222,6 +186,7 @@ WORD32 CDpdkMgr::InitDpdkEal(const CHAR *pArg0, CHAR *pArgCore)
 WORD32 CDpdkMgr::InitDevice(T_DpdkJsonCfg &rtCfg)
 {
     WORD32          dwResult = INVALID_DWORD;
+    WORD16          wPortID  = INVALID_WORD;
     CFactoryDevice *pFactory = CFactoryDevice::GetInstance();
 
     for (WORD32 dwIndex = 0; dwIndex < rtCfg.dwDevNum; dwIndex++)
@@ -239,6 +204,15 @@ WORD32 CDpdkMgr::InitDevice(T_DpdkJsonCfg &rtCfg)
             /* ÅäÖÃ´íÎó */
             return FAIL;
         }
+
+        dwResult = rte_eth_dev_get_port_by_name(rtDevCfg.aucAddr, &wPortID);
+        if (SUCCESS != dwResult)
+        {
+            /* ÅäÖÃ´íÎó */
+            return FAIL;
+        }
+
+        rtDevCfg.dwPortID = wPortID;
 
         ptDevInfo = CreateInfo(rtDevCfg.dwDeviceID,
                                rtDevCfg.dwPortID,

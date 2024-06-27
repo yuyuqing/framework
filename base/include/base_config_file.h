@@ -27,7 +27,7 @@
 #define MAX_APP_NUM_PER_THREAD       ((WORD32)(12))
 #define MAX_ASSOCIATE_NUM_PER_APP    ((WORD32)(16))
 
-#define EAL_CORE_ARG_LEN             ((WORD32)(64))
+#define EAL_ARG_LEN                  ((WORD32)(64))
 #define DEV_NAME_LEN                 ((WORD32)(32))
 #define MAX_DEV_PORT_NUM             ((WORD32)(4))
 #define IPV4_STRING_LEN              ((WORD32)(16))
@@ -194,9 +194,16 @@ typedef struct tagT_DpdkEthDevJsonCfg
 }T_DpdkEthDevJsonCfg;
 
 
+typedef struct tagT_DpdkBBDevJsonCfg
+{
+    WORD32        dwDeviceID;
+}T_DpdkBBDevJsonCfg;
+
+
 typedef struct tagT_DpdkDevJsonCfg
 {
     CHAR          aucType[DEV_NAME_LEN];
+    CHAR          aucAddr[DEV_NAME_LEN];
     WORD32        dwDeviceID;
     WORD32        dwPortID;
     WORD32        dwQueueNum;
@@ -209,8 +216,15 @@ typedef struct tagT_DpdkJsonCfg
     WORD32               dwDevNum;
     WORD32               dwBBNum;
     WORD32               dwEthNum;
-    CHAR                 aucCoreArg[EAL_CORE_ARG_LEN];
+    CHAR                 aucCoreArg[EAL_ARG_LEN];
+    CHAR                 aucMemArg[EAL_ARG_LEN];
+    CHAR                 aucChannelArg[EAL_ARG_LEN];
+    CHAR                 aucFilePrefixArg[EAL_ARG_LEN];
+    CHAR                 aucProcTypeArg[EAL_ARG_LEN];
+    CHAR                 aucIovaModeArg[EAL_ARG_LEN];
+    CHAR                 aucVirtNetArg[EAL_ARG_LEN];
     T_DpdkDevJsonCfg     atDevice[MAX_DEV_PORT_NUM];
+    T_DpdkBBDevJsonCfg   atBBDev[MAX_DEV_PORT_NUM];
     T_DpdkEthDevJsonCfg  atEthDev[MAX_DEV_PORT_NUM];
 }T_DpdkJsonCfg;
 
@@ -242,6 +256,7 @@ public :
     T_DpdkJsonCfg       & GetDpdkJsonCfg();
     T_RootJsonCfg       & GetRootJsonCfg();
 
+    T_DpdkBBDevJsonCfg  * GetBBDevJsonCfg(WORD32 dwDeviceID);
     T_DpdkEthDevJsonCfg * GetEthDevJsonCfg(WORD32 dwDeviceID);
 
 protected :
