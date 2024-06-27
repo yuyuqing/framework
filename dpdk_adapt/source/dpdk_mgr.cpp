@@ -24,6 +24,8 @@ WORD32 ExitDpdk(VOID *pArg)
         g_pDpdkMgr = NULL;
     }
 
+    CFactoryDevice::Destroy();
+
     return SUCCESS;
 }
 

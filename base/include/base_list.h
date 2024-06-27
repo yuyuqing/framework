@@ -19,9 +19,7 @@ public :
     CBaseList ();
     virtual ~CBaseList();
 
-    WORD32 Initialize();
-
-    T * operator[] (WORD32 dwIndex);
+    virtual WORD32 Initialize();
 
     /* 创建节点并添加到尾部 */
     T * CreateTail();
@@ -37,6 +35,15 @@ public :
 
     /* 从链表中移除节点并释放节点 */
     WORD32 Remove(T *pInst);
+
+    /* 从链表中移除节点并释放节点(根据Key找到待移除节点) */
+    template <typename K>
+    WORD32 Remove(const K &rKey);
+
+    T * GetHead();
+    T * GetTail();
+    T * Next(T *pData);
+    T * Prev(T *pData);
 
     WORD32 GetCount();
 
@@ -71,39 +78,6 @@ WORD32 CBaseList<T, NODE_NUM, ALIGN_FLAG>::Initialize()
     CBaseDataContainer<T, NODE_NUM, ALIGN_FLAG>::Initialize();
 
     return SUCCESS;
-}
-
-
-template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
-inline T * CBaseList<T, NODE_NUM, ALIGN_FLAG>::operator[] (WORD32 dwIndex)
-{
-    if (unlikely(dwIndex >= m_dwCount))
-    {
-        return NULL;
-    }
-
-    WORD32        dwTmpIdx = 0;
-    T            *pData    = NULL;
-    T_LinkHeader *pCurHead = m_ptHeader;
-
-    while (pCurHead)
-    {
-        if (dwTmpIdx == dwIndex)
-        {
-            pData = (*this)(pCurHead->m_dwIndex);
-            break ;
-        }
-
-        dwTmpIdx++;
-        pCurHead = pCurHead->m_pNext;
-    }
-
-    if (unlikely(NULL == pData))
-    {
-        assert(0);
-    }
-
-    return pData;
 }
 
 
@@ -248,11 +222,7 @@ inline WORD32 CBaseList<T, NODE_NUM, ALIGN_FLAG>::Remove(T *pInst)
     while (pCurHead)
     {
         dwInstID = pCurHead->m_dwIndex;
-        pData    = (*this)(dwInstID);
-        if (unlikely(NULL == pData))
-        {
-            assert(0);
-        }
+        pData    = (*pCurHead);
 
         if (pInst == pData)
         {
@@ -296,6 +266,142 @@ inline WORD32 CBaseList<T, NODE_NUM, ALIGN_FLAG>::Remove(T *pInst)
 }
 
 
+/* 从链表中移除节点并释放节点(根据Key找到待移除节点) */
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+template <typename K>
+inline WORD32 CBaseList<T, NODE_NUM, ALIGN_FLAG>::Remove(const K &rKey)
+{
+    WORD32        dwInstID = INVALID_DWORD;
+    T            *pData    = NULL;
+    T_LinkHeader *pCurHead = m_ptHeader;
+    T_LinkHeader *pPrev    = NULL;
+    T_LinkHeader *pNext    = NULL;
+
+    while (pCurHead)
+    {
+        dwInstID = pCurHead->m_dwIndex;
+        pData    = (*pCurHead);
+
+        if ((*pData) == rKey)
+        {
+            pPrev = pCurHead->m_pPrev;
+            pNext = pCurHead->m_pNext;
+
+            if (NULL == pPrev)
+            {
+                /* 删除头节点 */
+                m_ptHeader = pNext;
+            }
+            else
+            {
+                pPrev->m_pNext = pNext;
+            }
+
+            if (NULL == pNext)
+            {
+                /* 删除尾节点 */
+                m_ptTailer = pPrev;
+            }
+            else
+            {
+                pNext->m_pPrev = pPrev;
+            }
+
+            pCurHead->m_pPrev = NULL;
+            pCurHead->m_pNext = NULL;
+
+            m_dwCount--;
+
+            this->Free(dwInstID);
+
+            return SUCCESS;
+        }
+
+        pCurHead = pCurHead->m_pNext;
+    }
+
+    return FAIL;
+}
+
+
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline T * CBaseList<T, NODE_NUM, ALIGN_FLAG>::GetHead()
+{
+    if (NULL == m_ptHeader)
+    {
+        return NULL;
+    }
+
+    return *m_ptHeader;
+}
+
+
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline T * CBaseList<T, NODE_NUM, ALIGN_FLAG>::GetTail()
+{
+    if (NULL == m_ptTailer)
+    {
+        return NULL;
+    }
+
+    return *m_ptTailer;
+}
+
+
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline T * CBaseList<T, NODE_NUM, ALIGN_FLAG>::Next(T *pData)
+{
+    if (FALSE == this->IsValid(pData))
+    {
+        return NULL;
+    }
+
+    WORD64 lwAddr = (WORD64)pData;
+
+    T_LinkHeader *pCurNode = (T_LinkHeader *)(lwAddr - this->s_dwDataOffset);
+    if (pCurNode->m_bFree)
+    {
+        return NULL;
+    }
+
+    T_LinkHeader *pNextNode = pCurNode->m_pNext;
+
+    if (NULL == pNextNode)
+    {
+        return NULL;
+    }
+
+    return *pNextNode;
+}
+
+
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline T * CBaseList<T, NODE_NUM, ALIGN_FLAG>::Prev(T *pData)
+{
+    if (FALSE == this->IsValid(pData))
+    {
+        return NULL;
+    }
+
+    WORD64 lwAddr = (WORD64)pData;
+
+    T_LinkHeader *pCurNode = (T_LinkHeader *)(lwAddr - this->s_dwDataOffset);
+    if (pCurNode->m_bFree)
+    {
+        return NULL;
+    }
+
+    T_LinkHeader *pPrevNode = pCurNode->m_pPrev;
+
+    if (NULL == pPrevNode)
+    {
+        return NULL;
+    }
+
+    return *pPrevNode;
+}
+
+
 template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
 inline WORD32 CBaseList<T, NODE_NUM, ALIGN_FLAG>::GetCount()
 {
@@ -321,8 +427,6 @@ public :
 
     virtual ~CShareList();
 
-    T * operator[] (WORD32 dwIndex);
-
     /* 创建节点并添加到尾部 */
     T * CreateTail();
 
@@ -337,6 +441,15 @@ public :
 
     /* 从链表中移除节点并释放节点 */
     WORD32 Remove(T *pInst);
+
+    /* 从链表中移除节点并释放节点(根据Key找到待移除节点) */
+    template <typename K>
+    WORD32 Remove(const K &rKey);
+
+    T * GetHead();
+    T * GetTail();
+    T * Next(T *pData);
+    T * Prev(T *pData);
 
     WORD32 GetCount();
 
@@ -354,39 +467,6 @@ CShareList<T, NODE_NUM, ALIGN_FLAG>::~CShareList()
     m_dwCount  = 0;
     m_ptHeader = NULL;
     m_ptTailer = NULL;
-}
-
-
-template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
-inline T * CShareList<T, NODE_NUM, ALIGN_FLAG>::operator[] (WORD32 dwIndex)
-{
-    if (unlikely(dwIndex >= m_dwCount))
-    {
-        return NULL;
-    }
-
-    WORD32        dwTmpIdx = 0;
-    T            *pData    = NULL;
-    T_LinkHeader *pCurHead = m_ptHeader;
-
-    while (pCurHead)
-    {
-        if (dwTmpIdx == dwIndex)
-        {
-            pData = m_rContainer(pCurHead->m_dwIndex);
-            break ;
-        }
-
-        dwTmpIdx++;
-        pCurHead = pCurHead->m_pNext;
-    }
-
-    if (unlikely(NULL == pData))
-    {
-        assert(0);
-    }
-
-    return pData;
 }
 
 
@@ -531,11 +611,7 @@ inline WORD32 CShareList<T, NODE_NUM, ALIGN_FLAG>::Remove(T *pInst)
     while (pCurHead)
     {
         dwInstID = pCurHead->m_dwIndex;
-        pData    = m_rContainer(dwInstID);
-        if (unlikely(NULL == pData))
-        {
-            assert(0);
-        }
+        pData    = (*pCurHead);
 
         if (pInst == pData)
         {
@@ -576,6 +652,142 @@ inline WORD32 CShareList<T, NODE_NUM, ALIGN_FLAG>::Remove(T *pInst)
     }
 
     return FAIL;
+}
+
+
+/* 从链表中移除节点并释放节点(根据Key找到待移除节点) */
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+template <typename K>
+inline WORD32 CShareList<T, NODE_NUM, ALIGN_FLAG>::Remove(const K &rKey)
+{
+    WORD32        dwInstID = INVALID_DWORD;
+    T            *pData    = NULL;
+    T_LinkHeader *pCurHead = m_ptHeader;
+    T_LinkHeader *pPrev    = NULL;
+    T_LinkHeader *pNext    = NULL;
+
+    while (pCurHead)
+    {
+        dwInstID = pCurHead->m_dwIndex;
+        pData    = (*pCurHead);
+
+        if ((*pData) == rKey)
+        {
+            pPrev = pCurHead->m_pPrev;
+            pNext = pCurHead->m_pNext;
+
+            if (NULL == pPrev)
+            {
+                /* 删除头节点 */
+                m_ptHeader = pNext;
+            }
+            else
+            {
+                pPrev->m_pNext = pNext;
+            }
+
+            if (NULL == pNext)
+            {
+                /* 删除尾节点 */
+                m_ptTailer = pPrev;
+            }
+            else
+            {
+                pNext->m_pPrev = pPrev;
+            }
+
+            pCurHead->m_pPrev = NULL;
+            pCurHead->m_pNext = NULL;
+
+            m_dwCount--;
+
+            m_rContainer.Free(dwInstID);
+
+            return SUCCESS;
+        }
+
+        pCurHead = pCurHead->m_pNext;
+    }
+
+    return FAIL;
+}
+
+
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline T * CShareList<T, NODE_NUM, ALIGN_FLAG>::GetHead()
+{
+    if (NULL == m_ptHeader)
+    {
+        return NULL;
+    }
+
+    return *m_ptHeader;
+}
+
+
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline T * CShareList<T, NODE_NUM, ALIGN_FLAG>::GetTail()
+{
+    if (NULL == m_ptTailer)
+    {
+        return NULL;
+    }
+
+    return *m_ptTailer;
+}
+
+
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline T * CShareList<T, NODE_NUM, ALIGN_FLAG>::Next(T *pData)
+{
+    if (FALSE == m_rContainer.IsValid(pData))
+    {
+        return NULL;
+    }
+
+    WORD64 lwAddr = (WORD64)pData;
+
+    T_LinkHeader *pCurNode = (T_LinkHeader *)(lwAddr - m_rContainer.s_dwDataOffset);
+    if (pCurNode->m_bFree)
+    {
+        return NULL;
+    }
+
+    T_LinkHeader *pNextNode = pCurNode->m_pNext;
+
+    if (NULL == pNextNode)
+    {
+        return NULL;
+    }
+
+    return *pNextNode;
+}
+
+
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline T * CShareList<T, NODE_NUM, ALIGN_FLAG>::Prev(T *pData)
+{
+    if (FALSE == m_rContainer.IsValid(pData))
+    {
+        return NULL;
+    }
+
+    WORD64 lwAddr = (WORD64)pData;
+
+    T_LinkHeader *pCurNode = (T_LinkHeader *)(lwAddr - m_rContainer.s_dwDataOffset);
+    if (pCurNode->m_bFree)
+    {
+        return NULL;
+    }
+
+    T_LinkHeader *pPrevNode = pCurNode->m_pPrev;
+
+    if (NULL == pPrevNode)
+    {
+        return NULL;
+    }
+
+    return *pPrevNode;
 }
 
 
@@ -631,7 +843,6 @@ public :
     WORD32 Initialize();
 
     T * Find(const K &rKey);
-    T * operator[] (WORD32 dwIndex);
 
     /* 创建节点并添加到尾部 */
     T * CreateTail(const K &rKey);
@@ -650,6 +861,11 @@ public :
 
     /* 从链表中移除节点并释放节点 */
     WORD32 Remove(const K &rKey);
+
+    T * GetHead();
+    T * GetTail();
+    T * Next(T *pData);
+    T * Prev(T *pData);
 
     WORD32 GetCount();
 
@@ -696,11 +912,7 @@ inline T * CBaseSequence<K, T, NODE_NUM>::Find(const K &rKey)
 
     while (pCurHead)
     {
-        pData = m_cList(pCurHead->m_dwIndex);
-        if (unlikely(NULL == pData))
-        {
-            assert(0);
-        }
+        pData = (*pCurHead);
 
         if (rKey == pData->m_tKey)
         {
@@ -711,39 +923,6 @@ inline T * CBaseSequence<K, T, NODE_NUM>::Find(const K &rKey)
     }
 
     return NULL;
-}
-
-
-template <typename K, class T, WORD32 NODE_NUM>
-inline T * CBaseSequence<K, T, NODE_NUM>::operator[] (WORD32 dwIndex)
-{
-    if (unlikely(dwIndex >= m_dwCount))
-    {
-        return NULL;
-    }
-
-    WORD32            dwTmpIdx = 0;
-    CSequenceData    *pData    = NULL;
-    T_SequenceHeader *pCurHead = m_ptHeader;
-
-    while (pCurHead)
-    {
-        if (dwTmpIdx == dwIndex)
-        {
-            pData = m_cList(pCurHead->m_dwIndex);
-            break ;
-        }
-
-        dwTmpIdx++;
-        pCurHead = pCurHead->m_pNext;
-    }
-
-    if (unlikely(NULL == pData))
-    {
-        assert(0);
-    }
-
-    return *pData;
 }
 
 
@@ -910,11 +1089,7 @@ inline WORD32 CBaseSequence<K, T, NODE_NUM>::Remove(const K &rKey)
     while (pCurHead)
     {
         dwInstID = pCurHead->m_dwIndex;
-        pData    = m_cList(dwInstID);
-        if (unlikely(NULL == pData))
-        {
-            assert(0);
-        }
+        pData    = (*pCurHead);
 
         if (rKey == pData->m_tKey)
         {
@@ -956,6 +1131,84 @@ inline WORD32 CBaseSequence<K, T, NODE_NUM>::Remove(const K &rKey)
     }
 
     return FAIL;
+}
+
+
+template <typename K, class T, WORD32 NODE_NUM>
+inline T * CBaseSequence<K, T, NODE_NUM>::GetHead()
+{
+    if (NULL == m_ptHeader)
+    {
+        return NULL;
+    }
+
+    return *m_ptHeader;
+}
+
+
+template <typename K, class T, WORD32 NODE_NUM>
+inline T * CBaseSequence<K, T, NODE_NUM>::GetTail()
+{
+    if (NULL == m_ptTailer)
+    {
+        return NULL;
+    }
+
+    return *m_ptTailer;
+}
+
+
+template <typename K, class T, WORD32 NODE_NUM>
+inline T * CBaseSequence<K, T, NODE_NUM>::Next(T *pData)
+{
+    if (FALSE == m_cList.IsValid(pData))
+    {
+        return NULL;
+    }
+
+    WORD64 lwAddr = (WORD64)pData;
+
+    T_SequenceHeader *pCurNode = (T_SequenceHeader *)(lwAddr - m_cList.s_dwDataOffset);
+    if (pCurNode->m_bFree)
+    {
+        return NULL;
+    }
+
+    T_SequenceHeader *pNextNode = pCurNode->m_pNext;
+
+    if (NULL == pNextNode)
+    {
+        return NULL;
+    }
+
+    return *pNextNode;
+}
+
+
+template <typename K, class T, WORD32 NODE_NUM>
+inline T * CBaseSequence<K, T, NODE_NUM>::Prev(T *pData)
+{
+    if (FALSE == m_cList.IsValid(pData))
+    {
+        return NULL;
+    }
+
+    WORD64 lwAddr = (WORD64)pData;
+
+    T_SequenceHeader *pCurNode = (T_SequenceHeader *)(lwAddr - m_cList.s_dwDataOffset);
+    if (pCurNode->m_bFree)
+    {
+        return NULL;
+    }
+
+    T_SequenceHeader *pPrevNode = pCurNode->m_pPrev;
+
+    if (NULL == pPrevNode)
+    {
+        return NULL;
+    }
+
+    return *pPrevNode;
 }
 
 

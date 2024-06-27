@@ -170,7 +170,7 @@ public :
     CBaseDataContainer ();
     virtual ~CBaseDataContainer();
 
-    WORD32 Initialize();
+    virtual WORD32 Initialize();
 
     T * Malloc(WORD32 *pdwIndex = NULL);
     T * Malloc(WORD32 &rdwIndex);
