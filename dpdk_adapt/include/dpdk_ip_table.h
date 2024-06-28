@@ -65,8 +65,43 @@ typedef union tagT_IPAddr
         return SUCCESS;
     }
 
-    WORD32 SetIPv6(CHAR *pIPv4Addr)
+    WORD32 SetIPv6(CHAR *pIPv6Addr)
     {
+        WORD32  dwLen = strlen(pIPv6Addr);
+        CHAR   *pData = pIPv6Addr;
+
+        WORD32 dwByteNum = 0;
+        WORD16 wValue    = 0;
+        WORD16 awIP[8]   = {0, 0, 0, 0, 0, 0, 0, 0};
+
+        for (WORD32 dwIndex = 0; dwIndex < dwLen; dwIndex++)
+        {
+            WORD16 wByte = pData[dwIndex];
+
+            if (wByte == ':')
+            {
+                awIP[dwByteNum++] = wValue;
+                wValue = 0;
+            }
+            else
+            {
+                wByte  -= '0';
+                wValue  = (wValue << 4) + wByte;
+
+                if (dwIndex == (dwLen - 1))
+                {
+                    awIP[dwByteNum++] = wValue;
+                    break ;
+                }
+            }
+        }
+
+        for (WORD32 dwIndex = 0; dwIndex < 8; dwIndex++)
+        {
+            this->aucIPv6[(2 * dwIndex) + 0] = (BYTE)(awIP[dwIndex] >> 8);
+            this->aucIPv6[(2 * dwIndex) + 1] = (BYTE)(awIP[dwIndex] & 0x00FF);
+        }
+
         return SUCCESS;
     }
 }T_IPAddr;
