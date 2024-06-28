@@ -42,7 +42,7 @@ protected :
 class CArpTable : public CBaseList<CArpInst, MAX_ARP_NUM, FALSE>
 {
 protected :
-    using CBaseList<CArpInst, MAX_ARP_NUM, FALSE>::Initialize();
+    using CBaseList<CArpInst, MAX_ARP_NUM, FALSE>::Initialize;
 
 public :
     CArpTable ();
