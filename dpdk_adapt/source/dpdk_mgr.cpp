@@ -106,6 +106,9 @@ WORD32 CDpdkMgr::Initialize(CCentralMemPool *pMemInterface,
 
     m_pMemInterface = pMemInterface;
 
+    m_cIPTable.Initialize();
+    m_cVlanTable.Initialize();
+
     WORD32 dwResult   = INVALID_DWORD;
     WORD32 dwDevCount = 0;
 

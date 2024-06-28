@@ -166,6 +166,8 @@ public :
     WORD32 GetDeviceID();
     WORD16 GetPortID();
 
+    BYTE GetQueueNum();
+
     E_DeviceType GetType();
 
     virtual VOID Dump();
@@ -220,6 +222,12 @@ inline WORD32 CBaseDevice::GetDeviceID()
 inline WORD16 CBaseDevice::GetPortID()
 {
     return m_wPortID;
+}
+
+
+inline BYTE CBaseDevice::GetQueueNum()
+{
+    return m_ucQueueNum;
 }
 
 

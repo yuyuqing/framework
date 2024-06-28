@@ -546,20 +546,30 @@ WORD32 ParseDpdk(T_DpdkJsonCfg &tConfig, CJsonValue &rRoot)
         for (WORD32 dwIndex1 = 0; dwIndex1 < rtEthCfg.dwVlanNum; dwIndex1++)
         {
             CJsonValue           &rVlan     = rVlans[dwIndex1];
+            CJsonValue           &rVlanIP   = rVlan["ip_cfg"];
             T_DpdkEthVlanJsonCfg &rtVlanCfg = rtEthCfg.atVlan[dwIndex1];
 
-            rtVlanCfg.dwVlanID   = (WORD32)(rVlan["vlan_id"].AsDWORD());
-            rtVlanCfg.dwPriority = (WORD32)(rVlan["priority"].AsDWORD());
+            rtVlanCfg.dwVlanID     = rVlan["vlan_id"].AsDWORD();
+            rtVlanCfg.dwPriority   = rVlan["priority"].AsDWORD();
+            rtVlanCfg.tIP.dwIPType = rVlanIP["addr_type"].AsDWORD();
 
-            CString<IPV4_STRING_LEN> cVlanAddr(rVlan["ipv4_addr"].AsString());
-            CString<IPV4_STRING_LEN> cVlanGW(rVlan["ipv4_gate_way"].AsString());
+            CString<IPV4_STRING_LEN> cIpv4Addr(rVlanIP["ipv4_addr"].AsString());
+            CString<IPV4_STRING_LEN> cIpv4GW(rVlanIP["ipv4_gate_way"].AsString());
+            CString<IPV6_STRING_LEN> cIpv6Addr(rVlanIP["ipv6_addr"].AsString());
+            CString<IPV6_STRING_LEN> cIpv6GW(rVlanIP["ipv6_gate_way"].AsString());
 
-            memcpy(rtVlanCfg.aucIpv4Addr,
-                   cVlanAddr.toChar(),
-                   cVlanAddr.Length());
-            memcpy(rtVlanCfg.aucIpv4GW,
-                   cVlanGW.toChar(),
-                   cVlanGW.Length());
+            memcpy(rtVlanCfg.tIP.aucIpv4Addr,
+                   cIpv4Addr.toChar(),
+                   cIpv4Addr.Length());
+            memcpy(rtVlanCfg.tIP.aucIpv4GW,
+                   cIpv4GW.toChar(),
+                   cIpv4GW.Length());
+            memcpy(rtVlanCfg.tIP.aucIpv6Addr,
+                   cIpv6Addr.toChar(),
+                   cIpv6Addr.Length());
+            memcpy(rtVlanCfg.tIP.aucIpv6GW,
+                   cIpv6GW.toChar(),
+                   cIpv6GW.Length());
         }
     }
 

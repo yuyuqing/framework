@@ -12,11 +12,9 @@
 
 typedef enum tagE_AppClass
 {
-    E_APP_INVALID = 0,
+    E_APP_INVALID = -1,
 
-    E_APP_BASE,           /* CBaseApp */
-    E_APP_FT,             /* CFTApp */
-    E_APP_OAM,            /* COamApp */
+    E_APP_OAM     = 0,    /* COamApp */
     E_APP_TIMER,          /* CTimerApp */
     E_APP_PHY_RECV,       /* CPhyRecvApp */
     E_APP_CL,             /* CClApp */
@@ -26,8 +24,13 @@ typedef enum tagE_AppClass
     E_APP_EGTP,           /* CEgtpApp */
     E_APP_NRUP,           /* CNrupApp */
 
+    E_APP_DPDK_BB,
+    E_APP_DPDK_ETH,
+
     E_APP_TEST,           /* ”√”⁄≤‚ ‘ */
-    E_APP_DPDK,
+
+    E_APP_BASE,           /* CBaseApp */
+    E_APP_FT,             /* CFTApp */
 
     E_APP_NUM,
 }E_AppClass;

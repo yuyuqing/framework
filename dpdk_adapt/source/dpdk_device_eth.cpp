@@ -1,6 +1,7 @@
 
 
 #include "dpdk_device_eth.h"
+#include "dpdk_mgr.h"
 #include "base_log.h"
 
 
@@ -69,6 +70,9 @@ WORD32 CEthDevice::Initialize()
     m_ucVlanNum  = (BYTE)(ptCfg->dwVlanNum);
     m_ucIPNum    = (BYTE)(ptCfg->dwIpNum);
 
+    CIPTable   &rIPTalbe   = g_pDpdkMgr->GetIPTable();
+    CVlanTable &rVlanTable = g_pDpdkMgr->GetVlanTable();
+
     WORD32 dwResult = CBaseDevice::Initialize(NULL);
     if (SUCCESS != dwResult)
     {
@@ -81,7 +85,21 @@ WORD32 CEthDevice::Initialize()
         return FAIL;
     }
 
-    /* TBD : 初始化ARP/VLAN/IP表项 */
+    /* TBD : 初始化ARP表项 */
+
+    /* 注册本地IP表项 */
+    dwResult = rIPTalbe.RegistIP(*ptCfg);
+    if (SUCCESS != dwResult)
+    {
+        return FAIL;
+    }
+
+    /* 注册本地VLAN表项 */
+    dwResult = rVlanTable.RegistVlan(*ptCfg);
+    if (SUCCESS != dwResult)
+    {
+        return FAIL;
+    }
 
     return SUCCESS;
 }

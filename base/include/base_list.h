@@ -914,7 +914,7 @@ inline T * CBaseSequence<K, T, NODE_NUM>::Find(const K &rKey)
     {
         pData = (*pCurHead);
 
-        if (rKey == pData->m_tKey)
+        if (pData->m_tKey == rKey)
         {
             return (*pData);
         }

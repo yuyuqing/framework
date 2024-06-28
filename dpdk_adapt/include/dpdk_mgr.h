@@ -5,6 +5,7 @@
 
 
 #include "dpdk_device.h"
+#include "dpdk_vlan_table.h"
 
 
 #define EAL_ARG_NUM             ((WORD32)(8))
@@ -25,6 +26,9 @@ public :
     CBaseDevice  * FindDevice(E_DeviceType eType, WORD16 wPortID);
 
     WORD32 GetDeviceNum();
+
+    CIPTable   & GetIPTable();
+    CVlanTable & GetVlanTable();
 
     VOID Dump();
 
@@ -49,6 +53,9 @@ protected :
     CCentralMemPool    *m_pMemInterface;
     WORD32              m_dwDevNum;
     T_DeviceInfo        m_atDevInfo[MAX_DEV_PORT_NUM];
+
+    CIPTable            m_cIPTable;
+    CVlanTable          m_cVlanTable;
 };
 
 
@@ -98,6 +105,18 @@ inline CBaseDevice * CDpdkMgr::FindDevice(E_DeviceType eType, WORD16 wPortID)
 inline WORD32 CDpdkMgr::GetDeviceNum()
 {
     return m_dwDevNum;
+}
+
+
+inline CIPTable & CDpdkMgr::GetIPTable()
+{
+    return m_cIPTable;
+}
+
+
+inline CVlanTable & CDpdkMgr::GetVlanTable()
+{
+    return m_cVlanTable;
 }
 
 

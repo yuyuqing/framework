@@ -29,7 +29,7 @@
 
 #define EAL_ARG_LEN                  ((WORD32)(64))
 #define DEV_NAME_LEN                 ((WORD32)(32))
-#define MAX_DEV_PORT_NUM             ((WORD32)(4))
+#define MAX_DEV_PORT_NUM             ((WORD32)(8))
 #define IPV4_STRING_LEN              ((WORD32)(16))
 #define IPV6_STRING_LEN              ((WORD32)(40))
 #define MAX_DEV_IP_NUM               ((WORD32)(2))
@@ -164,15 +164,6 @@ typedef struct tagT_ThreadPoolJsonCfg
 }T_ThreadPoolJsonCfg;
 
 
-typedef struct tagT_DpdkEthVlanJsonCfg
-{
-    WORD32               dwVlanID;
-    WORD32               dwPriority;
-    CHAR                 aucIpv4Addr[IPV4_STRING_LEN];
-    CHAR                 aucIpv4GW[IPV4_STRING_LEN];
-}T_DpdkEthVlanJsonCfg;
-
-
 typedef struct tagT_DpdkEthIPJsonCfg
 {
     WORD32               dwIPType;
@@ -181,6 +172,14 @@ typedef struct tagT_DpdkEthIPJsonCfg
     CHAR                 aucIpv6Addr[IPV6_STRING_LEN];
     CHAR                 aucIpv6GW[IPV6_STRING_LEN];
 }T_DpdkEthIPJsonCfg;
+
+
+typedef struct tagT_DpdkEthVlanJsonCfg
+{
+    WORD32               dwVlanID;
+    WORD32               dwPriority;
+    T_DpdkEthIPJsonCfg   tIP;
+}T_DpdkEthVlanJsonCfg;
 
 
 typedef struct tagT_DpdkEthDevJsonCfg
