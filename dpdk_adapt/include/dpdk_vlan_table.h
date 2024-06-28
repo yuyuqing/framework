@@ -7,7 +7,7 @@
 #include "dpdk_ip_table.h"
 
 
-#define MAX_VLAN_NUM        ((WORD32)(256))
+#define MAX_VLAN_NUM        ((WORD32)(64))
 
 
 typedef struct tagT_VlanKey

@@ -9,7 +9,7 @@
 
 
 #define IPV6_ADDR_LEN     ((WORD32)(16))
-#define MAX_IP_NUM        ((WORD32)(256))
+#define MAX_IP_NUM        ((WORD32)(128))
 
 
 typedef enum tagE_IPAddrType
@@ -83,6 +83,54 @@ typedef union tagT_IPAddr
                 awIP[dwByteNum++] = wValue;
                 wValue = 0;
             }
+            else if (wByte > '9')
+            {
+                switch (wByte)
+                {
+                case 'a' :
+                case 'A' :
+                    wByte = 10;
+                    break;
+
+                case 'b' :
+                case 'B' :
+                    wByte = 11;
+                    break;
+
+                case 'c' :
+                case 'C' :
+                    wByte = 12;
+                    break;
+
+                case 'd' :
+                case 'D' :
+                    wByte = 13;
+                    break;
+
+                case 'e' :
+                case 'E' :
+                    wByte = 14;
+                    break;
+
+                case 'f' :
+                case 'F' :
+                    wByte = 15;
+                    break;
+
+                default :
+                    /* ≈‰÷√¥ÌŒÛ */
+                    assert(0);
+                    break ;
+                }
+
+                wValue  = (wValue << 4) + wByte;
+
+                if (dwIndex == (dwLen - 1))
+                {
+                    awIP[dwByteNum++] = wValue;
+                    break ;
+                }
+            }
             else
             {
                 wByte  -= '0';
@@ -124,6 +172,16 @@ public :
 
     virtual ~CIPInst();
 
+    WORD32 GetDeviceID();
+    WORD32 GetVlanID();
+    WORD32 GetIPV4();
+
+    E_IPAddrType GetIPType();
+
+    T_IPAddr & GetIPAddr();
+
+    CHAR * toChar();
+
 protected :
     WORD32                    m_dwDeviceID;
     BOOL                      m_bVlanFlag;
@@ -133,6 +191,42 @@ protected :
 
     CString<IPV6_STRING_LEN>  m_cIPStr;
 };
+
+
+inline WORD32 CIPInst::GetDeviceID()
+{
+    return m_dwDeviceID;
+}
+
+
+inline WORD32 CIPInst::GetVlanID()
+{
+    return (m_bVlanFlag) ? m_dwVlanID : INVALID_DWORD;
+}
+
+
+inline WORD32 CIPInst::GetIPV4()
+{
+    return (E_IPV4_TYPE == m_eAddrType) ? (m_tAddr.dwIPv4) : 0;
+}
+
+
+inline E_IPAddrType CIPInst::GetIPType()
+{
+    return m_eAddrType;
+}
+
+
+inline T_IPAddr & CIPInst::GetIPAddr()
+{
+    return m_tAddr;
+}
+
+
+inline CHAR * CIPInst::toChar()
+{
+    return m_cIPStr.toChar();
+}
 
 
 class CIPTable : public CBaseList<CIPInst, MAX_IP_NUM, FALSE>

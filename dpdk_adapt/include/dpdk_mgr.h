@@ -6,6 +6,7 @@
 
 #include "dpdk_device.h"
 #include "dpdk_vlan_table.h"
+#include "dpdk_arp_table.h"
 
 
 #define EAL_ARG_NUM             ((WORD32)(8))
@@ -29,6 +30,7 @@ public :
 
     CIPTable   & GetIPTable();
     CVlanTable & GetVlanTable();
+    CArpTable  & GetArpTable();
 
     VOID Dump();
 
@@ -56,6 +58,7 @@ protected :
 
     CIPTable            m_cIPTable;
     CVlanTable          m_cVlanTable;
+    CArpTable           m_cArpTable;
 };
 
 
@@ -117,6 +120,12 @@ inline CIPTable & CDpdkMgr::GetIPTable()
 inline CVlanTable & CDpdkMgr::GetVlanTable()
 {
     return m_cVlanTable;
+}
+
+
+inline CArpTable & CDpdkMgr::GetArpTable()
+{
+    return m_cArpTable;
 }
 
 

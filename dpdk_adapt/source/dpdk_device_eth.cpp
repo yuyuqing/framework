@@ -85,7 +85,8 @@ WORD32 CEthDevice::Initialize()
         return FAIL;
     }
 
-    /* TBD : 初始化ARP表项 */
+    T_MacAddr tMacAddr;
+    memcpy(tMacAddr.aucMacAddr, m_tEthAddr.addr_bytes, ARP_MAC_ADDR_LEN);
 
     /* 注册本地IP表项 */
     dwResult = rIPTalbe.RegistIP(*ptCfg);

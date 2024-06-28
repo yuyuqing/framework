@@ -29,6 +29,8 @@ public :
 
     virtual WORD32 Initialize();
 
+    BYTE * GetMacAddr();
+
 protected :
     BYTE                   m_ucLinkType;
     BYTE                   m_ucVlanNum;
@@ -36,6 +38,12 @@ protected :
 
     struct rte_ether_addr  m_tEthAddr;
 };
+
+
+inline BYTE * CEthDevice::GetMacAddr()
+{
+    return (BYTE *)(m_tEthAddr.addr_bytes);
+}
 
 
 #endif
