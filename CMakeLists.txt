@@ -22,5 +22,5 @@ add_definitions(-DMEM_CHECK)
 add_definitions(-Wno-builtin-macro-redefined)
 
 ADD_SUBDIRECTORY(base)
-# ADD_SUBDIRECTORY(dpdk_adapt)
+ADD_SUBDIRECTORY(dpdk_adapt)
 ADD_SUBDIRECTORY(test)
