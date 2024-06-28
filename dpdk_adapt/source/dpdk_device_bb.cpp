@@ -13,15 +13,12 @@ SWORD32 CBBDevice::LsiEventCallBack(WORD16          wPortID,
                                     VOID           *pRetParam)
 {
     struct rte_eth_link tLink;
-	CHAR aucLinkStatus[RTE_ETH_LINK_MAX_STR_LEN];
 
     SWORD32 iResult = rte_eth_link_get(wPortID, &tLink);
     if (iResult < 0)
     {
         return iResult;
     }
-
-	rte_eth_link_to_str(aucLinkStatus, sizeof(aucLinkStatus), &tLink);
 
     return 0;
 }

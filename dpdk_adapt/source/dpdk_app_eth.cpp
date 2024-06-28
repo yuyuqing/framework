@@ -215,12 +215,16 @@ WORD32 CEthApp::Init()
     {
         assert(0);
     }
+
+    return SUCCESS;
 }
 
 
 WORD32 CEthApp::DeInit()
 {
     TRACE_STACK("CEthApp::DeInit()");
+
+    return SUCCESS;
 }
 
 
@@ -232,6 +236,8 @@ WORD32 CEthApp::Exit(WORD32 dwMsgID, VOID *pIn, WORD16 wMsgLen)
     m_wPortID    = INVALID_WORD;
     m_wQueueID   = INVALID_WORD;
     m_pQueue     = NULL;
+
+    return SUCCESS;
 }
 
 
