@@ -185,7 +185,7 @@
             "apps"         :
             [
                 {
-                    "name"         : "CEthQueueApp",
+                    "name"         : "CEthApp",
                     "app_id"       : 2,
                     "event_begin"  : 3072,
                     "assoc_cell"   : [0]
