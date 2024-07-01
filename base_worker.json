@@ -220,7 +220,7 @@
         [
             {
                 "dev_id"          : 0,                            //DPDK设备ID(内部内部唯一标识)
-                "link_type"       : 0,                            //当类型为网卡设备时, 指示上联网络类型(0:Access, 1:Trunk, 2:Hybrid)
+                "link_type"       : 2,                            //当类型为网卡设备时, 指示上联网络类型(0:Access, 1:Trunk, 2:Hybrid)
                                                                   //当link_type取值为0时, 只需要配置IP地址, 不需要配置VLAN
                                                                   //当link_type取值为1时, 不需要配置IP地址(配置0.0.0.0), 只需要配置VLAN
                                                                   //当link_type取值为2时, 既需要配置IP地址, 也需要配置VLAN
@@ -232,14 +232,21 @@
                         "ipv4_gate_way"  : "172.16.10.1",         //网关IP地址(当addr_type为1时, 本字段设置为0.0.0.0)
                         "ipv6_addr"      : "0000:0000:0000:0000:0000:0000:0000:0000",
                         "ipv6_gate_way"  : "0000:0000:0000:0000:0000:0000:0000:0000"
+                    },
+                    {
+                        "addr_type"      : 1,                     //0:IPv4, 1:IPv6(暂不支持)
+                        "ipv4_addr"      : "0.0.0.0",             //网卡IP地址(当addr_type为1时, 本字段设置为0.0.0.0)
+                        "ipv4_gate_way"  : "0.0.0.0",             //网关IP地址(当addr_type为1时, 本字段设置为0.0.0.0)
+                        "ipv6_addr"      : "2001:A00A:B11B:0000:0000:0000:AC10:0A08",
+                        "ipv6_gate_way"  : "2001:A00A:B11B:0000:0000:0000:AC10:0A01"
                     }
                 ],
                 "vlan_cfg"        :
                 [
                     {
-                        "vlan_id"        : 20,                    //vlan id, 用于标识一个VLAN(1~4095为普通VLAN, >4095为QinQ)
-                        "priority"       : 7,                     //vlan优先级(0~7), 7为最高优先级
-                        "ip_cfg"          :                       //暂不支持多IP配置(多个IP配置时, 需要考虑路由)
+                        "vlan_id"            : 20,                //vlan id, 用于标识一个VLAN(1~4095为普通VLAN, >4095为QinQ)
+                        "priority"           : 7,                 //vlan优先级(0~7), 7为最高优先级
+                        "ip_cfg"             :                    //暂不支持多IP配置(多个IP配置时, 需要考虑路由)
                         {
                             "addr_type"      : 0,                 //0:IPv4, 1:IPv6(暂不支持)
                             "ipv4_addr"      : "172.16.20.8",     //网卡IP地址(当addr_type为1时, 本字段设置为0.0.0.0)
@@ -249,9 +256,9 @@
                         }
                     },
                     {
-                        "vlan_id"        : 30,                    //vlan id, 用于标识一个VLAN(1~4095为普通VLAN, >4095为QinQ)
-                        "priority"       : 7,                     //vlan优先级(0~7), 7为最高优先级
-                        "ip_cfg"          :                       //暂不支持多IP配置(多个IP配置时, 需要考虑路由)
+                        "vlan_id"            : 30,                //vlan id, 用于标识一个VLAN(1~4095为普通VLAN, >4095为QinQ)
+                        "priority"           : 7,                 //vlan优先级(0~7), 7为最高优先级
+                        "ip_cfg"             :                    //暂不支持多IP配置(多个IP配置时, 需要考虑路由)
                         {
                             "addr_type"      : 0,                 //0:IPv4, 1:IPv6(暂不支持)
                             "ipv4_addr"      : "172.16.30.8",     //网卡IP地址(当addr_type为1时, 本字段设置为0.0.0.0)
@@ -262,6 +269,9 @@
                     }
                 ]
             }
+        ],
+        "route"                   :
+        [
         ]
     }
 }

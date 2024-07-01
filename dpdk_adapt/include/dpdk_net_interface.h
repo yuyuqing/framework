@@ -6,84 +6,61 @@
 
 #include "dpdk_device.h"
 
-#include "base_list.h"
+#include "base_app_interface.h"
 
 
-class CLocalInterface : public CBaseData
+class CNetStack : public CCBObject, public CBaseData
 {
 public :
-    CLocalInterface(WORD32 dwDeviceID, WORD32 dwPortID, CBaseDevice *pDevice);
-    virtual ~CLocalInterface();
+    static WORD32 RecvPacket(VOID   *pArg,
+                             WORD32  dwDevID,
+                             WORD32  dwPortID,
+                             WORD32  dwQueueID,
+                             T_MBuf *pMBuf);
 
-    operator CBaseDevice * ()
-    {
-        return m_pDevice;
-    }
+public :
+    CNetStack ();
+    virtual ~CNetStack();
 
-    BOOL operator== (WORD32 dwDeviceID);
+    virtual WORD32 Initialize(CCentralMemPool *pMemInterface);
 
-    WORD32 GetDeviceID();
-    WORD16 GetPortID();
+    virtual WORD32 RecvEthPacket(CAppInterface *pApp,
+                                 WORD32         dwDevID,
+                                 WORD32         dwPortID,
+                                 WORD32         dwQueueID,
+                                 T_MBuf        *pMBuf,
+                                 T_EthHead     *ptEthHead);
 
 protected :
-    WORD32        m_dwDeviceID;
-    WORD32        m_dwPortID;
-    CBaseDevice  *m_pDevice;
+    CCentralMemPool  *m_pMemInterface;
 };
 
 
-inline BOOL CLocalInterface::operator== (WORD32 dwDeviceID)
-{
-    return (dwDeviceID == m_dwDeviceID);
-}
-
-
-inline WORD32 CLocalInterface::GetDeviceID()
-{
-    return m_dwDeviceID;
-}
-
-
-inline WORD16 CLocalInterface::GetPortID()
-{
-    return m_dwPortID;
-}
-
-
-/* 本地网络接口 */
-class CNetIntfHandler : public CBaseList<CLocalInterface, MAX_DEV_PORT_NUM, FALSE>
+/* 本地网络接口句柄 */
+class CNetIntfHandler : public CNetStack
 {
 public :
     CNetIntfHandler ();
     virtual ~CNetIntfHandler();
 
-    virtual WORD32 Initialize();
+    virtual WORD32 Initialize(CCentralMemPool *pMemInterface);
 
-    CLocalInterface * Find(WORD32 dwDeviceID);
+    virtual WORD32 RecvEthPacket(CAppInterface *pApp,
+                                 WORD32         dwDevID,
+                                 WORD32         dwPortID,
+                                 WORD32         dwQueueID,
+                                 T_MBuf        *pMBuf,
+                                 T_EthHead     *ptEthHead);
 
-    WORD32 RegistDevice(WORD32 dwDeviceID, WORD32 dwPortID, CBaseDevice *pDevice);
-    WORD32 RemoveDevice(WORD32 dwDeviceID);
+protected :
+    CNetStack  *m_pArpStack;
+    CNetStack  *m_pVlanStack;
+    CNetStack  *m_pIPv4Stack;
+    CNetStack  *m_pIPv6Stack;
 };
 
 
-inline CLocalInterface * CNetIntfHandler::Find(WORD32 dwDeviceID)
-{
-    CLocalInterface *pData    = NULL;
-    T_LinkHeader    *pCurHead = m_ptHeader;
-
-    while (pCurHead)
-    {
-        pData = (*pCurHead);
-        if ((*pData) == dwDeviceID)
-        {
-            return pData;
-        }
-
-        pCurHead = pCurHead->m_pNext;
-    }
-
-    return NULL;
-}
+extern CNetIntfHandler *g_pNetIntfHandler;
 
 
 #endif

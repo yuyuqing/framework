@@ -152,6 +152,62 @@ typedef union tagT_IPAddr
 
         return SUCCESS;
     }
+
+    WORD32 toStr(E_IPAddrType eType, CString<IPV6_STRING_LEN> &rIPAddr)
+    {
+        WORD32 dwLen      = 0;
+        WORD32 dwTotalLen = 0;
+
+        if (E_IPV4_TYPE == eType)
+        {
+            WORD32 dwIP     = this->dwIPv4;
+            WORD32 adwIP[4] = {0, 0, 0, 0};
+            CHAR   aucData[IPV4_STRING_LEN] = {0,};
+
+            adwIP[0] = (dwIP & 0xFF);
+            adwIP[1] = ((dwIP >>  8) & 0xFF);
+            adwIP[2] = ((dwIP >> 16) & 0xFF);
+            adwIP[3] = ((dwIP >> 24) & 0xFF);
+
+            dwLen       = IntToStr(&(aucData[dwTotalLen]), adwIP[0], E_DECIMAL_10);
+            dwTotalLen += dwLen;
+
+            aucData[dwTotalLen++] = '.';
+            dwLen       = IntToStr(&(aucData[dwTotalLen]), adwIP[1], E_DECIMAL_10);
+            dwTotalLen += dwLen;
+
+            aucData[dwTotalLen++] = '.';
+            dwLen    = IntToStr(&(aucData[dwTotalLen]), adwIP[2], E_DECIMAL_10);
+            dwTotalLen += dwLen;
+
+            aucData[dwTotalLen++] = '.';
+            dwLen    = IntToStr(&(aucData[dwTotalLen]), adwIP[3], E_DECIMAL_10);
+            dwTotalLen += dwLen;
+
+            rIPAddr = aucData;
+        }
+        else
+        {
+            CHAR aucIP[IPV6_ADDR_LEN];
+            memcpy(aucIP, this->aucIPv6, IPV6_ADDR_LEN);
+
+            for (WORD32 dwIndex = 0; dwIndex < IPV6_ADDR_LEN; dwIndex++)
+            {
+                CHAR aucData[4] = {0, 0, 0, 0};
+
+                dwLen    = IntToStr(aucData, aucIP[0], E_DECIMAL_16, 2, '0');
+                rIPAddr += aucData;
+
+                if ((dwIndex + 1) == IPV6_ADDR_LEN)
+                {
+                    break ;
+                }
+                rIPAddr += ':';
+            }
+        }
+
+        return SUCCESS;
+    }
 }T_IPAddr;
 
 

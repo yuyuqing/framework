@@ -29,6 +29,9 @@
 
 typedef struct rte_mbuf          T_MBuf;
 typedef enum rte_eth_event_type  E_EthEventType;
+typedef struct rte_ether_hdr     T_EthHead;
+typedef struct rte_vlan_hdr      T_VlanHead;
+typedef struct rte_arp_hdr       T_ArpHead;
 
 
 /* 报文回调处理函数 */
@@ -79,6 +82,10 @@ public :
 
     /* 发送多条报文 */
     WORD32 SendPacket(WORD32 dwNum, T_MBuf **pBufs);
+
+    CBaseDevice * GetDevice();
+
+    struct rte_mempool * GetMemPool();
 
 protected :
     CBaseDevice         *m_pDev;
@@ -143,6 +150,18 @@ inline WORD32 CDevQueue::SendPacket(WORD32 dwNum, T_MBuf **pBufs)
     }
 
     return dwSendNum;
+}
+
+
+inline CBaseDevice * CDevQueue::GetDevice()
+{
+    return m_pDev;
+}
+
+
+inline struct rte_mempool * CDevQueue::GetMemPool()
+{
+    return m_pMbufPool;
 }
 
 

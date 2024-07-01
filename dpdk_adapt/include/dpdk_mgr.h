@@ -7,6 +7,7 @@
 #include "dpdk_device.h"
 #include "dpdk_vlan_table.h"
 #include "dpdk_arp_table.h"
+#include "dpdk_net_interface.h"
 
 
 #define EAL_ARG_NUM             ((WORD32)(8))
@@ -59,6 +60,8 @@ protected :
     CIPTable            m_cIPTable;
     CVlanTable          m_cVlanTable;
     CArpTable           m_cArpTable;
+
+    CNetIntfHandler     m_cNetHandler;
 };
 
 

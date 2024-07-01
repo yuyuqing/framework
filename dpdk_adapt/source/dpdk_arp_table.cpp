@@ -4,11 +4,13 @@
 #include "dpdk_mgr.h"
 
 
-CArpInst::CArpInst (E_IPAddrType  eType,
+CArpInst::CArpInst (WORD32        dwDevID,
+                    E_IPAddrType  eType,
                     T_IPAddr     &rtIPAddr,
                     BYTE         *pMacAddr)
 {
-    m_eAddrType = eType;
+    m_dwDeviceID = dwDevID;
+    m_eAddrType  = eType;
 
     memcpy(&m_tIPAddr,  &rtIPAddr, sizeof(T_IPAddr));
     memcpy(m_tMacAddr.aucMacAddr, pMacAddr, ARP_MAC_ADDR_LEN);
@@ -17,10 +19,34 @@ CArpInst::CArpInst (E_IPAddrType  eType,
 
 CArpInst::~CArpInst()
 {
-    m_eAddrType = E_IPV4_TYPE;
+    m_dwDeviceID = INVALID_DWORD;
+    m_eAddrType  = E_IPV4_TYPE;
 
     memset(&m_tIPAddr,  0x00, sizeof(m_tIPAddr));
     memset(&m_tMacAddr, 0x00, sizeof(m_tMacAddr));
+}
+
+
+VOID CArpInst::Dump()
+{
+    CHAR aucMacAddr[24] = {0,};
+
+    sprintf(aucMacAddr,
+            "%02x:%02x:%02x:%02x:%02x:%02x",
+            m_tMacAddr.aucMacAddr[0], m_tMacAddr.aucMacAddr[1],
+            m_tMacAddr.aucMacAddr[2], m_tMacAddr.aucMacAddr[3],
+            m_tMacAddr.aucMacAddr[4], m_tMacAddr.aucMacAddr[5]);
+
+    CString <IPV6_STRING_LEN>  tIPAddr;
+
+    m_tIPAddr.toStr(m_eAddrType, tIPAddr);
+
+    LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+               "DeviceID : %d, Type : %d, IPAddr : %s, MacAddr : %s\n",
+               m_dwDeviceID,
+               m_eAddrType,
+               tIPAddr.toChar(),
+               aucMacAddr);
 }
 
 
@@ -52,7 +78,7 @@ WORD32 CArpTable::Initialize(CIPTable &rIPTable)
             return FAIL;
         }
 
-        new (pInst) CArpInst(eType, rtIPAddr, pMacAddr);
+        new (pInst) CArpInst(dwDeviceID, eType, rtIPAddr, pMacAddr);
 
         pCur = rIPTable.Next(pCur);
     }
@@ -61,21 +87,22 @@ WORD32 CArpTable::Initialize(CIPTable &rIPTable)
 }
 
 
-WORD32 CArpTable::RegistArp(E_IPAddrType  eType,
-                            T_IPAddr     &rtIPAddr,
-                            T_MacAddr    &rtMacAddr)
+CArpInst * CArpTable::RegistArp(WORD32        dwDeviceID,
+                                E_IPAddrType  eType,
+                                T_IPAddr     &rtIPAddr,
+                                T_MacAddr    &rtMacAddr)
 {
     CGuardLock<CSpinLock> cGuard(m_cLock);
 
     CArpInst *pInst = CreateTail();
     if (NULL == pInst)
     {
-        return FAIL;
+        return NULL;
     }
 
-    new (pInst) CArpInst(eType, rtIPAddr, rtMacAddr.aucMacAddr);
+    new (pInst) CArpInst(dwDeviceID, eType, rtIPAddr, rtMacAddr.aucMacAddr);
 
-    return SUCCESS;
+    return pInst;
 }
 
 
