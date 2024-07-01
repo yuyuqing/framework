@@ -11,10 +11,13 @@ DEFINE_DEVICE(CEthDevice);
 CEthDevice::CEthDevice (const T_DeviceParam &rtParam)
     : CBaseDevice(E_ETH_DEVICE, rtParam)
 {
-    m_ucLinkType = E_ETH_LINK_ACCESS;
-    m_ucVlanNum  = 0;
-    m_ucIPNum    = 0;
+    m_ucLinkType  = E_ETH_LINK_ACCESS;
+    m_ucVlanNum   = 0;
+    m_ucIPNum     = 0;
+    m_dwPrimaryIP = 0;
 
+    memset(m_aucIPType, 0x00, sizeof(m_aucIPType));
+    memset(m_atIPAddr,  0x00, sizeof(m_atIPAddr));
     memset(&m_tEthAddr, 0x00, sizeof(m_tEthAddr));
 
     m_tEthConf.rxmode.mq_mode               = RTE_ETH_MQ_RX_RSS;
@@ -66,9 +69,10 @@ WORD32 CEthDevice::Initialize()
         return FAIL;
     }
 
-    m_ucLinkType = (BYTE)(ptCfg->dwLinkType);
-    m_ucVlanNum  = (BYTE)(ptCfg->dwVlanNum);
-    m_ucIPNum    = (BYTE)(ptCfg->dwIpNum);
+    m_ucLinkType  = (BYTE)(ptCfg->dwLinkType);
+    m_ucVlanNum   = (BYTE)(ptCfg->dwVlanNum);
+    m_ucIPNum     = (BYTE)(ptCfg->dwIpNum);
+    m_dwPrimaryIP = FetchPrimaryIP(*ptCfg);
 
     CIPTable   &rIPTalbe   = g_pDpdkMgr->GetIPTable();
     CVlanTable &rVlanTable = g_pDpdkMgr->GetVlanTable();
@@ -103,6 +107,37 @@ WORD32 CEthDevice::Initialize()
     }
 
     return SUCCESS;
+}
+
+
+WORD32 CEthDevice::FetchPrimaryIP(T_DpdkEthDevJsonCfg &rtCfg)
+{
+    WORD32   dwIPNum     = rtCfg.dwIpNum;
+    WORD32   dwPrimaryIP = 0;
+
+    for (WORD32 dwIndex = 0; dwIndex < dwIPNum; dwIndex++)
+    {
+        T_DpdkEthIPJsonCfg &rtIPCfg = rtCfg.atIP[dwIndex];
+
+        if (E_IPV4_TYPE == rtIPCfg.dwIPType)
+        {
+            m_aucIPType[dwIndex] = (BYTE)(E_IPV4_TYPE);
+            m_atIPAddr[dwIndex].SetIPv4(rtIPCfg.aucIpv4Addr);
+
+            /* 取第一个配置IPv4地址作为主IP */
+            if (0 == dwPrimaryIP)
+            {
+                dwPrimaryIP = m_atIPAddr[dwIndex].dwIPv4;
+            }
+        }
+        else
+        {
+            m_aucIPType[dwIndex] = (BYTE)(E_IPV6_TYPE);
+            m_atIPAddr[dwIndex].SetIPv6(rtIPCfg.aucIpv6Addr);
+        }
+    }
+
+    return dwPrimaryIP;
 }
 
 

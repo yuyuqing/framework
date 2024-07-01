@@ -16,7 +16,9 @@ public :
 
     virtual WORD32 Initialize(CCentralMemPool *pMemInterface);
 
+    /* wProto : 低层协议栈类型(0 : EtherNet) */
     virtual WORD32 RecvEthPacket(CAppInterface *pApp,
+                                 WORD16         wProto,
                                  WORD32         dwDevID,
                                  WORD32         dwPortID,
                                  WORD32         dwQueueID,
@@ -43,6 +45,11 @@ protected :
                             WORD32              dwSrcIP,
                             WORD32              dwDstIP,
                             struct rte_mempool *pMBufPool);
+
+    T_MBuf * EncodeArpRequest(BYTE               *pSrcMacAddr,
+                              WORD32              dwSrcIP,
+                              WORD32              dwDstIP,
+                              struct rte_mempool *pMBufPool);
 
 protected :
     CSpinLock     m_cLock;      /* 针对单个线程(持有CArpStack的线程) */

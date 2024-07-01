@@ -133,6 +133,7 @@ WORD32 CNetStack::RecvPacket(VOID   *pArg,
     T_EthHead *ptEthHead = rte_pktmbuf_mtod(pMBuf, T_EthHead *);
 
     return g_pNetIntfHandler->RecvEthPacket(pApp,
+                                            0,
                                             dwDevID,
                                             dwPortID,
                                             dwQueueID,
@@ -161,7 +162,9 @@ WORD32 CNetStack::Initialize(CCentralMemPool *pMemInterface)
 }
 
 
+/* wProto : 低层协议栈类型(0 : EtherNet) */
 WORD32 CNetStack::RecvEthPacket(CAppInterface *pApp,
+                                WORD16         wProto,
                                 WORD32         dwDevID,
                                 WORD32         dwPortID,
                                 WORD32         dwQueueID,
@@ -249,7 +252,9 @@ WORD32 CNetIntfHandler::Initialize(CCentralMemPool *pMemInterface)
 }
 
 
+/* wProto : 低层协议栈类型(0 : EtherNet) */
 WORD32 CNetIntfHandler::RecvEthPacket(CAppInterface *pApp,
+                                      WORD16         wProto,
                                       WORD32         dwDevID,
                                       WORD32         dwPortID,
                                       WORD32         dwQueueID,
@@ -262,6 +267,7 @@ WORD32 CNetIntfHandler::RecvEthPacket(CAppInterface *pApp,
     case RTE_ETHER_TYPE_VLAN :
         {
             return m_pVlanStack->RecvEthPacket(pApp,
+                                               0,
                                                dwDevID,
                                                dwPortID,
                                                dwQueueID,
@@ -273,6 +279,7 @@ WORD32 CNetIntfHandler::RecvEthPacket(CAppInterface *pApp,
     case RTE_ETHER_TYPE_ARP :
         {
             return m_pArpStack->RecvEthPacket(pApp,
+                                              0,
                                               dwDevID,
                                               dwPortID,
                                               dwQueueID,
@@ -284,6 +291,7 @@ WORD32 CNetIntfHandler::RecvEthPacket(CAppInterface *pApp,
     case RTE_ETHER_TYPE_IPV4 :
         {
             return m_pIPv4Stack->RecvEthPacket(pApp,
+                                               0,
                                                dwDevID,
                                                dwPortID,
                                                dwQueueID,
@@ -295,6 +303,7 @@ WORD32 CNetIntfHandler::RecvEthPacket(CAppInterface *pApp,
     case RTE_ETHER_TYPE_IPV6 :
         {
             return m_pIPv6Stack->RecvEthPacket(pApp,
+                                               0,
                                                dwDevID,
                                                dwPortID,
                                                dwQueueID,

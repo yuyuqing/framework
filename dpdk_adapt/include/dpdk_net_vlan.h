@@ -16,6 +16,7 @@ public :
     virtual WORD32 Initialize(CCentralMemPool *pMemInterface);
 
     virtual WORD32 RecvEthPacket(CAppInterface *pApp,
+                                 WORD16         wProto,
                                  WORD32         dwDevID,
                                  WORD32         dwPortID,
                                  WORD32         dwQueueID,

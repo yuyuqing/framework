@@ -5,6 +5,7 @@
 
 
 #include "dpdk_device.h"
+#include "dpdk_ip_table.h"
 
 
 typedef enum tagE_EthLinkType
@@ -29,20 +30,55 @@ public :
 
     virtual WORD32 Initialize();
 
+    WORD32 GetPrimaryIPv4();
+
     BYTE * GetMacAddr();
+
+    /* dwIPv4是否为本设备的IP地址(dwIPv4 : 按网络字节序) */
+    BOOL IsMatch(WORD32 dwIPv4);
+
+protected :
+    WORD32 FetchPrimaryIP(T_DpdkEthDevJsonCfg &rtCfg);
 
 protected :
     BYTE                   m_ucLinkType;
     BYTE                   m_ucVlanNum;
     BYTE                   m_ucIPNum;
 
+    WORD32                 m_dwPrimaryIP;  /* 取第一个IPv4配置作为主IPv4地址 */
+
+    BYTE                   m_aucIPType[MAX_DEV_IP_NUM];
+    T_IPAddr               m_atIPAddr[MAX_DEV_IP_NUM];
+
     struct rte_ether_addr  m_tEthAddr;
 };
+
+
+inline WORD32 CEthDevice::GetPrimaryIPv4()
+{
+    return m_dwPrimaryIP;
+}
 
 
 inline BYTE * CEthDevice::GetMacAddr()
 {
     return (BYTE *)(m_tEthAddr.addr_bytes);
+}
+
+
+/* dwIPv4是否为本设备的IP地址(dwIPv4 : 按网络字节序) */
+inline BOOL CEthDevice::IsMatch(WORD32 dwIPv4)
+{
+    for (WORD32 dwIndex = 0; dwIndex < m_ucIPNum; dwIndex++)
+    {
+        if ( (E_IPV4_TYPE == m_aucIPType[dwIndex])
+          && (dwIPv4 == m_atIPAddr[dwIndex].dwIPv4))
+        {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
 }
 
 

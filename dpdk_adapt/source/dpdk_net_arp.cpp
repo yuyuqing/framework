@@ -31,7 +31,9 @@ WORD32 CArpStack::Initialize(CCentralMemPool *pMemInterface)
 }
 
 
+/* wProto : 低层协议栈类型(0 : EtherNet) */
 WORD32 CArpStack::RecvEthPacket(CAppInterface *pApp,
+                                WORD16         wProto,
                                 WORD32         dwDevID,
                                 WORD32         dwPortID,
                                 WORD32         dwQueueID,
@@ -74,6 +76,27 @@ WORD32 CArpStack::RecvEthPacket(CAppInterface *pApp,
 /* 主动向目的IP发Arp请求, 用于查询对端MAC地址 */
 WORD32 CArpStack::SendArpRequest(CDevQueue *pQueue, WORD32 dwDstIP)
 {
+    /* 不需要向自己发送ARP请求 */
+    CIPInst *pIPInst = m_pIPTable->FindByIPv4(dwDstIP);
+    if (NULL != pIPInst)
+    {
+        return FAIL;
+    }
+
+    CEthDevice         *pDevice  = (CEthDevice *)(pQueue->GetDevice());
+    struct rte_mempool *pMemPool = pQueue->GetMemPool();
+
+    T_MBuf *pArpReq = EncodeArpRequest(pDevice->GetMacAddr(),
+                                       pDevice->GetPrimaryIPv4(),
+                                       dwDstIP,
+                                       pMemPool);
+    if (NULL == pArpReq)
+    {
+        return FAIL;
+    }
+
+    pQueue->SendPacket(pArpReq);
+
     return SUCCESS;
 }
 
@@ -84,6 +107,8 @@ WORD32 CArpStack::ProcArpRequest(CAppInterface *pApp,
                                  WORD32         dwQueueID,
                                  T_ArpHead     *pArpHead)
 {
+    TRACE_STACK("CArpStack::ProcArpRequest()");
+
     WORD32  dwSrcIP = pArpHead->arp_data.arp_sip;
     WORD32  dwDstIP = pArpHead->arp_data.arp_tip;
     BYTE   *pSrcMac = pArpHead->arp_data.arp_sha.addr_bytes;
@@ -125,6 +150,8 @@ WORD32 CArpStack::ProcArpRequest(CAppInterface *pApp,
 
 WORD32 CArpStack::ProcArpReply(T_ArpHead *pArpHead, WORD32 dwDevID)
 {
+    TRACE_STACK("CArpStack::ProcArpReply()");
+
     WORD32  dwSrcIP = pArpHead->arp_data.arp_sip;
     WORD32  dwDstIP = pArpHead->arp_data.arp_tip;
     BYTE   *pSrcMac = pArpHead->arp_data.arp_sha.addr_bytes;
@@ -237,6 +264,44 @@ T_MBuf * CArpStack::EncodeArpReply(BYTE               *pSrcMacAddr,
                "ArpSrcIP : %u, ArpSrcMac : %s, ArpDstIP : %u, ArpDstMac : %s\n",
                dwSrcIP, aucSrcMacAddr,
                dwDstIP, aucDstMacAddr);
+
+    return pMBuf;
+}
+
+
+T_MBuf * CArpStack::EncodeArpRequest(BYTE               *pSrcMacAddr,
+                                     WORD32              dwSrcIP,
+                                     WORD32              dwDstIP,
+                                     struct rte_mempool *pMBufPool)
+{
+    T_EthHead *pEthHead = NULL;
+    T_ArpHead *pArpHead = NULL;
+    T_MBuf    *pMBuf    = rte_pktmbuf_alloc(pMBufPool);
+    if (NULL == pMBuf)
+    {
+        return NULL;
+    }
+
+    WORD32 dwPktSize = sizeof(T_EthHead) + sizeof(T_ArpHead);
+    pMBuf->pkt_len  = dwPktSize;
+    pMBuf->data_len = dwPktSize;
+
+    pEthHead = rte_pktmbuf_mtod(pMBuf, struct rte_ether_hdr *);
+    pArpHead = (T_ArpHead *)(pEthHead + 1);
+
+    memset(pEthHead->dst_addr.addr_bytes, 0xFF, RTE_ETHER_ADDR_LEN);
+    rte_memcpy(pEthHead->src_addr.addr_bytes, pSrcMacAddr, RTE_ETHER_ADDR_LEN);
+    pEthHead->ether_type = htons(RTE_ETHER_TYPE_ARP);
+
+    pArpHead->arp_hardware = htons(RTE_ARP_HRD_ETHER);
+    pArpHead->arp_protocol = htons(RTE_ETHER_TYPE_IPV4);
+    pArpHead->arp_hlen     = RTE_ETHER_ADDR_LEN;
+    pArpHead->arp_plen     = sizeof(WORD32);
+    pArpHead->arp_opcode   = htons(RTE_ARP_OP_REQUEST);
+    rte_memcpy(pArpHead->arp_data.arp_sha.addr_bytes, pSrcMacAddr, RTE_ETHER_ADDR_LEN);
+    pArpHead->arp_data.arp_sip = dwSrcIP;
+    memset(pArpHead->arp_data.arp_tha.addr_bytes, 0x00, RTE_ETHER_ADDR_LEN);
+    pArpHead->arp_data.arp_tip = dwDstIP;
 
     return pMBuf;
 }

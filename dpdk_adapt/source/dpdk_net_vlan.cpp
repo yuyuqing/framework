@@ -71,6 +71,7 @@ WORD32 CVlanStack::Initialize(CCentralMemPool *pMemInterface)
  ****************************** VLAN ********************************
 *******************************************************************/
 WORD32 CVlanStack::RecvEthPacket(CAppInterface *pApp,
+                                 WORD16         wProto,
                                  WORD32         dwDevID,
                                  WORD32         dwPortID,
                                  WORD32         dwQueueID,

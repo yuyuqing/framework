@@ -32,6 +32,9 @@ typedef enum rte_eth_event_type  E_EthEventType;
 typedef struct rte_ether_hdr     T_EthHead;
 typedef struct rte_vlan_hdr      T_VlanHead;
 typedef struct rte_arp_hdr       T_ArpHead;
+typedef struct rte_ipv4_hdr      T_Ipv4Head;
+typedef struct rte_icmp_hdr      T_IcmpHead;
+typedef struct rte_udp_hdr       T_UdpHead;
 
 
 /* 报文回调处理函数 */
