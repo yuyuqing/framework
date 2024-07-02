@@ -231,8 +231,14 @@ T_MBuf * CArpStack::EncodeArpReply(BYTE               *pSrcMacAddr,
     pPkt     = rte_pktmbuf_mtod(pMBuf, BYTE *);
     pEthHead = (T_EthHead *)pPkt;
 
+#if RTE_VERSION >= RTE_VERSION_NUM(21, 11, 1, 0)
     rte_memcpy(pEthHead->dst_addr.addr_bytes, pDstMacAddr, RTE_ETHER_ADDR_LEN);
     rte_memcpy(pEthHead->src_addr.addr_bytes, pSrcMacAddr, RTE_ETHER_ADDR_LEN);
+#else
+    rte_memcpy(pEthHead->d_addr.addr_bytes, pDstMacAddr, RTE_ETHER_ADDR_LEN);
+    rte_memcpy(pEthHead->s_addr.addr_bytes, pSrcMacAddr, RTE_ETHER_ADDR_LEN);
+#endif
+
     pEthHead->ether_type = htons(RTE_ETHER_TYPE_ARP);
 
     pArpHead               = (T_ArpHead *)(pEthHead + 1);
@@ -289,8 +295,14 @@ T_MBuf * CArpStack::EncodeArpRequest(BYTE               *pSrcMacAddr,
     pEthHead = rte_pktmbuf_mtod(pMBuf, struct rte_ether_hdr *);
     pArpHead = (T_ArpHead *)(pEthHead + 1);
 
+#if RTE_VERSION >= RTE_VERSION_NUM(21, 11, 1, 0)
     memset(pEthHead->dst_addr.addr_bytes, 0xFF, RTE_ETHER_ADDR_LEN);
     rte_memcpy(pEthHead->src_addr.addr_bytes, pSrcMacAddr, RTE_ETHER_ADDR_LEN);
+#else
+    memset(pEthHead->d_addr.addr_bytes, 0xFF, RTE_ETHER_ADDR_LEN);
+    rte_memcpy(pEthHead->s_addr.addr_bytes, pSrcMacAddr, RTE_ETHER_ADDR_LEN);
+#endif
+
     pEthHead->ether_type = htons(RTE_ETHER_TYPE_ARP);
 
     pArpHead->arp_hardware = htons(RTE_ARP_HRD_ETHER);

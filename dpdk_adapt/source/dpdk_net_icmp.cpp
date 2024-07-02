@@ -47,12 +47,21 @@ WORD32 CIcmpStack::RecvEthPacket(CAppInterface *pApp,
     {
     case RTE_IP_ICMP_ECHO_REQUEST :
         {
+#if RTE_VERSION >= RTE_VERSION_NUM(21, 11, 1, 0)
             dwResult = ProcIcmpRequest(ptEthHead->src_addr.addr_bytes,
                                        ptIpv4Head->src_addr,
                                        ptIpv4Head->dst_addr,
                                        ptIpv4Head,
                                        ptIcmpHead,
                                        pApp);
+#else
+            dwResult = ProcIcmpRequest(ptEthHead->s_addr.addr_bytes,
+                                       ptIpv4Head->src_addr,
+                                       ptIpv4Head->dst_addr,
+                                       ptIpv4Head,
+                                       ptIcmpHead,
+                                       pApp);
+#endif
         }
         break ;
 
@@ -146,8 +155,14 @@ T_MBuf * CIcmpStack::EncodeIcmpReply(BYTE               *pSrcMacAddr,
     pPkt     = rte_pktmbuf_mtod(pMBuf, BYTE *);
     pEthHead = (T_EthHead *)pPkt;
 
+#if RTE_VERSION >= RTE_VERSION_NUM(21, 11, 1, 0)
     rte_memcpy(pEthHead->dst_addr.addr_bytes, pDstMacAddr, RTE_ETHER_ADDR_LEN);
     rte_memcpy(pEthHead->src_addr.addr_bytes, pSrcMacAddr, RTE_ETHER_ADDR_LEN);
+#else
+    rte_memcpy(pEthHead->d_addr.addr_bytes, pDstMacAddr, RTE_ETHER_ADDR_LEN);
+    rte_memcpy(pEthHead->s_addr.addr_bytes, pSrcMacAddr, RTE_ETHER_ADDR_LEN);
+#endif
+
     pEthHead->ether_type = htons(RTE_ETHER_TYPE_IPV4);
 
     pIpv4Head = (T_Ipv4Head *)(pEthHead + 1);

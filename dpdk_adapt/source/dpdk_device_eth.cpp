@@ -20,12 +20,9 @@ CEthDevice::CEthDevice (const T_DeviceParam &rtParam)
     memset(m_atIPAddr,  0x00, sizeof(m_atIPAddr));
     memset(&m_tEthAddr, 0x00, sizeof(m_tEthAddr));
 
-    m_tEthConf.rxmode.mq_mode               = RTE_ETH_MQ_RX_RSS;
 #if RTE_VERSION >= RTE_VERSION_NUM(21, 11, 1, 0)
+    m_tEthConf.rxmode.mq_mode               = RTE_ETH_MQ_RX_RSS;
     m_tEthConf.rxmode.mtu                   = RTE_ETHER_MAX_LEN;
-#else
-    m_tEthConf.rxmode.max_rx_pkt_len        = RTE_ETHER_MAX_LEN;
-#endif
     m_tEthConf.rxmode.offloads              = RTE_ETH_RX_OFFLOAD_UDP_CKSUM
                                             | RTE_ETH_RX_OFFLOAD_TCP_CKSUM;
     m_tEthConf.txmode.mq_mode               = RTE_ETH_MQ_TX_NONE;
@@ -36,6 +33,20 @@ CEthDevice::CEthDevice (const T_DeviceParam &rtParam)
                                             | RTE_ETH_RSS_NONFRAG_IPV4_TCP
                                             | RTE_ETH_RSS_IPV6
                                             | RTE_ETH_RSS_NONFRAG_IPV6_TCP;
+#else
+    m_tEthConf.rxmode.mq_mode               = ETH_MQ_RX_RSS;
+    m_tEthConf.rxmode.max_rx_pkt_len        = RTE_ETHER_MAX_LEN;
+    m_tEthConf.rxmode.offloads              = DEV_RX_OFFLOAD_UDP_CKSUM
+                                            | DEV_RX_OFFLOAD_TCP_CKSUM;
+    m_tEthConf.txmode.mq_mode               = ETH_MQ_TX_NONE;
+    m_tEthConf.txmode.offloads              = DEV_TX_OFFLOAD_UDP_CKSUM
+                                            | DEV_TX_OFFLOAD_TCP_CKSUM;
+    m_tEthConf.rx_adv_conf.rss_conf.rss_key = NULL;
+    m_tEthConf.rx_adv_conf.rss_conf.rss_hf  = ETH_RSS_IPV4
+                                            | ETH_RSS_NONFRAG_IPV4_TCP
+                                            | ETH_RSS_IPV6
+                                            | ETH_RSS_NONFRAG_IPV6_TCP;
+#endif
 }
 
 
