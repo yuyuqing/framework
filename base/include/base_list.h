@@ -834,7 +834,12 @@ public :
     typedef CBaseDataContainer<CSequenceData, NODE_NUM, FALSE>  CSequenceList;
     typedef typename CSequenceList::T_DataHeader                T_SequenceHeader;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winvalid-offsetof"
+
     static const WORD32 s_dwValueOffset = offsetof(CSequenceData, m_tData);
+
+#pragma GCC diagnostic pop
 
 public :
     CBaseSequence ();
@@ -1023,7 +1028,14 @@ inline T * CBaseSequence<K, T, NODE_NUM>::Create(const K &rKey)
 template <typename K, class T, WORD32 NODE_NUM>
 inline WORD32 CBaseSequence<K, T, NODE_NUM>::Delete(T *pInst)
 {
-    CSequenceData *pData = (CSequenceData *)(pInst) - s_dwValueOffset;
+    WORD64 lwAddr = (WORD64)(pInst) - s_dwValueOffset;
+
+    if (FALSE == m_cList.IsValid((VOID *)lwAddr))
+    {
+        return FAIL;
+    }
+
+    CSequenceData *pData = (CSequenceData *)lwAddr;
 
     m_cList.Free(pData);
     delete pData;
