@@ -75,7 +75,7 @@ target_link_libraries(main_primary -lglib-2.0 ${lib_obj} -Wl,--whole-archive;-L/
                       -l:librte_bbdev.a;-l:librte_acl.a;-l:librte_timer.a;-l:librte_hash.a;-l:librte_metrics.a;-l:librte_cmdline.a;
                       -l:librte_pci.a;-l:librte_ethdev.a;-l:librte_meter.a;-l:librte_net.a;-l:librte_mbuf.a;-l:librte_mempool.a;
                       -l:librte_rcu.a;-l:librte_ring.a;-l:librte_eal.a;-l:librte_telemetry.a;-l:librte_kvargs.a;
-                      -Wl,--no-whole-archive;-Wl,--export-dynamic; -lrt -pthread)
+                      -Wl,--no-whole-archive;-Wl,--export-dynamic; -lrt -pthread -lm -ldl -lnuma -lpcap)
 
 
 set(main_secondary_srcs
@@ -118,4 +118,4 @@ target_link_libraries(main_secondary -lglib-2.0 ${lib_obj} -Wl,--whole-archive;-
                       -l:librte_bbdev.a;-l:librte_acl.a;-l:librte_timer.a;-l:librte_hash.a;-l:librte_metrics.a;-l:librte_cmdline.a;
                       -l:librte_pci.a;-l:librte_ethdev.a;-l:librte_meter.a;-l:librte_net.a;-l:librte_mbuf.a;-l:librte_mempool.a;
                       -l:librte_rcu.a;-l:librte_ring.a;-l:librte_eal.a;-l:librte_telemetry.a;-l:librte_kvargs.a;
-                      -Wl,--no-whole-archive;-Wl,--export-dynamic; -lrt -pthread)
+                      -Wl,--no-whole-archive;-Wl,--export-dynamic; -lrt -pthread -lm -ldl -lnuma -lpcap)
