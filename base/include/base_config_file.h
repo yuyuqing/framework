@@ -27,6 +27,8 @@
 #define MAX_APP_NUM_PER_THREAD       ((WORD32)(12))
 #define MAX_ASSOCIATE_NUM_PER_APP    ((WORD32)(16))
 
+
+#define EAL_ARG_NUM                  ((WORD32)(16))
 #define EAL_ARG_LEN                  ((WORD32)(64))
 #define DEV_NAME_LEN                 ((WORD32)(32))
 #define MAX_DEV_PORT_NUM             ((WORD32)(8))
@@ -212,16 +214,11 @@ typedef struct tagT_DpdkDevJsonCfg
 typedef struct tagT_DpdkJsonCfg
 {
     BOOL                 bInitFlag;
+    WORD32               dwArgNum;
     WORD32               dwDevNum;
     WORD32               dwBBNum;
     WORD32               dwEthNum;
-    CHAR                 aucCoreArg[EAL_ARG_LEN];
-    CHAR                 aucMemArg[EAL_ARG_LEN];
-    CHAR                 aucChannelArg[EAL_ARG_LEN];
-    CHAR                 aucFilePrefixArg[EAL_ARG_LEN];
-    CHAR                 aucProcTypeArg[EAL_ARG_LEN];
-    CHAR                 aucIovaModeArg[EAL_ARG_LEN];
-    CHAR                 aucVirtNetArg[EAL_ARG_LEN];
+    CHAR                 aucArgs[EAL_ARG_NUM][EAL_ARG_LEN];
     T_DpdkDevJsonCfg     atDevice[MAX_DEV_PORT_NUM];
     T_DpdkBBDevJsonCfg   atBBDev[MAX_DEV_PORT_NUM];
     T_DpdkEthDevJsonCfg  atEthDev[MAX_DEV_PORT_NUM];

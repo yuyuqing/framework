@@ -114,14 +114,7 @@ WORD32 CDpdkMgr::Initialize(CCentralMemPool *pMemInterface,
     WORD32 dwDevCount = 0;
 
     /* Æô¶¯DPDK */
-    dwResult = InitDpdkEal(pArg0,
-                           rtCfg.aucCoreArg,
-                           rtCfg.aucMemArg,
-                           rtCfg.aucChannelArg,
-                           rtCfg.aucFilePrefixArg,
-                           rtCfg.aucProcTypeArg,
-                           rtCfg.aucIovaModeArg,
-                           rtCfg.aucVirtNetArg);
+    dwResult = InitDpdkEal(rtCfg);
     if (SUCCESS != dwResult)
     {
         return FAIL;
@@ -162,25 +155,16 @@ VOID CDpdkMgr::Dump()
 }
 
 
-WORD32 CDpdkMgr::InitDpdkEal(const CHAR *pArg0,
-                             CHAR       *pArgCore,
-                             CHAR       *pArgMem,
-                             CHAR       *pArgChannel,
-                             CHAR       *pArgFilePrefix,
-                             CHAR       *pArgProcType,
-                             CHAR       *pArgIovaMode,
-                             CHAR       *pArgVirtNet)
+WORD32 CDpdkMgr::InitDpdkEal(T_DpdkJsonCfg &rtCfg)
 {
-    CHAR *pArgs[EAL_ARG_NUM] = {(CHAR *)pArg0,
-                                pArgCore,
-                                pArgMem,
-                                pArgChannel,
-                                pArgFilePrefix,
-                                pArgProcType,
-                                pArgIovaMode,
-                                pArgVirtNet};
+    CHAR *pArgs[EAL_ARG_NUM] = {NULL, };
 
-    SWORD32 iResult = rte_eal_init((SWORD32)(EAL_ARG_NUM), pArgs);
+    for (WORD32 dwIndex = 0; dwIndex < rtCfg.dwArgNum; dwIndex++)
+    {
+        pArgs[dwIndex] = rtCfg.aucArgs[dwIndex];
+    }
+
+    SWORD32 iResult = rte_eal_init((SWORD32)(rtCfg.dwArgNum), pArgs);
     if (iResult < 0)
     {
         return FAIL;

@@ -446,38 +446,29 @@ WORD32 ParseDpdk(T_DpdkJsonCfg &tConfig, CJsonValue &rRoot)
 {
     tConfig.bInitFlag = (BOOL)(rRoot["init_flag"].AsBOOL());
 
-    CString<EAL_ARG_LEN> cCoreArg(rRoot["lcore_arg"].AsString());
-    memcpy(tConfig.aucCoreArg, cCoreArg.toChar(), cCoreArg.Length());
-
-    CString<EAL_ARG_LEN> cMemArg(rRoot["socket_mem"].AsString());
-    memcpy(tConfig.aucMemArg, cMemArg.toChar(), cMemArg.Length());
-
-    CString<EAL_ARG_LEN> cChannelArg(rRoot["channel_num"].AsString());
-    memcpy(tConfig.aucChannelArg, cChannelArg.toChar(), cChannelArg.Length());
-
-    CString<EAL_ARG_LEN> cFileArg(rRoot["file_prefix"].AsString());
-    memcpy(tConfig.aucFilePrefixArg, cFileArg.toChar(), cFileArg.Length());
-
-    CString<EAL_ARG_LEN> cProcArg(rRoot["proc_type"].AsString());
-    memcpy(tConfig.aucProcTypeArg, cProcArg.toChar(), cProcArg.Length());
-
-    CString<EAL_ARG_LEN> cIovaArg(rRoot["iova_mode"].AsString());
-    memcpy(tConfig.aucIovaModeArg, cIovaArg.toChar(), cIovaArg.Length());
-
-    CString<EAL_ARG_LEN> cVirtArg(rRoot["virt_net"].AsString());
-    memcpy(tConfig.aucVirtNetArg, cVirtArg.toChar(), cVirtArg.Length());
-
+    CJsonValue &rArgs   = rRoot["init_args"];
     CJsonValue &rIntf   = rRoot["interface"];
     CJsonValue &rBBDev  = rRoot["bbdev"];
     CJsonValue &rEthDev = rRoot["ethdev"];
 
+    tConfig.dwArgNum = rArgs.size();
     tConfig.dwDevNum = rIntf.size();
     tConfig.dwBBNum  = rBBDev.size();
     tConfig.dwEthNum = rEthDev.size();
 
+    tConfig.dwArgNum = MIN(tConfig.dwArgNum, EAL_ARG_NUM);
     tConfig.dwDevNum = MIN(tConfig.dwDevNum, MAX_DEV_PORT_NUM);
     tConfig.dwBBNum  = MIN(tConfig.dwBBNum,  MAX_DEV_PORT_NUM);
     tConfig.dwEthNum = MIN(tConfig.dwEthNum, MAX_DEV_PORT_NUM);
+
+    for (WORD32 dwIndex = 0; dwIndex < tConfig.dwArgNum; dwIndex++)
+    {
+        CJsonValue &rArg = rArgs[dwIndex];
+        CHAR       *pArg = tConfig.aucArgs[dwIndex];
+
+        CString<EAL_ARG_LEN> cCmdArg(rArg["cmd_line"].AsString());
+        memcpy(pArg, cCmdArg.toChar(), cCmdArg.Length());
+    }
 
     for (WORD32 dwIndex = 0; dwIndex < tConfig.dwDevNum; dwIndex++)
     {

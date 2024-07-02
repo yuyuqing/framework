@@ -10,9 +10,6 @@
 #include "dpdk_net_interface.h"
 
 
-#define EAL_ARG_NUM             ((WORD32)(8))
-
-
 class CDpdkMgr : public CSingleton<CDpdkMgr>, public CBaseData
 {
 public :
@@ -36,14 +33,7 @@ public :
     VOID Dump();
 
 protected :
-    WORD32 InitDpdkEal(const CHAR *pArg0,
-                       CHAR       *pArgCore,
-                       CHAR       *pArgMem,
-                       CHAR       *pArgChannel,
-                       CHAR       *pArgFilePrefix,
-                       CHAR       *pArgProcType,
-                       CHAR       *pArgIovaMode,
-                       CHAR       *pArgVirtNet);
+    WORD32 InitDpdkEal(T_DpdkJsonCfg &rtCfg);
 
     WORD32 InitDevice(T_DpdkJsonCfg &rtCfg);
 
