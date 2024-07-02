@@ -20,7 +20,7 @@ typedef struct tagT_MacAddr
 class CArpTable;
 
 
-class CArpInst
+class CArpInst : public CBaseData
 {
 public :
     friend class CArpTable;
