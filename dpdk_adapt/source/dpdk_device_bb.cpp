@@ -28,7 +28,7 @@ CBBDevice::CBBDevice (const T_DeviceParam &rtParam)
     : CBaseDevice(E_BB_DEVICE, rtParam)
 {
     m_tEthConf.rxmode.mq_mode        = RTE_ETH_MQ_RX_NONE;
-#if RTE_VERSION >= RTE_VERSION_NUM(23, 07, 0, 0)
+#if RTE_VERSION >= RTE_VERSION_NUM(21, 11, 1, 0)
     m_tEthConf.rxmode.mtu            = RTE_ETHER_MAX_LEN;
 #else
     m_tEthConf.rxmode.max_rx_pkt_len = RTE_ETHER_MAX_LEN;

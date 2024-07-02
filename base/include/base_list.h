@@ -853,6 +853,9 @@ public :
     /* 仅创建节点 */
     T * Create(const K &rKey);
 
+    /* 仅释放节点 */
+    WORD32 Delete(T *pInst);
+
     /* 将节点添加到尾部 */
     WORD32 InsertTail(T *pInst);
 
@@ -1013,6 +1016,19 @@ inline T * CBaseSequence<K, T, NODE_NUM>::Create(const K &rKey)
     new (pData) CSequenceData(rKey);
 
     return *pData;
+}
+
+
+/* 仅释放节点 */
+template <typename K, class T, WORD32 NODE_NUM>
+inline WORD32 CBaseSequence<K, T, NODE_NUM>::Delete(T *pInst)
+{
+    CSequenceData *pData = (CSequenceData *)(pInst) - s_dwValueOffset;
+
+    m_cList.Free(pData);
+    delete pData;
+
+    return SUCCESS;
 }
 
 

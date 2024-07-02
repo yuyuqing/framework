@@ -20,12 +20,9 @@ include_directories(${dpdk_incs}
                     ${base_incs} 
                     ${dpdk_adapt_incs})
 
-# set(lib_obj
-#     sub::libbase
-#     sub::libdpdk_adapt)
-
 set(lib_obj
-    sub::libbase)
+    sub::libbase
+    sub::libdpdk_adapt)
 
 set(ENV{PKG_CONFIG_PATH} "/home/wrk1/dpdk_install/lib/x86_64-linux-gnu/pkgconfig")
 find_package(PkgConfig REQUIRED)
