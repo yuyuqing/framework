@@ -77,7 +77,11 @@ CTimerApp::CTimerApp ()
     m_ucSlot             = INVALID_BYTE;
     m_ucMeasMinute       = CLogInfo::s_awPeriodMinute[E_LOG_PERIOD_05_MINUTE];
 
-    memset((BYTE *)(&m_tMeas), 0x00, sizeof(m_tMeas));
+    memset((BYTE *)(&m_tMeas),           0x00, sizeof(m_tMeas));
+    memset((BYTE *)(&m_tPhyRecvMeasure), 0x00, sizeof(m_tPhyRecvMeasure));
+    memset((BYTE *)(&m_tClAppMeasure),   0x00, sizeof(m_tClAppMeasure));
+    memset((BYTE *)(&m_tSchAppMeasure),  0x00, sizeof(m_tSchAppMeasure));
+    memset((BYTE *)(&m_tUlRecvMeasure),  0x00, sizeof(m_tUlRecvMeasure));
 }
 
 
@@ -134,6 +138,7 @@ WORD32 CTimerApp::Init()
 {
     TRACE_STACK("CTimerApp::Init()");
 
+    /* 向NGP内存池注册(原因 : 定时器回调业务函数时, 需要从NGP的内存池中申请内存) */
     if (NULL != m_pRegistMemPoolFunc)
     {
         (*m_pRegistMemPoolFunc) ();
@@ -501,6 +506,50 @@ VOID CTimerApp::DumpMeasure(const VOID *pIn, WORD32 dwLen)
 {
     TRACE_STACK("CTimerApp::DumpMeasure()");
 
+    WORD32 dwTick   = COamApp::TIMER_TIMEOUT_INTERVAL;
+    WORD32 dwProcID = m_pOwner->GetProcID();
+
+    RegisterTimer(dwTick,
+                  (CCBObject *)this,
+                  (PCBFUNC)(&CTimerApp::TimeOutDumpTimerMeas),
+                  0);
+
+    switch (dwProcID)
+    {
+    case E_PROC_DU :
+        {
+            RegisterTimer(2 * dwTick,
+                          (CCBObject *)this,
+                          (PCBFUNC)(&CTimerApp::TimeOutDumpPhyRecv),
+                          0);
+
+            RegisterTimer(3 * dwTick,
+                          (CCBObject *)this,
+                          (PCBFUNC)(&CTimerApp::TimeOutDumpClApp),
+                          0);
+
+            RegisterTimer(4 * dwTick,
+                          (CCBObject *)this,
+                          (PCBFUNC)(&CTimerApp::TimeOutDumpUlRecv),
+                          0);
+
+            RegisterTimer(5 * dwTick,
+                          (CCBObject *)this,
+                          (PCBFUNC)(&CTimerApp::TimeOutDumpSchApp),
+                          0);
+        }
+        break ;
+
+    default :
+        break ;
+    }
+}
+
+
+VOID CTimerApp::TimeOutDumpTimerMeas(const VOID *pIn, WORD32 dwLen)
+{
+    TRACE_STACK("CTimerApp::DumpTimerMeas()");
+
     WORD64 lwStartCount = m_tMeas.lwStartCount.load(std::memory_order_relaxed);
     WORD64 lwStartMFail = m_tMeas.lwStartMFail.load(std::memory_order_relaxed);
     WORD64 lwStartQFail = m_tMeas.lwStartQFail.load(std::memory_order_relaxed);
@@ -538,6 +587,351 @@ VOID CTimerApp::DumpMeasure(const VOID *pIn, WORD32 dwLen)
                m_tMeas.lwSlotMsgCount,
                m_tMeas.lwSlotMsgMissCount,
                m_tMeas.lwTimeOutCount);
+}
+
+
+VOID CTimerApp::TimeOutDumpPhyRecv(const VOID *pIn, WORD32 dwLen)
+{
+    TRACE_STACK("CTimerApp::TimeOutDumpPhyRecv()");
+
+    T_PhyRecvMeasure        tMeasure;
+    T_PhyRecvAtomicMeasure &rtMeasAtomic = m_tPhyRecvMeasure;
+
+    tMeasure.lwSlotIndNum = rtMeasAtomic.lwSlotIndNum.load(std::memory_order_relaxed);
+
+    for (WORD32 dwIndex = 0; dwIndex < MAX_CELL_PER_GNB; dwIndex++)
+    {
+        T_PhyRecvCellMeasure       *ptCell       = &(tMeasure.atCell[dwIndex]);
+        T_PhyRecvCellAtomicMeasure *ptCellAtomic = &(rtMeasAtomic.atCell[dwIndex]);
+
+        for (WORD32 dwIndex1 = 0; dwIndex1 < SLOT_NUM_PER_HALF_SFN; dwIndex1++)
+        {
+            T_PhyRecvCellMeasItem       *ptItem       = &(ptCell->atMeas[dwIndex1]);
+            T_PhyRecvCellAtomicMeasItem *ptItemAtomic = &(ptCellAtomic->atMeas[dwIndex1]);
+
+            ptItem->lwDlActvUeNum   = ptItemAtomic->lwDlActvUeNum.load(std::memory_order_relaxed);
+            ptItem->lwUlPdcchNum    = ptItemAtomic->lwUlPdcchNum.load(std::memory_order_relaxed);
+            ptItem->lwDlPdcchNum    = ptItemAtomic->lwDlPdcchNum.load(std::memory_order_relaxed);
+            ptItem->lwCsiRsNum      = ptItemAtomic->lwCsiRsNum.load(std::memory_order_relaxed);
+            ptItem->lwBchNum        = ptItemAtomic->lwBchNum.load(std::memory_order_relaxed);
+            ptItem->lwPduNum        = ptItemAtomic->lwPduNum.load(std::memory_order_relaxed);
+            ptItem->lwSibNum        = ptItemAtomic->lwSibNum.load(std::memory_order_relaxed);
+            ptItem->lwPagingNum     = ptItemAtomic->lwPagingNum.load(std::memory_order_relaxed);
+            ptItem->lwMsg2Num       = ptItemAtomic->lwMsg2Num.load(std::memory_order_relaxed);
+            ptItem->lwMsg4Num       = ptItemAtomic->lwMsg4Num.load(std::memory_order_relaxed);
+            ptItem->lwTBNum         = ptItemAtomic->lwTBNum.load(std::memory_order_relaxed);
+            ptItem->lwTBSize        = ptItemAtomic->lwTBSize.load(std::memory_order_relaxed);
+            ptItem->lwPuschNum      = ptItemAtomic->lwPuschNum.load(std::memory_order_relaxed);
+            ptItem->lwPucchFrmt1Num = ptItemAtomic->lwPucchFrmt1Num.load(std::memory_order_relaxed);
+            ptItem->lwHqCsiSrNum    = ptItemAtomic->lwHqCsiSrNum.load(std::memory_order_relaxed);
+            ptItem->lwCsiSrNum      = ptItemAtomic->lwCsiSrNum.load(std::memory_order_relaxed);
+            ptItem->lwHqCsiNum      = ptItemAtomic->lwHqCsiNum.load(std::memory_order_relaxed);
+            ptItem->lwHqSrNum       = ptItemAtomic->lwHqSrNum.load(std::memory_order_relaxed);
+            ptItem->lwHarqNum       = ptItemAtomic->lwHarqNum.load(std::memory_order_relaxed);
+            ptItem->lwCsiNum        = ptItemAtomic->lwCsiNum.load(std::memory_order_relaxed);
+            ptItem->lwSrNum         = ptItemAtomic->lwSrNum.load(std::memory_order_relaxed);
+            ptItem->lwSrsNum        = ptItemAtomic->lwSrsNum.load(std::memory_order_relaxed);
+            ptItem->lwRachNum       = ptItemAtomic->lwRachNum.load(std::memory_order_relaxed);
+        }
+    }
+
+    LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+               "lwSlotIndNum : %lu\n",
+               tMeasure.lwSlotIndNum);
+
+    for (WORD32 dwIndex = 0; dwIndex < MAX_CELL_PER_GNB; dwIndex++)
+    {
+        LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+                   "CellID : %d\n",
+                   dwIndex);
+
+        T_PhyRecvCellMeasure *ptCell = &(tMeasure.atCell[dwIndex]);
+
+        {
+            TRACE_STACK("PDCCH    ActvUeNum       UlPdcchNum       "
+                        "DlPdcchNum         CsiRsNum    ");
+
+            for (WORD32 dwIndex1 = 0; dwIndex1 < SLOT_NUM_PER_HALF_SFN; dwIndex1++)
+            {
+                T_PhyRecvCellMeasItem *ptItem = &(ptCell->atMeas[dwIndex1]);
+                LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+                           "%d  %15lu  %15lu  %15lu  %15lu\n",
+                           dwIndex1,
+                           ptItem->lwDlActvUeNum,
+                           ptItem->lwUlPdcchNum,
+                           ptItem->lwDlPdcchNum,
+                           ptItem->lwCsiRsNum);
+            }
+        }
+
+        {
+            TRACE_STACK("PDSCH       BchNum           PduNum           "
+                        "SibNum        PagingNum          Msg2Num          "
+                        "Msg4Num            TBNum           TBSize     ");
+
+            for (WORD32 dwIndex1 = 0; dwIndex1 < SLOT_NUM_PER_HALF_SFN; dwIndex1++)
+            {
+                T_PhyRecvCellMeasItem *ptItem = &(ptCell->atMeas[dwIndex1]);
+                LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+                           "%d  %15lu  %15lu  %15lu  %15lu  "
+                           "%15lu  %15lu  %15lu  %15lu\n",
+                           dwIndex1,
+                           ptItem->lwBchNum,
+                           ptItem->lwPduNum,
+                           ptItem->lwSibNum,
+                           ptItem->lwPagingNum,
+                           ptItem->lwMsg2Num,
+                           ptItem->lwMsg4Num,
+                           ptItem->lwTBNum,
+                           ptItem->lwTBSize);
+            }
+        }
+
+        {
+            TRACE_STACK("PUSCH     PuschNum    PucchFrmt1Num       "
+                        "HqCsiSrNum         CsiSrNum         HqCsiNum          "
+                        "HqSrNum          HarqNum           CsiNum            "
+                        "SrNum           SrsNum          RachNum     ");
+
+            for (WORD32 dwIndex1 = 0; dwIndex1 < SLOT_NUM_PER_HALF_SFN; dwIndex1++)
+            {
+                T_PhyRecvCellMeasItem *ptItem = &(ptCell->atMeas[dwIndex1]);
+                LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+                           "%d  %15lu  %15lu  %15lu  %15lu  %15lu  %15lu  "
+                           "%15lu  %15lu  %15lu  %15lu  %15lu\n",
+                           dwIndex1,
+                           ptItem->lwPuschNum,
+                           ptItem->lwPucchFrmt1Num,
+                           ptItem->lwHqCsiSrNum,
+                           ptItem->lwCsiSrNum,
+                           ptItem->lwHqCsiNum,
+                           ptItem->lwHqSrNum,
+                           ptItem->lwHarqNum,
+                           ptItem->lwCsiNum,
+                           ptItem->lwSrNum,
+                           ptItem->lwSrsNum,
+                           ptItem->lwRachNum);
+            }
+        }
+    }
+}
+
+
+VOID CTimerApp::TimeOutDumpClApp(const VOID *pIn, WORD32 dwLen)
+{
+    TRACE_STACK("CTimerApp::TimeOutDumpClApp()");
+
+    T_ClAppMeasure        tMeasure;
+    T_ClAppAtomicMeasure &rtMeasAtomic = m_tClAppMeasure;
+
+    tMeasure.lwSlotIndNum     = rtMeasAtomic.lwSlotIndNum.load(std::memory_order_relaxed);
+    tMeasure.lwDiscontinueNum = rtMeasAtomic.lwDiscontinueNum.load(std::memory_order_relaxed);
+
+    for (WORD32 dwIndex = 0; dwIndex < MAX_CELL_PER_GNB; dwIndex++)
+    {
+        T_ClAppCellMeasure       *ptCell       = &(tMeasure.atCell[dwIndex]);
+        T_ClAppCellAtomicMeasure *ptCellAtomic = &(rtMeasAtomic.atCell[dwIndex]);
+
+        for (WORD32 dwIndex1 = 0; dwIndex1 < SLOT_NUM_PER_HALF_SFN; dwIndex1++)
+        {
+            T_ClAppCellMeasItem       *ptItem       = &(ptCell->atMeas[dwIndex1]);
+            T_ClAppCellAtomicMeasItem *ptItemAtomic = &(ptCellAtomic->atMeas[dwIndex1]);
+
+            ptItem->lwBchNum      = ptItemAtomic->lwBchNum.load(std::memory_order_relaxed);
+            ptItem->lwDlSchNum    = ptItemAtomic->lwDlSchNum.load(std::memory_order_relaxed);
+            ptItem->lwDlDciNum    = ptItemAtomic->lwDlDciNum.load(std::memory_order_relaxed);
+            ptItem->lwCsiRsNum    = ptItemAtomic->lwCsiRsNum.load(std::memory_order_relaxed);
+            ptItem->lwTxPduNum    = ptItemAtomic->lwTxPduNum.load(std::memory_order_relaxed);
+            ptItem->lwUlDciPduNum = ptItemAtomic->lwUlDciPduNum.load(std::memory_order_relaxed);
+            ptItem->lwPucchNum    = ptItemAtomic->lwPucchNum.load(std::memory_order_relaxed);
+            ptItem->lwPuschNum    = ptItemAtomic->lwPuschNum.load(std::memory_order_relaxed);
+            ptItem->lwSrsNum      = ptItemAtomic->lwSrsNum.load(std::memory_order_relaxed);
+        }
+    }
+
+    LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+               "lwSlotIndNum : %lu,   lwDiscontinueNum : %lu\n",
+               tMeasure.lwSlotIndNum,
+               tMeasure.lwDiscontinueNum);
+
+    for (WORD32 dwIndex = 0; dwIndex < MAX_CELL_PER_GNB; dwIndex++)
+    {
+        LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+                   "CellID : %d; BchNum         DlSchNum         "
+                   "DlDciNum         CsiRsNum         TxPduNum      "
+                   "UlDciPduNum         PucchNum         "
+                   "PuschNum           SrsNum\n",
+                   dwIndex);
+
+        T_ClAppCellMeasure *ptCell = &(tMeasure.atCell[dwIndex]);
+
+        for (WORD32 dwIndex1 = 0; dwIndex1 < SLOT_NUM_PER_HALF_SFN; dwIndex1++)
+        {
+            T_ClAppCellMeasItem *ptItem = &(ptCell->atMeas[dwIndex1]);
+            LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+                       "%d  %15lu  %15lu  %15lu  %15lu  "
+                       "%15lu  %15lu  %15lu  %15lu  %15lu\n",
+                       dwIndex1,
+                       ptItem->lwBchNum,
+                       ptItem->lwDlSchNum,
+                       ptItem->lwDlDciNum,
+                       ptItem->lwCsiRsNum,
+                       ptItem->lwTxPduNum,
+                       ptItem->lwUlDciPduNum,
+                       ptItem->lwPucchNum,
+                       ptItem->lwPuschNum,
+                       ptItem->lwSrsNum);
+        }
+    }
+}
+
+
+VOID CTimerApp::TimeOutDumpUlRecv(const VOID *pIn, WORD32 dwLen)
+{
+    TRACE_STACK("CTimerApp::TimeOutDumpUlRecv()");
+
+    T_UlRecvMeasure        tMeasure;
+    T_UlRecvAtomicMeasure &rtMeasAtomic = m_tUlRecvMeasure;
+
+    for (WORD32 dwIndex = 0; dwIndex < MAX_CELL_PER_GNB; dwIndex++)
+    {
+        T_UlRecvCellMeas       *ptCell       = &(tMeasure.atCell[dwIndex]);
+        T_UlRecvCellAtomicMeas *ptCellAtomic = &(rtMeasAtomic.atCell[dwIndex]);
+
+        for (WORD32 dwIndex1 = 0; dwIndex1 < SLOT_NUM_PER_HALF_SFN; dwIndex1++)
+        {
+            T_UlRecvCellMeasItem       *ptItem       = &(ptCell->atMeas[dwIndex1]);
+            T_UlRecvCellAtomicMeasItem *ptItemAtomic = &(ptCellAtomic->atMeas[dwIndex1]);
+
+            ptItem->lwUciRcvNum = ptItemAtomic->lwUciRcvNum.load(std::memory_order_relaxed);
+            ptItem->lwCrcRcvNum = ptItemAtomic->lwCrcRcvNum.load(std::memory_order_relaxed);
+            ptItem->lwSrsRcvNum = ptItemAtomic->lwSrsRcvNum.load(std::memory_order_relaxed);
+
+            for (WORD32 dwIndex2 = 0; dwIndex2 < SLOT_NUM_PER_HALF_SFN; dwIndex2++)
+            {
+                ptItem->alwUeUciSlot[dwIndex2] = ptItemAtomic->alwUeUciSlot[dwIndex2].load(std::memory_order_relaxed);
+                ptItem->alwUeCrcSlot[dwIndex2] = ptItemAtomic->alwUeCrcSlot[dwIndex2].load(std::memory_order_relaxed);
+                ptItem->alwUeSrsSlot[dwIndex2] = ptItemAtomic->alwUeSrsSlot[dwIndex2].load(std::memory_order_relaxed);
+            }
+        }
+    }
+
+    for (WORD32 dwIndex = 0; dwIndex < MAX_CELL_PER_GNB; dwIndex++)
+    {
+        T_UlRecvCellMeas *ptCell = &(tMeasure.atCell[dwIndex]);
+
+        LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+                   "CellID : %d\n",
+                   dwIndex);
+
+        TRACE_STACK("CurSlot    UciRcvNum      CrcRcvNum        "
+                    "SrsRcvNum         UciSlot7         UciSlot8         "
+                    "UciSlot9         CrcSlot7         CrcSlot8         "
+                    "CrcSlot9         SrsSlot7         SrsSlot8         "
+                    "SrsSlot9    ");
+
+        for (WORD32 dwIndex1 = 0; dwIndex1 < SLOT_NUM_PER_HALF_SFN; dwIndex1++)
+        {
+            T_UlRecvCellMeasItem *ptItem = &(ptCell->atMeas[dwIndex1]);
+
+            LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+                       "%d  %15lu  %15lu  %15lu  %15lu  %15lu  %15lu  "
+                       "%15lu  %15lu  %15lu  %15lu  %15lu  %15lu\n",
+                       dwIndex1,
+                       ptItem->lwUciRcvNum,
+                       ptItem->lwCrcRcvNum,
+                       ptItem->lwSrsRcvNum,
+                       ptItem->alwUeUciSlot[7],
+                       ptItem->alwUeUciSlot[8],
+                       ptItem->alwUeUciSlot[9],
+                       ptItem->alwUeCrcSlot[7],
+                       ptItem->alwUeCrcSlot[8],
+                       ptItem->alwUeCrcSlot[9],
+                       ptItem->alwUeSrsSlot[7],
+                       ptItem->alwUeSrsSlot[8],
+                       ptItem->alwUeSrsSlot[9]);
+        }
+    }
+}
+
+
+VOID CTimerApp::TimeOutDumpSchApp(const VOID *pIn, WORD32 dwLen)
+{
+    TRACE_STACK("CTimerApp::TimeOutDumpSchApp()");
+
+    T_SchAppMeasure        tMeasure;
+    T_SchAppAtomicMeasure &rtMeasAtomic = m_tSchAppMeasure;
+
+    for (WORD32 dwIndex = 0; dwIndex < MAX_CELL_PER_GNB; dwIndex++)
+    {
+        T_SchAppCellMeasure       *ptCell       = &(tMeasure.atCell[dwIndex]);
+        T_SchAppCellAtomicMeasure *ptCellAtomic = &(rtMeasAtomic.atCell[dwIndex]);
+
+        for (WORD32 dwIndex1 = 0; dwIndex1 < SLOT_NUM_PER_HALF_SFN; dwIndex1++)
+        {
+            T_SchAppCellMeasItem       *ptItem       = &(ptCell->atMeas[dwIndex1]);
+            T_SchAppCellAtomicMeasItem *ptItemAtomic = &(ptCellAtomic->atMeas[dwIndex1]);
+
+            ptItem->lwSlotIndNum = ptItemAtomic->lwSlotIndNum.load(std::memory_order_relaxed);
+            ptItem->lwUciIndNum  = ptItemAtomic->lwUciIndNum.load(std::memory_order_relaxed);
+            ptItem->lwCrcIndNum  = ptItemAtomic->lwCrcIndNum.load(std::memory_order_relaxed);
+            ptItem->lwSrsIndNum  = ptItemAtomic->lwSrsIndNum.load(std::memory_order_relaxed);
+
+            for (WORD32 dwIndex2 = 0; dwIndex2 < MAX_DIFF_SLOT_SCH2RLC; dwIndex2++)
+            {
+                ptItem->alwDiffTtiNum[dwIndex2] = ptItemAtomic->alwDiffTtiNum[dwIndex2].load(std::memory_order_relaxed);
+            }
+
+            for (WORD32 dwIndex2 = 0; dwIndex2 < SLOT_NUM_PER_HALF_SFN; dwIndex2++)
+            {
+                ptItem->alwDiffUciNum[dwIndex2] = ptItemAtomic->alwDiffUciNum[dwIndex2].load(std::memory_order_relaxed);
+                ptItem->alwDiffCrcNum[dwIndex2] = ptItemAtomic->alwDiffCrcNum[dwIndex2].load(std::memory_order_relaxed);
+                ptItem->alwDiffSrsNum[dwIndex2] = ptItemAtomic->alwDiffSrsNum[dwIndex2].load(std::memory_order_relaxed);
+            }
+        }
+    }
+
+    for (WORD32 dwIndex = 0; dwIndex < MAX_CELL_PER_GNB; dwIndex++)
+    {
+        LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+                   "CellID : %d\n",
+                   dwIndex);
+        TRACE_STACK("CurSlot    SlotIndNum     UciIndNum        "
+                    "CrcIndNum        SrsIndNum         TtiDiff0         "
+                    "TtiDiff1         TtiDiff2         TtiDiff3         "
+                    "UciDiff7         UciDiff8         UciDiff9         "
+                    "CrcDiff7         CrcDiff8         CrcDiff9         "
+                    "SrsDiff7         SrsDiff8         SrsDiff9         ");
+
+        T_SchAppCellMeasure *ptCell = &(tMeasure.atCell[dwIndex]);
+
+        for (WORD32 dwIndex1 = 0; dwIndex1 < SLOT_NUM_PER_HALF_SFN; dwIndex1++)
+        {
+            T_SchAppCellMeasItem *ptItem = &(ptCell->atMeas[dwIndex1]);
+            LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+                       "%d  %15lu  %15lu  %15lu  %15lu  %15lu  %15lu  %15lu  "
+                       "%15lu  %15lu  %15lu  %15lu  %15lu  %15lu  %15lu  "
+                       "%15lu  %15lu  %15lu\n",
+                       dwIndex1,
+                       ptItem->lwSlotIndNum,
+                       ptItem->lwUciIndNum,
+                       ptItem->lwCrcIndNum,
+                       ptItem->lwSrsIndNum,
+                       ptItem->alwDiffTtiNum[0],
+                       ptItem->alwDiffTtiNum[1],
+                       ptItem->alwDiffTtiNum[2],
+                       ptItem->alwDiffTtiNum[3],
+                       ptItem->alwDiffUciNum[7],
+                       ptItem->alwDiffUciNum[8],
+                       ptItem->alwDiffUciNum[9],
+                       ptItem->alwDiffCrcNum[7],
+                       ptItem->alwDiffCrcNum[8],
+                       ptItem->alwDiffCrcNum[9],
+                       ptItem->alwDiffSrsNum[7],
+                       ptItem->alwDiffSrsNum[8],
+                       ptItem->alwDiffSrsNum[9]);
+        }
+    }
 }
 
 

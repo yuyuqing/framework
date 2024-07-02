@@ -127,8 +127,18 @@ public :
 
     /* 周期性输出系统维测 */
     VOID DumpMeasure(const VOID *pIn, WORD32 dwLen);
+    VOID TimeOutDumpTimerMeas(const VOID *pIn, WORD32 dwLen);
+    VOID TimeOutDumpPhyRecv(const VOID *pIn, WORD32 dwLen);
+    VOID TimeOutDumpClApp(const VOID *pIn, WORD32 dwLen);
+    VOID TimeOutDumpUlRecv(const VOID *pIn, WORD32 dwLen);
+    VOID TimeOutDumpSchApp(const VOID *pIn, WORD32 dwLen);
 
     WORD32 InnerDelete(WORD32 dwKey);
+
+    T_PhyRecvAtomicMeasure & GetPhyRecvMeasure();
+    T_ClAppAtomicMeasure   & GetClAppMeasure();
+    T_SchAppAtomicMeasure  & GetSchAppMeasure();
+    T_UlRecvAtomicMeasure  & GetUlRecvMeasure();
 
 protected :
     WORD32 InnerCreate(WORD32          dwKey,
@@ -143,17 +153,46 @@ protected :
                        VOID           *pUserData);
 
 protected :
-    CTimerTree        m_cTree;
-    CB_RegistMemPool  m_pRegistMemPoolFunc;  /* 向NGP内存池注册线程信息 */
+    CTimerTree              m_cTree;
+    CB_RegistMemPool        m_pRegistMemPoolFunc;  /* 向NGP内存池注册线程信息 */
 
-    WORD64            m_lwSlotCount;
-    WORD16            m_wSFN;
-    BYTE              m_ucSlot;
+    WORD64                  m_lwSlotCount;
+    WORD16                  m_wSFN;
+    BYTE                    m_ucSlot;
 
-    BYTE              m_ucMeasMinute;  /* 维测定时器时长(单位:分钟) */
+    BYTE                    m_ucMeasMinute;  /* 维测定时器时长(单位:分钟) */
 
-    T_TimerMeasure    m_tMeas;
+    T_TimerMeasure          m_tMeas;
+
+    T_PhyRecvAtomicMeasure  m_tPhyRecvMeasure;
+    T_ClAppAtomicMeasure    m_tClAppMeasure;
+    T_SchAppAtomicMeasure   m_tSchAppMeasure;
+    T_UlRecvAtomicMeasure   m_tUlRecvMeasure;
 };
+
+
+inline T_PhyRecvAtomicMeasure & CTimerApp::GetPhyRecvMeasure()
+{
+    return m_tPhyRecvMeasure;
+}
+
+
+inline T_ClAppAtomicMeasure & CTimerApp::GetClAppMeasure()
+{
+    return m_tClAppMeasure;
+}
+
+
+inline T_SchAppAtomicMeasure & CTimerApp::GetSchAppMeasure()
+{
+    return m_tSchAppMeasure;
+}
+
+
+inline T_UlRecvAtomicMeasure & CTimerApp::GetUlRecvMeasure()
+{
+    return m_tUlRecvMeasure;
+}
 
 
 #endif
