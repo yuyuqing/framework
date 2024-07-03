@@ -13,7 +13,10 @@ public :
     CVlanStack ();
     virtual ~CVlanStack();
 
-    virtual WORD32 Initialize(CCentralMemPool *pMemInterface);
+    WORD32 Initialize(CCentralMemPool *pMemInterface,
+                      CNetStack       *pArpStack,
+                      CNetStack       *pIPv4Stack,
+                      CNetStack       *pIPv6Stack);
 
     virtual WORD32 RecvEthPacket(CAppInterface *pApp,
                                  WORD16         wProto,
@@ -24,8 +27,10 @@ public :
                                  T_EthHead     *ptEthHead);
 
 protected :
-    CNetStack  *m_pIPv4Stack;
-    CNetStack  *m_pIPv6Stack;
+    CVlanTable  *m_pVlanTable;
+    CNetStack   *m_pArpStack;
+    CNetStack   *m_pIPv4Stack;
+    CNetStack   *m_pIPv6Stack;
 };
 
 

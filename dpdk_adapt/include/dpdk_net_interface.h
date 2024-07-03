@@ -5,6 +5,7 @@
 
 
 #include "dpdk_device.h"
+#include "dpdk_vlan_table.h"
 
 #include "base_app_interface.h"
 
@@ -24,7 +25,7 @@ public :
 
     virtual WORD32 Initialize(CCentralMemPool *pMemInterface);
 
-    /* wProto : 低层协议栈类型(0 : EtherNet) */
+    /* 收以太网报文处理接口; wProto : 低层协议栈类型(0 : EtherNet) */
     virtual WORD32 RecvEthPacket(CAppInterface *pApp,
                                  WORD16         wProto,
                                  WORD32         dwDevID,
@@ -32,6 +33,15 @@ public :
                                  WORD32         dwQueueID,
                                  T_MBuf        *pMBuf,
                                  T_EthHead     *ptEthHead);
+
+    /* 收VLAN报文处理接口; ptHead : 去除VLAN以太网包头的净荷头指针 */
+    virtual WORD32 RecvVlanPacket(CAppInterface *pApp,
+                                  CVlanInst     *pVlanInst,
+                                  WORD32         dwDevID,
+                                  WORD32         dwPortID,
+                                  WORD32         dwQueueID,
+                                  T_MBuf        *pMBuf,
+                                  CHAR          *ptHead);
 
 protected :
     CCentralMemPool  *m_pMemInterface;
@@ -58,9 +68,9 @@ public :
 
 protected :
     CNetStack  *m_pArpStack;
-    CNetStack  *m_pVlanStack;
     CNetStack  *m_pIPv4Stack;
     CNetStack  *m_pIPv6Stack;
+    CNetStack  *m_pVlanStack;
 };
 
 

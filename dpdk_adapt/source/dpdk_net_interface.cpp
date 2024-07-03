@@ -162,7 +162,7 @@ WORD32 CNetStack::Initialize(CCentralMemPool *pMemInterface)
 }
 
 
-/* wProto : 低层协议栈类型(0 : EtherNet) */
+/* 收以太网报文处理接口; wProto : 低层协议栈类型(0 : EtherNet) */
 WORD32 CNetStack::RecvEthPacket(CAppInterface *pApp,
                                 WORD16         wProto,
                                 WORD32         dwDevID,
@@ -175,12 +175,25 @@ WORD32 CNetStack::RecvEthPacket(CAppInterface *pApp,
 }
 
 
+/* 收VLAN报文处理接口; ptHead : 去除VLAN以太网包头的净荷头指针 */
+WORD32 CNetStack::RecvVlanPacket(CAppInterface *pApp,
+                                 CVlanInst     *pVlanInst,
+                                 WORD32         dwDevID,
+                                 WORD32         dwPortID,
+                                 WORD32         dwQueueID,
+                                 T_MBuf        *pMBuf,
+                                 CHAR          *ptHead)
+{
+    return SUCCESS;
+}
+
+
 CNetIntfHandler::CNetIntfHandler ()
 {
     m_pArpStack  = NULL;
-    m_pVlanStack = NULL;
     m_pIPv4Stack = NULL;
     m_pIPv6Stack = NULL;
+    m_pVlanStack = NULL;
 
     g_pNetIntfHandler = this;
 }
@@ -192,12 +205,6 @@ CNetIntfHandler::~CNetIntfHandler()
     {
         delete m_pArpStack;
         m_pMemInterface->Free((BYTE *)m_pArpStack);
-    }
-
-    if (NULL != m_pVlanStack)
-    {
-        delete m_pVlanStack;
-        m_pMemInterface->Free((BYTE *)m_pVlanStack);
     }
 
     if (NULL != m_pIPv4Stack)
@@ -212,10 +219,16 @@ CNetIntfHandler::~CNetIntfHandler()
         m_pMemInterface->Free((BYTE *)m_pIPv6Stack);
     }
 
+    if (NULL != m_pVlanStack)
+    {
+        delete m_pVlanStack;
+        m_pMemInterface->Free((BYTE *)m_pVlanStack);
+    }
+
     m_pArpStack  = NULL;
-    m_pVlanStack = NULL;
     m_pIPv4Stack = NULL;
     m_pIPv6Stack = NULL;
+    m_pVlanStack = NULL;
 
     g_pNetIntfHandler = NULL;
 }
@@ -226,27 +239,29 @@ WORD32 CNetIntfHandler::Initialize(CCentralMemPool *pMemInterface)
     CNetStack::Initialize(pMemInterface);
 
     BYTE *pArpMem  = m_pMemInterface->Malloc(sizeof(CArpStack));
-    BYTE *pVlanMem = m_pMemInterface->Malloc(sizeof(CVlanStack));
     BYTE *pIPv4Mem = m_pMemInterface->Malloc(sizeof(CIPv4Stack));
     BYTE *pIPv6Mem = m_pMemInterface->Malloc(sizeof(CIPv6Stack));
+    BYTE *pVlanMem = m_pMemInterface->Malloc(sizeof(CVlanStack));
 
     if ( (NULL == pArpMem)
-      || (NULL == pVlanMem)
       || (NULL == pIPv4Mem)
-      || (NULL == pIPv6Mem))
+      || (NULL == pIPv6Mem)
+      || (NULL == pVlanMem))
     {
         assert(0);
     }
 
     m_pArpStack  = new (pArpMem) CArpStack();
-    m_pVlanStack = new (pVlanMem) CVlanStack();
     m_pIPv4Stack = new (pIPv4Mem) CIPv4Stack();
     m_pIPv6Stack = new (pIPv6Mem) CIPv6Stack();
+    m_pVlanStack = new (pVlanMem) CVlanStack();
 
     m_pArpStack->Initialize(pMemInterface);
-    m_pVlanStack->Initialize(pMemInterface);
     m_pIPv4Stack->Initialize(pMemInterface);
     m_pIPv6Stack->Initialize(pMemInterface);
+
+    CVlanStack *pVlanStack = (CVlanStack *)m_pVlanStack;
+    pVlanStack->Initialize(pMemInterface, m_pArpStack, m_pIPv4Stack, m_pIPv6Stack);
 
     return SUCCESS;
 }

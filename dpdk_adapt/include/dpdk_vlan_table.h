@@ -34,13 +34,44 @@ public :
                       E_IPAddrType               eType,
                       CString<IPV6_STRING_LEN>  &rIPAddr);
 
+    WORD32 GetDeviceID();
+    WORD32 GetVlanID();
+    WORD32 GetPriority();
+
+    T_IPAddr & GetIPAddr(BYTE &rucType);
+
 protected :
     WORD32        m_dwDeviceID;       /* 设备ID */
     WORD32        m_dwVlanID;         /* (VLANID1 << 12) | (VLANID2) */
-    WORD32        m_wPriority;        /* 优先级 */
+    WORD32        m_dwPriority;       /* 优先级 */
     E_IPAddrType  m_eAddrType;
     T_IPAddr      m_tIPAddr;
 };
+
+
+inline WORD32 CVlanInst::GetDeviceID()
+{
+    return m_dwDeviceID;
+}
+
+
+inline WORD32 CVlanInst::GetVlanID()
+{
+    return m_dwVlanID;
+}
+
+
+inline WORD32 CVlanInst::GetPriority()
+{
+    return m_dwPriority;
+}
+
+
+inline T_IPAddr & CVlanInst::GetIPAddr(BYTE &rucType)
+{
+    rucType = (BYTE)m_eAddrType;
+    return m_tIPAddr;
+}
 
 
 class CVlanTable : public CBaseSequence<T_VlanKey, CVlanInst, MAX_VLAN_NUM>

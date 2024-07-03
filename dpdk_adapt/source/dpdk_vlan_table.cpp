@@ -7,7 +7,7 @@ CVlanInst::CVlanInst ()
 {
     m_dwDeviceID = INVALID_DWORD;
     m_dwVlanID   = INVALID_DWORD;
-    m_wPriority  = INVALID_DWORD;
+    m_dwPriority = INVALID_DWORD;
     m_eAddrType  = E_IPV4_TYPE;
 
     memset(&m_tIPAddr, 0x00, sizeof(m_tIPAddr));
@@ -18,7 +18,7 @@ CVlanInst::~CVlanInst()
 {
     m_dwDeviceID = INVALID_DWORD;
     m_dwVlanID   = INVALID_DWORD;
-    m_wPriority  = INVALID_DWORD;
+    m_dwPriority = INVALID_DWORD;
     m_eAddrType  = E_IPV4_TYPE;
 
     memset(&m_tIPAddr, 0x00, sizeof(m_tIPAddr));
@@ -33,7 +33,7 @@ WORD32 CVlanInst::Initialize(WORD32                     dwDeviceID,
 {
     m_dwDeviceID = dwDeviceID;
     m_dwVlanID   = dwVlanID;
-    m_wPriority  = dwPriority;
+    m_dwPriority = dwPriority;
     m_eAddrType  = eType;
 
     memset(&m_tIPAddr, 0x00, sizeof(m_tIPAddr));

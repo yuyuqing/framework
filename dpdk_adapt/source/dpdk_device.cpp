@@ -80,6 +80,8 @@ CBaseDevice::CBaseDevice (E_DeviceType eType, const T_DeviceParam &rtParam)
 
 CBaseDevice::~CBaseDevice()
 {
+    rte_eth_dev_stop(m_wPortID);
+
     for (WORD32 dwIndex = 0; dwIndex < MAX_DEV_QUEUE_NUM; dwIndex++)
     {
         if (NULL != m_apQueue[dwIndex])

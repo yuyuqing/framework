@@ -1,5 +1,6 @@
 
 
+#include "dpdk_mgr.h"
 #include "dpdk_net_vlan.h"
 #include "dpdk_net_ipv4.h"
 #include "dpdk_net_ipv6.h"
@@ -7,6 +8,8 @@
 
 CVlanStack::CVlanStack ()
 {
+    m_pVlanTable = NULL;
+    m_pArpStack  = NULL;
     m_pIPv4Stack = NULL;
     m_pIPv6Stack = NULL;
 }
@@ -14,41 +17,25 @@ CVlanStack::CVlanStack ()
 
 CVlanStack::~CVlanStack()
 {
-    if (NULL != m_pIPv4Stack)
-    {
-        delete m_pIPv4Stack;
-        m_pMemInterface->Free((BYTE *)m_pIPv4Stack);
-    }
-
-    if (NULL != m_pIPv6Stack)
-    {
-        delete m_pIPv6Stack;
-        m_pMemInterface->Free((BYTE *)m_pIPv6Stack);
-    }
-
+    m_pVlanTable = NULL;
+    m_pArpStack  = NULL;
     m_pIPv4Stack = NULL;
     m_pIPv6Stack = NULL;
 }
 
 
-WORD32 CVlanStack::Initialize(CCentralMemPool *pMemInterface)
+WORD32 CVlanStack::Initialize(CCentralMemPool *pMemInterface,
+                              CNetStack       *pArpStack,
+                              CNetStack       *pIPv4Stack,
+                              CNetStack       *pIPv6Stack)
 {
     CNetStack::Initialize(pMemInterface);
 
-    BYTE *pIPv4Mem = m_pMemInterface->Malloc(sizeof(CIPv4Stack));
-    BYTE *pIPv6Mem = m_pMemInterface->Malloc(sizeof(CIPv6Stack));
+    m_pVlanTable = &(g_pDpdkMgr->GetVlanTable());
 
-    if ( (NULL == pIPv4Mem)
-      || (NULL == pIPv6Mem))
-    {
-        assert(0);
-    }
-
-    m_pIPv4Stack = new (pIPv4Mem) CIPv4Stack();
-    m_pIPv6Stack = new (pIPv6Mem) CIPv6Stack();
-
-    m_pIPv4Stack->Initialize(pMemInterface);
-    m_pIPv6Stack->Initialize(pMemInterface);
+    m_pArpStack  = pArpStack;
+    m_pIPv4Stack = pIPv4Stack;
+    m_pIPv6Stack = pIPv6Stack;
 
     return SUCCESS;
 }
@@ -98,7 +85,55 @@ WORD32 CVlanStack::RecvEthPacket(CAppInterface *pApp,
         wEthType   = rte_be_to_cpu_16(ptVlanHead->eth_proto);
     }
 
-    /* TBD : 将报文交给VLAN实例处理 */
+    CVlanInst *pVlanInst = m_pVlanTable->FindVlan(dwDevID, dwVlanID);
+    if (NULL == pVlanInst)
+    {
+        return FAIL;
+    }
+
+    switch (wEthType)
+    {
+    case RTE_ETHER_TYPE_ARP :
+        {
+            return m_pArpStack->RecvVlanPacket(pApp,
+                                               pVlanInst,
+                                               dwDevID,
+                                               dwPortID,
+                                               dwQueueID,
+                                               pMBuf,
+                                               (CHAR *)(ptVlanHead + 1));
+        }
+        break ;
+
+    case RTE_ETHER_TYPE_IPV4 :
+        {
+            return m_pIPv4Stack->RecvVlanPacket(pApp,
+                                                pVlanInst,
+                                                dwDevID,
+                                                dwPortID,
+                                                dwQueueID,
+                                                pMBuf,
+                                                (CHAR *)(ptVlanHead + 1));
+        }
+        break ;
+
+    case RTE_ETHER_TYPE_IPV6 :
+        {
+            return m_pIPv6Stack->RecvVlanPacket(pApp,
+                                                pVlanInst,
+                                                dwDevID,
+                                                dwPortID,
+                                                dwQueueID,
+                                                pMBuf,
+                                                (CHAR *)(ptVlanHead + 1));
+        }
+        break ;
+
+    default :
+        {
+        }
+        break ;
+    }
 
     return SUCCESS;
 }
