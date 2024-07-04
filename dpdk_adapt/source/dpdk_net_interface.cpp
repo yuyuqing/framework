@@ -290,7 +290,35 @@ WORD32 CNetStack::Initialize(CCentralMemPool *pMemInterface)
 }
 
 
-/* 封装以太网报文头 */
+/********************************************************************
+ **************************** Ethernet ******************************
+ * 0               1               2               3                *
+ * 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7  *
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+- *
+ * |                Destination Hardware Address                  | *
+ * |                              +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ *
+ * |                              |                               | *
+ * |                   Source Hardware Address                    | *
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+- *
+ * |         Length/Type          |             Data              | *
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+- *
+ **************************** Ethernet ******************************
+
+ ****************************** VLAN ********************************
+ * 0               1               2               3                *
+ * 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7  *
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+- *
+ * |                Destination Hardware Address                  | *
+ * |                              +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ *
+ * |                              |                               | *
+ * |                   Source Hardware Address                    | *
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+- *
+ * |              TPID            | PRI |CFI|       VID           | *
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+- *
+ * |         Length/Type          |             Data              | *
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+- *
+ ****************************** VLAN ********************************
+*******************************************************************/
 WORD16 CNetStack::EncodeEthPacket(BYTE   *pPkt,
                                   BYTE   *pSrcMacAddr,
                                   BYTE   *pDstMacAddr,
@@ -333,6 +361,56 @@ WORD16 CNetStack::EncodeEthPacket(BYTE   *pPkt,
     }
 
     return wEthLen;
+}
+
+
+/* 封装IPv4报文头
+ * pPkt      : IPv4头地址
+ * wTotalLen : 含IP头的IP报文长度
+ * wProto    : 上层协议(ICMP/TCP/UDP/SCTP)
+ */
+/********************************************************************
+ *******************************  IP ********************************
+ * 0               1               2               3                *
+ * 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7  *
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+- *
+ * |Version|  IHL |Type of Service|          Total Length         | *
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+- *
+ * |         Identification       |Flags|      Fragment Offset    | *
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+- *
+ * | Time to Live |    Protocol   |         Header Checksum       | *
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+- *
+ * |                       Source Address                         | *
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+- *
+ * |                    Destination Address                       | *
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+- *
+ * |                    Options                    |    Padding   | *
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+- *
+ *******************************  IP ********************************
+*******************************************************************/
+WORD16 CNetStack::EncodeIpv4Packet(BYTE   *pPkt,
+                                   WORD16  wTotalLen,
+                                   WORD16  wProto,
+                                   WORD32  dwSrcIP,
+                                   WORD32  dwDstIP)
+{
+    WORD16      wIPIdent  = g_pNetIntfHandler->FetchAddIPIdentity();
+    WORD16      wIPv4Len  = sizeof(T_Ipv4Head);
+    T_Ipv4Head *pIPv4Head = (T_Ipv4Head *)pPkt;
+
+    pIPv4Head->version_ihl     = 0x45;
+    pIPv4Head->type_of_service = 0;
+    pIPv4Head->total_length    = HTONS(wTotalLen);
+    pIPv4Head->packet_id       = HTONS(wIPIdent);
+    pIPv4Head->fragment_offset = 0;
+    pIPv4Head->time_to_live    = IP_HEAD_TTL;
+    pIPv4Head->next_proto_id   = wProto;
+    pIPv4Head->hdr_checksum    = 0;
+    pIPv4Head->src_addr        = dwSrcIP;
+    pIPv4Head->dst_addr        = dwDstIP;
+    pIPv4Head->hdr_checksum    = rte_ipv4_cksum(pIPv4Head);
+
+    return wIPv4Len;
 }
 
 
@@ -445,7 +523,7 @@ WORD32 CNetIntfHandler::RecvPacket(CAppInterface *pApp,
         break ;
     }
 
-    return SUCCESS;
+    return dwResult;
 }
 
 

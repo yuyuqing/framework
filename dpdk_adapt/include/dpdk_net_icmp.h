@@ -27,10 +27,14 @@ protected :
                            WORD32         dwDstIP,
                            T_Ipv4Head    *ptIpv4Head,
                            T_IcmpHead    *ptIcmpHead,
+                           WORD32         dwDeviceID,
+                           WORD32         dwVlanID,
                            CAppInterface *pApp);
 
     T_MBuf * EncodeIcmpReply(BYTE               *pSrcMacAddr,
                              BYTE               *pDstMacAddr,
+                             WORD32              dwDeviceID,
+                             WORD32              dwVlanID,
                              WORD32              dwSrcIP,
                              WORD32              dwDstIP,
                              WORD16              wIdentify,

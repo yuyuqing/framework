@@ -13,6 +13,8 @@
 class CNetStack : public CCBObject, public CBaseData
 {
 public :
+    enum { IP_HEAD_TTL = 64 };
+
     static WORD32 RecvPacket(VOID   *pArg,
                              WORD32  dwDevID,
                              WORD32  dwPortID,
@@ -36,13 +38,24 @@ public :
                               T_MBuf        *pMBuf,
                               CHAR          *pHead) = 0;
 
-    /* 封装以太网报文头 */
+    /* 封装以太网报文头; pPkt : 以太网头地址 */
     WORD16 EncodeEthPacket(BYTE   *pPkt,
                            BYTE   *pSrcMacAddr,
                            BYTE   *pDstMacAddr,
                            WORD32  dwDeviceID,
                            WORD32  dwVlanID,
                            WORD16  wEthType);
+
+    /* 封装IPv4报文头
+     * pPkt      : IPv4头地址
+     * wTotalLen : 含IP头的IP报文长度
+     * wProto    : 上层协议(ICMP/TCP/UDP/SCTP)
+     */
+    WORD16 EncodeIpv4Packet(BYTE   *pPkt,
+                            WORD16  wTotalLen,
+                            WORD16  wProto,
+                            WORD32  dwSrcIP,
+                            WORD32  dwDstIP);
 
 protected :
     CCentralMemPool  *m_pMemInterface;
@@ -65,11 +78,21 @@ public :
                               T_MBuf        *pMBuf,
                               CHAR          *pHead);
 
+    WORD16 FetchAddIPIdentity();
+
 protected :
-    CNetStack  *m_pArpStack;
-    CNetStack  *m_pIPv4Stack;
-    CNetStack  *m_pIPv6Stack;
+    std::atomic<WORD16>  m_wIPIdentity;  /* IP报文头中的ID标识 */
+
+    CNetStack           *m_pArpStack;
+    CNetStack           *m_pIPv4Stack;
+    CNetStack           *m_pIPv6Stack;
 };
+
+
+inline WORD16 CNetIntfHandler::FetchAddIPIdentity()
+{
+    return m_wIPIdentity.fetch_add(1, std::memory_order_relaxed);
+}
 
 
 extern CNetIntfHandler *g_pNetIntfHandler;

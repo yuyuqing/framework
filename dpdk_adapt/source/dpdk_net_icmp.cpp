@@ -46,6 +46,8 @@ WORD32 CIcmpStack::RecvPacket(CAppInterface *pApp,
                                        ptIpv4Head->dst_addr,
                                        ptIpv4Head,
                                        ptIcmpHead,
+                                       rtInfo.dwDeviceID,
+                                       rtInfo.dwVlanID,
                                        pApp);
 #else
             dwResult = ProcIcmpRequest(ptEthHead->s_addr.addr_bytes,
@@ -53,6 +55,8 @@ WORD32 CIcmpStack::RecvPacket(CAppInterface *pApp,
                                        ptIpv4Head->dst_addr,
                                        ptIpv4Head,
                                        ptIcmpHead,
+                                       rtInfo.dwDeviceID,
+                                       rtInfo.dwVlanID,
                                        pApp);
 #endif
         }
@@ -78,6 +82,8 @@ WORD32 CIcmpStack::ProcIcmpRequest(BYTE          *pSrcMacAddr,
                                    WORD32         dwDstIP,
                                    T_Ipv4Head    *ptIpv4Head,
                                    T_IcmpHead    *ptIcmpHead,
+                                   WORD32         dwDeviceID,
+                                   WORD32         dwVlanID,
                                    CAppInterface *pApp)
 {
     TRACE_STACK("CIcmpStack::ProcIcmpRequest()");
@@ -93,12 +99,23 @@ WORD32 CIcmpStack::ProcIcmpRequest(BYTE          *pSrcMacAddr,
         return FAIL;
     }
 
+    if (0 != dwVlanID)
+    {
+        CVlanInst *pVlanInst = m_pVlanTable->FindVlan(dwDeviceID, dwVlanID);
+        if (NULL == pVlanInst)
+        {
+            return FAIL;
+        }
+    }
+
     WORD16 wIcmpPayLen = ntohs(ptIpv4Head->total_length)
                        - sizeof(struct rte_ipv4_hdr)
                        - sizeof(struct rte_icmp_hdr);
 
     T_MBuf *pIcmpReply = EncodeIcmpReply(pDevice->GetMacAddr(),
                                          pSrcMacAddr,
+                                         dwDeviceID,
+                                         dwVlanID,
                                          dwDstIP,
                                          dwSrcIP,
                                          ptIcmpHead->icmp_ident,
@@ -119,6 +136,8 @@ WORD32 CIcmpStack::ProcIcmpRequest(BYTE          *pSrcMacAddr,
 
 T_MBuf * CIcmpStack::EncodeIcmpReply(BYTE               *pSrcMacAddr,
                                      BYTE               *pDstMacAddr,
+                                     WORD32              dwDeviceID,
+                                     WORD32              dwVlanID,
                                      WORD32              dwSrcIP,
                                      WORD32              dwDstIP,
                                      WORD16              wIdentify,
@@ -130,8 +149,6 @@ T_MBuf * CIcmpStack::EncodeIcmpReply(BYTE               *pSrcMacAddr,
     TRACE_STACK("CIcmpStack::EncodeIcmpReply()");
 
     BYTE       *pPkt      = NULL;
-    T_EthHead  *pEthHead  = NULL;
-    T_Ipv4Head *pIpv4Head = NULL;
     T_IcmpHead *pIcmpHead = NULL;
 
     T_MBuf *pMBuf = rte_pktmbuf_alloc(pMBufPool);
@@ -140,38 +157,26 @@ T_MBuf * CIcmpStack::EncodeIcmpReply(BYTE               *pSrcMacAddr,
         return NULL;
     }
 
-    WORD16 wTotalLen = sizeof(T_EthHead) + sizeof(T_Ipv4Head) + sizeof(T_IcmpHead) + wPayLoadLen;
+    pPkt = rte_pktmbuf_mtod(pMBuf, BYTE *);
+
+    WORD16 wEthLen = EncodeEthPacket(pPkt,
+                                     pSrcMacAddr,
+                                     pDstMacAddr,
+                                     dwDeviceID,
+                                     dwVlanID,
+                                     RTE_ETHER_TYPE_IPV4);
+    WORD16 wIPv4Len = EncodeIpv4Packet((pPkt + wEthLen),
+                                       (wPayLoadLen + sizeof(T_IcmpHead) + sizeof(T_Ipv4Head)),
+                                       IPPROTO_ICMP,
+                                       dwSrcIP,
+                                       dwDstIP);
+
+    WORD16 wTotalLen = wEthLen + wIPv4Len + sizeof(T_IcmpHead) + wPayLoadLen;
 
     pMBuf->data_len = wTotalLen;
     pMBuf->pkt_len  = wTotalLen;
 
-    pPkt     = rte_pktmbuf_mtod(pMBuf, BYTE *);
-    pEthHead = (T_EthHead *)pPkt;
-
-#if RTE_VERSION >= RTE_VERSION_NUM(21, 11, 1, 0)
-    rte_memcpy(pEthHead->dst_addr.addr_bytes, pDstMacAddr, RTE_ETHER_ADDR_LEN);
-    rte_memcpy(pEthHead->src_addr.addr_bytes, pSrcMacAddr, RTE_ETHER_ADDR_LEN);
-#else
-    rte_memcpy(pEthHead->d_addr.addr_bytes, pDstMacAddr, RTE_ETHER_ADDR_LEN);
-    rte_memcpy(pEthHead->s_addr.addr_bytes, pSrcMacAddr, RTE_ETHER_ADDR_LEN);
-#endif
-
-    pEthHead->ether_type = htons(RTE_ETHER_TYPE_IPV4);
-
-    pIpv4Head = (T_Ipv4Head *)(pEthHead + 1);
-    pIpv4Head->version_ihl     = 0x45;
-    pIpv4Head->type_of_service = 0;
-    pIpv4Head->total_length    = htons(wPayLoadLen + sizeof(T_IcmpHead) + sizeof(T_Ipv4Head));
-    pIpv4Head->packet_id       = 0;
-    pIpv4Head->fragment_offset = 0;
-    pIpv4Head->time_to_live    = 64;
-    pIpv4Head->next_proto_id   = IPPROTO_ICMP;
-    pIpv4Head->hdr_checksum    = 0;
-    pIpv4Head->src_addr        = dwSrcIP;
-    pIpv4Head->dst_addr        = dwDstIP;
-    pIpv4Head->hdr_checksum    = rte_ipv4_cksum(pIpv4Head);
-
-    pIcmpHead = (T_IcmpHead *)(pIpv4Head + 1);
+    pIcmpHead = (T_IcmpHead *)(pPkt + wEthLen + wIPv4Len);
     pIcmpHead->icmp_type   = RTE_IP_ICMP_ECHO_REPLY;
     pIcmpHead->icmp_code   = 0;
     pIcmpHead->icmp_cksum  = 0;
