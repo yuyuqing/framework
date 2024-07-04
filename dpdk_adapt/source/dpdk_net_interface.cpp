@@ -1,8 +1,8 @@
 
 
+#include "dpdk_mgr.h"
 #include "dpdk_app_eth.h"
 #include "dpdk_net_arp.h"
-#include "dpdk_net_vlan.h"
 #include "dpdk_net_ipv4.h"
 #include "dpdk_net_ipv6.h"
 
@@ -129,62 +129,210 @@ WORD32 CNetStack::RecvPacket(VOID   *pArg,
                              WORD32  dwQueueID,
                              T_MBuf *pMBuf)
 {
+    T_OffloadInfo  tInfo;
+    memset(&tInfo, 0x00, sizeof(tInfo));
+
+    tInfo.dwDeviceID = dwDevID;
+    tInfo.dwPortID   = dwPortID;
+    tInfo.dwQueueID  = dwQueueID;
+
     CEthApp   *pApp      = (CEthApp *)pArg;
     T_EthHead *ptEthHead = rte_pktmbuf_mtod(pMBuf, T_EthHead *);
 
-    return g_pNetIntfHandler->RecvEthPacket(pApp,
-                                            0,
-                                            dwDevID,
-                                            dwPortID,
-                                            dwQueueID,
-                                            pMBuf,
-                                            ptEthHead);
+    ParseEthernet(ptEthHead, tInfo);
+
+    return g_pNetIntfHandler->RecvPacket(pApp, tInfo, pMBuf, (CHAR *)ptEthHead);
+}
+
+
+WORD32 CNetStack::ParseEthernet(T_EthHead *ptEthHead, T_OffloadInfo &rtInfo)
+{
+    T_Ipv4Head *ptIpv4Head = NULL;
+    T_Ipv6Head *ptIpv6Head = NULL;
+    T_VlanHead *ptVlanHead = NULL;
+    WORD32      dwVlanID   = 0;
+
+    rtInfo.wL2Len   = sizeof(T_EthHead);
+    rtInfo.wEthType = ptEthHead->ether_type;
+
+    while ( (rtInfo.wEthType == HTONS(RTE_ETHER_TYPE_VLAN))
+         || (rtInfo.wEthType == HTONS(RTE_ETHER_TYPE_QINQ)))
+    {
+        ptVlanHead = (T_VlanHead *)(((CHAR *)(ptEthHead)) + rtInfo.wL2Len);
+        dwVlanID   = (dwVlanID << 12) | ((rte_be_to_cpu_16(ptVlanHead->vlan_tci)) & 0x0FFF);
+
+        rtInfo.wL2Len   += sizeof(T_VlanHead);
+        rtInfo.wEthType  = ptVlanHead->eth_proto;
+    }
+
+    rtInfo.dwVlanID = dwVlanID;
+
+    switch (rtInfo.wEthType)
+    {
+    case HTONS(RTE_ETHER_TYPE_IPV4) :
+        {
+            ptIpv4Head = (T_Ipv4Head *)(((CHAR *)(ptEthHead)) + rtInfo.wL2Len);
+            ParseIpv4(ptIpv4Head, rtInfo);
+        }
+        break ;
+
+    case HTONS(RTE_ETHER_TYPE_IPV6) :
+        {
+            ptIpv6Head = (T_Ipv6Head *)(((CHAR *)(ptEthHead)) + rtInfo.wL2Len);
+            ParseIpv6(ptIpv6Head, rtInfo);
+        }
+        break ;
+
+    default :
+        {
+        }
+        break ;
+    }
+
+    return SUCCESS;
+}
+
+
+WORD32 CNetStack::ParseIpv4(T_Ipv4Head *ptIpv4Head, T_OffloadInfo &rtInfo)
+{
+    T_TcpHead *ptTcpHead = NULL;
+
+    rtInfo.wL3Len    = rte_ipv4_hdr_len(ptIpv4Head);
+    rtInfo.ucL4Proto = ptIpv4Head->next_proto_id;
+
+    switch (rtInfo.ucL4Proto)
+    {
+    case IPPROTO_UDP :
+        {
+            rtInfo.wL4Len = sizeof(T_UdpHead);
+        }
+        break ;
+
+    case IPPROTO_TCP :
+        {
+            ptTcpHead     = (T_TcpHead *)(((CHAR *)(ptIpv4Head)) + rtInfo.wL3Len);
+            rtInfo.wL4Len = (ptTcpHead->data_off & 0xF0) >> 2;
+        }
+        break ;
+
+    case IPPROTO_SCTP :
+        {
+        }
+        break ;
+
+    default :
+        {
+        }
+        break ;
+    }
+
+    return SUCCESS;
+}
+
+
+WORD32 CNetStack::ParseIpv6(T_Ipv6Head *ptIpv6Head, T_OffloadInfo &rtInfo)
+{
+    T_TcpHead *ptTcpHead = NULL;
+
+    rtInfo.wL3Len    = sizeof(T_Ipv6Head);
+    rtInfo.ucL4Proto = ptIpv6Head->proto;
+
+    switch (rtInfo.ucL4Proto)
+    {
+    case IPPROTO_UDP :
+        {
+            rtInfo.wL4Len = sizeof(T_UdpHead);
+        }
+        break ;
+
+    case IPPROTO_TCP :
+        {
+            ptTcpHead     = (T_TcpHead *)(((CHAR *)(ptIpv6Head)) + rtInfo.wL3Len);
+            rtInfo.wL4Len = (ptTcpHead->data_off & 0xF0) >> 2;
+        }
+        break ;
+
+    case IPPROTO_SCTP :
+        {
+        }
+        break ;
+
+    default :
+        {
+        }
+        break ;
+    }
+
+    return SUCCESS;
 }
 
 
 CNetStack::CNetStack ()
 {
     m_pMemInterface = NULL;
+    m_pVlanTable    = NULL;
 }
 
 
 CNetStack::~CNetStack()
 {
     m_pMemInterface = NULL;
+    m_pVlanTable    = NULL;
 }
 
 
 WORD32 CNetStack::Initialize(CCentralMemPool *pMemInterface)
 {
     m_pMemInterface = pMemInterface;
+    m_pVlanTable    = &(g_pDpdkMgr->GetVlanTable());
 
     return SUCCESS;
 }
 
 
-/* 收以太网报文处理接口; wProto : 低层协议栈类型(0 : EtherNet) */
-WORD32 CNetStack::RecvEthPacket(CAppInterface *pApp,
-                                WORD16         wProto,
-                                WORD32         dwDevID,
-                                WORD32         dwPortID,
-                                WORD32         dwQueueID,
-                                T_MBuf        *pMBuf,
-                                T_EthHead     *ptEthHead)
+/* 封装以太网报文头 */
+WORD16 CNetStack::EncodeEthPacket(BYTE   *pPkt,
+                                  BYTE   *pSrcMacAddr,
+                                  BYTE   *pDstMacAddr,
+                                  WORD32  dwDeviceID,
+                                  WORD32  dwVlanID,
+                                  WORD16  wEthType)
 {
-    return SUCCESS;
-}
+    WORD16     wEthLen  = sizeof(T_EthHead);
+    T_EthHead *pEthHead = (T_EthHead *)pPkt;
 
+#if RTE_VERSION >= RTE_VERSION_NUM(21, 11, 1, 0)
+    rte_memcpy(pEthHead->dst_addr.addr_bytes, pDstMacAddr, RTE_ETHER_ADDR_LEN);
+    rte_memcpy(pEthHead->src_addr.addr_bytes, pSrcMacAddr, RTE_ETHER_ADDR_LEN);
+#else
+    rte_memcpy(pEthHead->d_addr.addr_bytes, pDstMacAddr, RTE_ETHER_ADDR_LEN);
+    rte_memcpy(pEthHead->s_addr.addr_bytes, pSrcMacAddr, RTE_ETHER_ADDR_LEN);
+#endif
 
-/* 收VLAN报文处理接口; ptHead : 去除VLAN以太网包头的净荷头指针 */
-WORD32 CNetStack::RecvVlanPacket(CAppInterface *pApp,
-                                 CVlanInst     *pVlanInst,
-                                 WORD32         dwDevID,
-                                 WORD32         dwPortID,
-                                 WORD32         dwQueueID,
-                                 T_MBuf        *pMBuf,
-                                 CHAR          *ptHead)
-{
-    return SUCCESS;
+    if (0 != dwVlanID)
+    {
+        pEthHead->ether_type = HTONS(RTE_ETHER_TYPE_VLAN);
+
+        /* 在外面已经校验过VLANID, 因此pVlanInst必然不为NULL */
+        CVlanInst  *pVlanInst  = m_pVlanTable->FindVlan(dwDeviceID, dwVlanID);
+        T_VlanHead *ptVlanHead = (T_VlanHead *)(pEthHead + 1);
+        WORD16      wVlanTag   = 0;
+        WORD16      wVlanID    = (WORD16)dwVlanID;
+        WORD16      wPriority  = (WORD16)(pVlanInst->GetPriority());
+
+        wVlanTag = ((wPriority & 0x07) << 13) | (1 << 12) | (wVlanID & 0x0FFF);
+
+        ptVlanHead->vlan_tci  = RTE_BE16(wVlanTag);
+        ptVlanHead->eth_proto = HTONS(wEthType);
+
+        wEthLen += sizeof(T_VlanHead);
+    }
+    else
+    {
+        pEthHead->ether_type = HTONS(wEthType);
+    }
+
+    return wEthLen;
 }
 
 
@@ -193,7 +341,6 @@ CNetIntfHandler::CNetIntfHandler ()
     m_pArpStack  = NULL;
     m_pIPv4Stack = NULL;
     m_pIPv6Stack = NULL;
-    m_pVlanStack = NULL;
 
     g_pNetIntfHandler = this;
 }
@@ -219,16 +366,9 @@ CNetIntfHandler::~CNetIntfHandler()
         m_pMemInterface->Free((BYTE *)m_pIPv6Stack);
     }
 
-    if (NULL != m_pVlanStack)
-    {
-        delete m_pVlanStack;
-        m_pMemInterface->Free((BYTE *)m_pVlanStack);
-    }
-
     m_pArpStack  = NULL;
     m_pIPv4Stack = NULL;
     m_pIPv6Stack = NULL;
-    m_pVlanStack = NULL;
 
     g_pNetIntfHandler = NULL;
 }
@@ -241,12 +381,10 @@ WORD32 CNetIntfHandler::Initialize(CCentralMemPool *pMemInterface)
     BYTE *pArpMem  = m_pMemInterface->Malloc(sizeof(CArpStack));
     BYTE *pIPv4Mem = m_pMemInterface->Malloc(sizeof(CIPv4Stack));
     BYTE *pIPv6Mem = m_pMemInterface->Malloc(sizeof(CIPv6Stack));
-    BYTE *pVlanMem = m_pMemInterface->Malloc(sizeof(CVlanStack));
 
     if ( (NULL == pArpMem)
       || (NULL == pIPv4Mem)
-      || (NULL == pIPv6Mem)
-      || (NULL == pVlanMem))
+      || (NULL == pIPv6Mem))
     {
         assert(0);
     }
@@ -254,76 +392,50 @@ WORD32 CNetIntfHandler::Initialize(CCentralMemPool *pMemInterface)
     m_pArpStack  = new (pArpMem) CArpStack();
     m_pIPv4Stack = new (pIPv4Mem) CIPv4Stack();
     m_pIPv6Stack = new (pIPv6Mem) CIPv6Stack();
-    m_pVlanStack = new (pVlanMem) CVlanStack();
 
     m_pArpStack->Initialize(pMemInterface);
     m_pIPv4Stack->Initialize(pMemInterface);
     m_pIPv6Stack->Initialize(pMemInterface);
 
-    CVlanStack *pVlanStack = (CVlanStack *)m_pVlanStack;
-    pVlanStack->Initialize(pMemInterface, m_pArpStack, m_pIPv4Stack, m_pIPv6Stack);
-
     return SUCCESS;
 }
 
 
-/* wProto : 低层协议栈类型(0 : EtherNet) */
-WORD32 CNetIntfHandler::RecvEthPacket(CAppInterface *pApp,
-                                      WORD16         wProto,
-                                      WORD32         dwDevID,
-                                      WORD32         dwPortID,
-                                      WORD32         dwQueueID,
-                                      T_MBuf        *pMBuf,
-                                      T_EthHead     *ptEthHead)
+/* 接收以太网报文处理; pHead : 以太网头 */
+WORD32 CNetIntfHandler::RecvPacket(CAppInterface *pApp,
+                                   T_OffloadInfo &rtInfo,
+                                   T_MBuf        *pMBuf,
+                                   CHAR          *pHead)
 {
-    WORD16 wEthType = rte_be_to_cpu_16(ptEthHead->ether_type);
+    WORD32 dwResult = INVALID_DWORD;
+    WORD16 wEthType = rte_be_to_cpu_16(rtInfo.wEthType);
+
     switch (wEthType)
     {
-    case RTE_ETHER_TYPE_VLAN :
-        {
-            return m_pVlanStack->RecvEthPacket(pApp,
-                                               0,
-                                               dwDevID,
-                                               dwPortID,
-                                               dwQueueID,
-                                               pMBuf,
-                                               ptEthHead);
-        }
-        break ;
-
     case RTE_ETHER_TYPE_ARP :
         {
-            return m_pArpStack->RecvEthPacket(pApp,
-                                              0,
-                                              dwDevID,
-                                              dwPortID,
-                                              dwQueueID,
-                                              pMBuf,
-                                              ptEthHead);
+            dwResult = m_pArpStack->RecvPacket(pApp,
+                                               rtInfo,
+                                               pMBuf,
+                                               (pHead + rtInfo.wL2Len));
         }
         break ;
 
     case RTE_ETHER_TYPE_IPV4 :
         {
-            return m_pIPv4Stack->RecvEthPacket(pApp,
-                                               0,
-                                               dwDevID,
-                                               dwPortID,
-                                               dwQueueID,
-                                               pMBuf,
-                                               ptEthHead);
+            dwResult = m_pIPv4Stack->RecvPacket(pApp,
+                                                rtInfo,
+                                                pMBuf,
+                                                (pHead + rtInfo.wL2Len));
         }
         break ;
 
     case RTE_ETHER_TYPE_IPV6 :
         {
-            return m_pIPv6Stack->RecvEthPacket(pApp,
-                                               0,
-                                               dwDevID,
-                                               dwPortID,
-                                               dwQueueID,
-                                               pMBuf,
-                                               ptEthHead);
+            dwResult = m_pIPv6Stack->RecvPacket(pApp,
+                                                rtInfo,
+                                                pMBuf,
+                                                (pHead + rtInfo.wL2Len));
         }
         break ;
 

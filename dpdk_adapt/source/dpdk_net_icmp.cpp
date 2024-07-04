@@ -23,25 +23,18 @@ WORD32 CIcmpStack::Initialize(CCentralMemPool *pMemInterface)
 }
 
 
-/* wProto : 低层协议栈类型(0 : EtherNet; 此时取值应为RTE_ETHER_TYPE_IPV4) */
-WORD32 CIcmpStack::RecvEthPacket(CAppInterface *pApp,
-                                 WORD16         wProto,
-                                 WORD32         dwDevID,
-                                 WORD32         dwPortID,
-                                 WORD32         dwQueueID,
-                                 T_MBuf        *pMBuf,
-                                 T_EthHead     *ptEthHead)
+/* 接收报文处理; pHead : ICMP报文头 */
+WORD32 CIcmpStack::RecvPacket(CAppInterface *pApp,
+                              T_OffloadInfo &rtInfo,
+                              T_MBuf        *pMBuf,
+                              CHAR          *pHead)
 {
-    TRACE_STACK("CIcmpStack::RecvEthPacket()");
-
-    if (unlikely(RTE_ETHER_TYPE_IPV4 != wProto))
-    {
-        return FAIL;
-    }
+    TRACE_STACK("CIcmpStack::RecvPacket()");
 
     WORD32      dwResult   = INVALID_DWORD;
-    T_Ipv4Head *ptIpv4Head = rte_pktmbuf_mtod_offset(pMBuf, struct rte_ipv4_hdr *, sizeof(struct rte_ether_hdr));
-    T_IcmpHead *ptIcmpHead = (T_IcmpHead *)(ptIpv4Head + 1);
+    T_EthHead  *ptEthHead  = (T_EthHead *)(pHead - rtInfo.wL3Len - rtInfo.wL2Len);
+    T_Ipv4Head *ptIpv4Head = (T_Ipv4Head *)(pHead - rtInfo.wL3Len);
+    T_IcmpHead *ptIcmpHead = (T_IcmpHead *)pHead;
 
     switch (ptIcmpHead->icmp_type)
     {
@@ -87,7 +80,7 @@ WORD32 CIcmpStack::ProcIcmpRequest(BYTE          *pSrcMacAddr,
                                    T_IcmpHead    *ptIcmpHead,
                                    CAppInterface *pApp)
 {
-    TRACE_STACK("CIcmpStack::RecvEthPacket()");
+    TRACE_STACK("CIcmpStack::ProcIcmpRequest()");
 
     CEthApp            *pEthApp  = (CEthApp *)pApp;
     CDevQueue          *pQueue   = pEthApp->GetQueue();

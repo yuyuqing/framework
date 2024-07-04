@@ -16,41 +16,21 @@ public :
 
     virtual WORD32 Initialize(CCentralMemPool *pMemInterface);
 
-    /* wProto : 低层协议栈类型(0 : EtherNet) */
-    virtual WORD32 RecvEthPacket(CAppInterface *pApp,
-                                 WORD16         wProto,
-                                 WORD32         dwDevID,
-                                 WORD32         dwPortID,
-                                 WORD32         dwQueueID,
-                                 T_MBuf        *pMBuf,
-                                 T_EthHead     *ptEthHead);
-
-    /* 收VLAN报文处理接口; ptHead : 去除VLAN以太网包头的净荷头指针 */
-    virtual WORD32 RecvVlanPacket(CAppInterface *pApp,
-                                  CVlanInst     *pVlanInst,
-                                  WORD32         dwDevID,
-                                  WORD32         dwPortID,
-                                  WORD32         dwQueueID,
-                                  T_MBuf        *pMBuf,
-                                  CHAR          *ptHead);
+    /* 接收报文处理; pHead : ARP报文头 */
+    virtual WORD32 RecvPacket(CAppInterface *pApp,
+                              T_OffloadInfo &rtInfo,
+                              T_MBuf        *pMBuf,
+                              CHAR          *pHead);
 
     /* 主动向目的IP发Arp请求, 用于查询对端MAC地址 */
-    WORD32 SendArpRequest(CDevQueue *pQueue, WORD32 dwDstIP);
+    WORD32 SendArpRequest(CDevQueue *pQueue,
+                          WORD32     dwDstIP,
+                          WORD32     dwVlanID = 0);
 
 protected :
     WORD32 ProcArpRequest(CAppInterface *pApp,
-                          WORD32         dwDevID,
-                          WORD32         dwPortID,
-                          WORD32         dwQueueID,
+                          T_OffloadInfo &rtInfo,
                           T_ArpHead     *pArpHead);
-
-    /* 处理携带VLAN标签的ARP请求 */
-    WORD32 ProcVlanArpRequest(CAppInterface *pApp,
-                              CVlanInst     *pVlanInst,
-                              WORD32         dwDevID,
-                              WORD32         dwPortID,
-                              WORD32         dwQueueID,
-                              T_ArpHead     *pArpHead);
 
     WORD32 ProcArpReply(T_ArpHead *pArpHead, WORD32 dwDevID);
 
@@ -59,19 +39,15 @@ protected :
 
     T_MBuf * EncodeArpReply(BYTE               *pSrcMacAddr,
                             BYTE               *pDstMacAddr,
+                            WORD32              dwDeviceID,
+                            WORD32              dwVlanID,
                             WORD32              dwSrcIP,
                             WORD32              dwDstIP,
                             struct rte_mempool *pMBufPool);
 
-    /* 编码携带VLAN标签的ARP请求 */
-    T_MBuf * EncodeVlanArpReply(CVlanInst          *pVlanInst,
-                                BYTE               *pSrcMacAddr,
-                                BYTE               *pDstMacAddr,
-                                WORD32              dwSrcIP,
-                                WORD32              dwDstIP,
-                                struct rte_mempool *pMBufPool);
-
     T_MBuf * EncodeArpRequest(BYTE               *pSrcMacAddr,
+                              WORD32              dwDeviceID,
+                              WORD32              dwVlanID,
                               WORD32              dwSrcIP,
                               WORD32              dwDstIP,
                               struct rte_mempool *pMBufPool);

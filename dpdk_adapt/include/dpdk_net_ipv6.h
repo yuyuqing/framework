@@ -15,6 +15,12 @@ public :
 
     virtual WORD32 Initialize(CCentralMemPool *pMemInterface);
 
+    /* 接收报文处理; pHead : IPv6头 */
+    virtual WORD32 RecvPacket(CAppInterface *pApp,
+                              T_OffloadInfo &rtInfo,
+                              T_MBuf        *pMBuf,
+                              CHAR          *pHead);
+
 protected :
     CNetStack  *m_pIcmpStack;
     CNetStack  *m_pUdpStack;

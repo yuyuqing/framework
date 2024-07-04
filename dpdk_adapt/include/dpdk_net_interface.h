@@ -19,32 +19,34 @@ public :
                              WORD32  dwQueueID,
                              T_MBuf *pMBuf);
 
+    static WORD32 ParseEthernet(T_EthHead *ptEthHead, T_OffloadInfo &rtInfo);
+
+    static WORD32 ParseIpv4(T_Ipv4Head *ptIpv4Head, T_OffloadInfo &rtInfo);
+    static WORD32 ParseIpv6(T_Ipv6Head *ptIpv6Head, T_OffloadInfo &rtInfo);
+
 public :
     CNetStack ();
     virtual ~CNetStack();
 
     virtual WORD32 Initialize(CCentralMemPool *pMemInterface);
 
-    /* 收以太网报文处理接口; wProto : 低层协议栈类型(0 : EtherNet) */
-    virtual WORD32 RecvEthPacket(CAppInterface *pApp,
-                                 WORD16         wProto,
-                                 WORD32         dwDevID,
-                                 WORD32         dwPortID,
-                                 WORD32         dwQueueID,
-                                 T_MBuf        *pMBuf,
-                                 T_EthHead     *ptEthHead);
+    /* 接收报文处理 */
+    virtual WORD32 RecvPacket(CAppInterface *pApp,
+                              T_OffloadInfo &rtInfo,
+                              T_MBuf        *pMBuf,
+                              CHAR          *pHead) = 0;
 
-    /* 收VLAN报文处理接口; ptHead : 去除VLAN以太网包头的净荷头指针 */
-    virtual WORD32 RecvVlanPacket(CAppInterface *pApp,
-                                  CVlanInst     *pVlanInst,
-                                  WORD32         dwDevID,
-                                  WORD32         dwPortID,
-                                  WORD32         dwQueueID,
-                                  T_MBuf        *pMBuf,
-                                  CHAR          *ptHead);
+    /* 封装以太网报文头 */
+    WORD16 EncodeEthPacket(BYTE   *pPkt,
+                           BYTE   *pSrcMacAddr,
+                           BYTE   *pDstMacAddr,
+                           WORD32  dwDeviceID,
+                           WORD32  dwVlanID,
+                           WORD16  wEthType);
 
 protected :
     CCentralMemPool  *m_pMemInterface;
+    CVlanTable       *m_pVlanTable;
 };
 
 
@@ -57,20 +59,16 @@ public :
 
     virtual WORD32 Initialize(CCentralMemPool *pMemInterface);
 
-    /* wProto : 低层协议栈类型(0 : EtherNet) */
-    virtual WORD32 RecvEthPacket(CAppInterface *pApp,
-                                 WORD16         wProto,
-                                 WORD32         dwDevID,
-                                 WORD32         dwPortID,
-                                 WORD32         dwQueueID,
-                                 T_MBuf        *pMBuf,
-                                 T_EthHead     *ptEthHead);
+    /* 接收以太网报文处理; pHead : 以太网头 */
+    virtual WORD32 RecvPacket(CAppInterface *pApp,
+                              T_OffloadInfo &rtInfo,
+                              T_MBuf        *pMBuf,
+                              CHAR          *pHead);
 
 protected :
     CNetStack  *m_pArpStack;
     CNetStack  *m_pIPv4Stack;
     CNetStack  *m_pIPv6Stack;
-    CNetStack  *m_pVlanStack;
 };
 
 

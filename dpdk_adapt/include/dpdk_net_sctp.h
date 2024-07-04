@@ -14,6 +14,12 @@ public :
     virtual ~CSctpStack();
 
     virtual WORD32 Initialize(CCentralMemPool *pMemInterface);
+
+    /* 接收报文处理; pHead : SCTP头 */
+    virtual WORD32 RecvPacket(CAppInterface *pApp,
+                              T_OffloadInfo &rtInfo,
+                              T_MBuf        *pMBuf,
+                              CHAR          *pHead);
 };
 
 

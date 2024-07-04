@@ -8,8 +8,16 @@
 #include "base_config_file.h"
 
 
-#define IPV6_ADDR_LEN     ((WORD32)(16))
-#define MAX_IP_NUM        ((WORD32)(128))
+#define MAX_IP_NUM                      ((WORD32)(128))
+
+#define ARP_MAC_ADDR_LEN                ((WORD32)(6))
+#define IPV6_ADDR_LEN                   ((WORD32)(16))
+
+
+typedef struct tagT_MacAddr
+{
+    BYTE  aucMacAddr[ARP_MAC_ADDR_LEN];
+}T_MacAddr;
 
 
 typedef enum tagE_IPAddrType

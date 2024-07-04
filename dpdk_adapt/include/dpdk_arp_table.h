@@ -7,14 +7,7 @@
 #include "dpdk_ip_table.h"
 
 
-#define ARP_MAC_ADDR_LEN                ((WORD32)(6))
 #define MAX_ARP_NUM                     ((WORD32)(256))
-
-
-typedef struct tagT_MacAddr
-{
-    BYTE  aucMacAddr[ARP_MAC_ADDR_LEN];
-}T_MacAddr;
 
 
 class CArpTable;

@@ -14,6 +14,12 @@ public :
     virtual ~CTcpStack();
 
     virtual WORD32 Initialize(CCentralMemPool *pMemInterface);
+
+    /* 接收报文处理; pHead : TCP头 */
+    virtual WORD32 RecvPacket(CAppInterface *pApp,
+                              T_OffloadInfo &rtInfo,
+                              T_MBuf        *pMBuf,
+                              CHAR          *pHead);
 };
 
 

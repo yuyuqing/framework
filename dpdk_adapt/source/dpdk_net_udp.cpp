@@ -19,3 +19,13 @@ WORD32 CUdpStack::Initialize(CCentralMemPool *pMemInterface)
 }
 
 
+/* 接收报文处理; pHead : UDP头 */
+WORD32 CUdpStack::RecvPacket(CAppInterface *pApp,
+                             T_OffloadInfo &rtInfo,
+                             T_MBuf        *pMBuf,
+                             CHAR          *pHead)
+{
+    return SUCCESS;
+}
+
+

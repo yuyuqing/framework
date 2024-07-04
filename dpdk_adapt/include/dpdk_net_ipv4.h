@@ -15,14 +15,11 @@ public :
 
     virtual WORD32 Initialize(CCentralMemPool *pMemInterface);
 
-    /* wProto : 低层协议栈类型(0 : EtherNet) */
-    virtual WORD32 RecvEthPacket(CAppInterface *pApp,
-                                 WORD16         wProto,
-                                 WORD32         dwDevID,
-                                 WORD32         dwPortID,
-                                 WORD32         dwQueueID,
-                                 T_MBuf        *pMBuf,
-                                 T_EthHead     *ptEthHead);
+    /* 接收报文处理; pHead : IPv4头 */
+    virtual WORD32 RecvPacket(CAppInterface *pApp,
+                              T_OffloadInfo &rtInfo,
+                              T_MBuf        *pMBuf,
+                              CHAR          *pHead);
 
 protected :
     CNetStack  *m_pIcmpStack;

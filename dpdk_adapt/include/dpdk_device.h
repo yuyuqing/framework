@@ -4,54 +4,7 @@
 #define _DPDK_DEVICE_H_
 
 
-#include <rte_version.h>
-#include <rte_ethdev.h>
-#include <rte_eal.h>
-
-#include "pub_typedef.h"
-
-#include "base_call_back.h"
-#include "base_factory_tpl.h"
-#include "base_config_file.h"
-#include "base_mem_pool.h"
-
-
-#define MAX_DEV_QUEUE_NUM        ((WORD32)(4))
-#define MBUF_BURST_NUM           ((WORD32)(32))
-#define RX_DESC_DEFAULT          ((WORD32)(1024))
-#define TX_DESC_DEFAULT          ((WORD32)(1024))
-#define MBUF_NAME_LEN            ((WORD32)(64))
-#define MBUF_NUM_PER_PORT        ((WORD32)(16384))
-#define MBUF_CACHE_SIZE          ((WORD32)(128))
-#define MBUF_PRIV_SIZE           ((WORD32)(0))
-#define MBUF_DATA_ROOM_SIZE      ((WORD32)(2048))
-
-
-typedef struct rte_mbuf          T_MBuf;
-typedef enum rte_eth_event_type  E_EthEventType;
-typedef struct rte_ether_hdr     T_EthHead;
-typedef struct rte_vlan_hdr      T_VlanHead;
-typedef struct rte_arp_hdr       T_ArpHead;
-typedef struct rte_ipv4_hdr      T_Ipv4Head;
-typedef struct rte_icmp_hdr      T_IcmpHead;
-typedef struct rte_udp_hdr       T_UdpHead;
-
-
-/* 报文回调处理函数 */
-using PMBufCallBack = WORD32 (*)(VOID   *pArg,
-                                 WORD32  dwDevID,
-                                 WORD32  dwPortID,
-                                 WORD32  dwQueueID,
-                                 T_MBuf *pMBuf);
-
-
-typedef enum tagE_DeviceType
-{
-    E_DEV_INVALID = 0,
-
-    E_ETH_DEVICE,       /* 以太网设备 */
-    E_BB_DEVICE,        /* 基带设备 */
-}E_DeviceType;
+#include "dpdk_common.h"
 
 
 typedef struct tagT_DeviceParam
@@ -87,6 +40,8 @@ public :
     WORD32 SendPacket(WORD32 dwNum, T_MBuf **pBufs);
 
     CBaseDevice * GetDevice();
+
+    WORD32 GetDeviceID();
 
     struct rte_mempool * GetMemPool();
 
@@ -159,6 +114,12 @@ inline WORD32 CDevQueue::SendPacket(WORD32 dwNum, T_MBuf **pBufs)
 inline CBaseDevice * CDevQueue::GetDevice()
 {
     return m_pDev;
+}
+
+
+inline WORD32 CDevQueue::GetDeviceID()
+{
+    return m_dwDeviceID;
 }
 
 

@@ -19,3 +19,13 @@ WORD32 CTcpStack::Initialize(CCentralMemPool *pMemInterface)
 }
 
 
+/* 接收报文处理; pHead : TCP头 */
+WORD32 CTcpStack::RecvPacket(CAppInterface *pApp,
+                             T_OffloadInfo &rtInfo,
+                             T_MBuf        *pMBuf,
+                             CHAR          *pHead)
+{
+    return SUCCESS;
+}
+
+

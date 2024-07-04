@@ -80,65 +80,47 @@ WORD32 CIPv4Stack::Initialize(CCentralMemPool *pMemInterface)
 }
 
 
-/* wProto : 低层协议栈类型(0 : EtherNet) */
-WORD32 CIPv4Stack::RecvEthPacket(CAppInterface *pApp,
-                                 WORD16         wProto,
-                                 WORD32         dwDevID,
-                                 WORD32         dwPortID,
-                                 WORD32         dwQueueID,
-                                 T_MBuf        *pMBuf,
-                                 T_EthHead     *ptEthHead)
+/* 接收报文处理; pHead : IPv4头 */
+WORD32 CIPv4Stack::RecvPacket(CAppInterface *pApp,
+                              T_OffloadInfo &rtInfo,
+                              T_MBuf        *pMBuf,
+                              CHAR          *pHead)
 {
-    T_Ipv4Head *ptIpv4Head = rte_pktmbuf_mtod_offset(pMBuf,
-                                                     struct rte_ipv4_hdr *,
-                                                     sizeof(struct rte_ether_hdr));
-    switch (ptIpv4Head->next_proto_id)
+    switch (rtInfo.ucL4Proto)
     {
     case IPPROTO_ICMP :
         {
-            return m_pIcmpStack->RecvEthPacket(pApp,
-                                               RTE_ETHER_TYPE_IPV4,
-                                               dwDevID,
-                                               dwPortID,
-                                               dwQueueID,
-                                               pMBuf,
-                                               ptEthHead);
+            return m_pIcmpStack->RecvPacket(pApp,
+                                            rtInfo,
+                                            pMBuf,
+                                            (pHead + rtInfo.wL3Len));
         }
         break ;
 
     case IPPROTO_UDP :
         {
-            return m_pUdpStack->RecvEthPacket(pApp,
-                                              RTE_ETHER_TYPE_IPV4,
-                                              dwDevID,
-                                              dwPortID,
-                                              dwQueueID,
-                                              pMBuf,
-                                              ptEthHead);
+            return m_pUdpStack->RecvPacket(pApp,
+                                            rtInfo,
+                                            pMBuf,
+                                            (pHead + rtInfo.wL3Len));
         }
         break ;
 
     case IPPROTO_SCTP :
         {
-            return m_pSctpStack->RecvEthPacket(pApp,
-                                               RTE_ETHER_TYPE_IPV4,
-                                               dwDevID,
-                                               dwPortID,
-                                               dwQueueID,
-                                               pMBuf,
-                                               ptEthHead);
+            return m_pSctpStack->RecvPacket(pApp,
+                                            rtInfo,
+                                            pMBuf,
+                                            (pHead + rtInfo.wL3Len));
         }
         break ;
 
     case IPPROTO_TCP :
         {
-            return m_pTcpStack->RecvEthPacket(pApp,
-                                              RTE_ETHER_TYPE_IPV4,
-                                              dwDevID,
-                                              dwPortID,
-                                              dwQueueID,
-                                              pMBuf,
-                                              ptEthHead);
+            return m_pTcpStack->RecvPacket(pApp,
+                                            rtInfo,
+                                            pMBuf,
+                                            (pHead + rtInfo.wL3Len));
         }
         break ;
 
