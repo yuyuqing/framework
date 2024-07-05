@@ -84,7 +84,7 @@ WORD32 CArpStack::SendArpRequest(CDevQueue *pQueue,
     }
 
     CEthDevice         *pDevice  = (CEthDevice *)(pQueue->GetDevice());
-    struct rte_mempool *pMemPool = pQueue->GetMemPool();
+    struct rte_mempool *pMemPool = pQueue->GetTxMemPool();
 
     T_MBuf *pArpReq = EncodeArpRequest(pDevice->GetMacAddr(),
                                        pQueue->GetDeviceID(),
@@ -140,7 +140,7 @@ WORD32 CArpStack::ProcArpRequest(CAppInterface *pApp,
     CEthApp            *pEthApp  = (CEthApp *)pApp;
     CDevQueue          *pQueue   = pEthApp->GetQueue();
     CEthDevice         *pDevice  = (CEthDevice *)(pQueue->GetDevice());
-    struct rte_mempool *pMemPool = pQueue->GetMemPool();
+    struct rte_mempool *pMemPool = pQueue->GetTxMemPool();
 
     T_MBuf *pArpReply = EncodeArpReply(pDevice->GetMacAddr(),
                                        pArpHead->arp_data.arp_sha.addr_bytes,

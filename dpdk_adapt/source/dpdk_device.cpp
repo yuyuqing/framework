@@ -6,46 +6,69 @@
 
 CDevQueue::CDevQueue(CBaseDevice *pDevice)
 {
-    m_pDev       = pDevice;
-    m_dwDeviceID = pDevice->GetDeviceID();
-    m_wPortID    = INVALID_WORD;
-    m_wQueueID   = INVALID_WORD;
-    m_pMbufPool  = NULL;
+    m_pDev        = pDevice;
+    m_dwDeviceID  = pDevice->GetDeviceID();
+    m_wPortID     = INVALID_WORD;
+    m_wQueueID    = INVALID_WORD;
+    m_pTxMbufPool = NULL;
+    m_pRxMbufPool = NULL;
 }
 
 
 CDevQueue::~CDevQueue()
 {
-    m_pDev       = NULL;
-    m_dwDeviceID = INVALID_DWORD;
-    m_wPortID    = INVALID_WORD;
-    m_wQueueID   = INVALID_WORD;
-    m_pMbufPool  = NULL;
+    m_pDev        = NULL;
+    m_dwDeviceID  = INVALID_DWORD;
+    m_wPortID     = INVALID_WORD;
+    m_wQueueID    = INVALID_WORD;
+    m_pTxMbufPool = NULL;
+    m_pRxMbufPool = NULL;
 }
 
 
-WORD32 CDevQueue::Initialize(WORD16 wPortID, WORD16 wQueueID)
+WORD32 CDevQueue::Initialize(WORD16 wPortID,
+                             WORD16 wQueueID,
+                             WORD32 dwMBufNum,
+                             WORD32 dwMBufCacheSize,
+                             WORD32 dwMBufPrivSize,
+                             WORD32 dwMBufRoomSize)
 {
     CHAR cPort  = ((CHAR)(wPortID))  + '0';
     CHAR cQueue = ((CHAR)(wQueueID)) + '0';
-    CString<MBUF_NAME_LEN>  cMBufName("MBUF_POOL");
 
-    cMBufName += '_';
-    cMBufName += cPort;
-    cMBufName += '_';
-    cMBufName += cQueue;
+    CString<MBUF_NAME_LEN>  cTxMBufName("TxMBUF_POOL");
+    CString<MBUF_NAME_LEN>  cRxMBufName("RxMBUF_POOL");
+
+    cTxMBufName += '_';
+    cTxMBufName += cPort;
+    cTxMBufName += '_';
+    cTxMBufName += cQueue;
+
+    cRxMBufName += '_';
+    cRxMBufName += cPort;
+    cRxMBufName += '_';
+    cRxMBufName += cQueue;
 
     m_wPortID  = wPortID;
     m_wQueueID = wQueueID;
 
-    m_pMbufPool = rte_pktmbuf_pool_create(
-                    cMBufName.toChar(),
-                    MBUF_NUM_PER_PORT,
-                    MBUF_CACHE_SIZE,
-                    MBUF_PRIV_SIZE,
-                    MBUF_DATA_ROOM_SIZE,
-                    rte_socket_id());
-    if (NULL == m_pMbufPool)
+    m_pTxMbufPool = rte_pktmbuf_pool_create(
+                        cTxMBufName.toChar(),
+                        dwMBufNum,
+                        dwMBufCacheSize,
+                        dwMBufPrivSize,
+                        dwMBufRoomSize,
+                        rte_socket_id());
+
+    m_pRxMbufPool = rte_pktmbuf_pool_create(
+                        cRxMBufName.toChar(),
+                        dwMBufNum,
+                        dwMBufCacheSize,
+                        dwMBufPrivSize,
+                        dwMBufRoomSize,
+                        rte_socket_id());
+
+    if ((NULL == m_pTxMbufPool) || (NULL == m_pRxMbufPool))
     {
         return FAIL;
     }
@@ -57,12 +80,16 @@ WORD32 CDevQueue::Initialize(WORD16 wPortID, WORD16 wQueueID)
 CBaseDevice::CBaseDevice (E_DeviceType eType, const T_DeviceParam &rtParam)
     : m_rCentralMemPool(*(rtParam.pMemPool))
 {
-    m_dwDeviceID = rtParam.dwDeviceID;
-    m_wPortID    = (WORD16)(rtParam.dwPortID);
-    m_ucQueueNum = (BYTE)(rtParam.dwQueueNum);
-    m_ucDevType  = (BYTE)(eType);
-    m_wRxDescNum = RX_DESC_DEFAULT;
-    m_wTxDescNum = TX_DESC_DEFAULT;
+    m_dwDeviceID      = rtParam.dwDeviceID;
+    m_wPortID         = (WORD16)(rtParam.dwPortID);
+    m_ucQueueNum      = (BYTE)(rtParam.dwQueueNum);
+    m_ucDevType       = (BYTE)(eType);
+    m_dwMBufNum       = rtParam.dwMBufNum;
+    m_dwMBufCacheSize = rtParam.dwMBufCacheSize;
+    m_dwMBufPrivSize  = rtParam.dwMBufPrivSize;
+    m_dwMBufRoomSize  = rtParam.dwMBufRoomSize;
+    m_wRxDescNum      = rtParam.dwRxDescNum;
+    m_wTxDescNum      = rtParam.dwTxDescNum;
 
     memset(&m_tEthConf, 0x00, sizeof(m_tEthConf));
     memset(&m_tDevInfo, 0x00, sizeof(m_tDevInfo));
@@ -97,6 +124,10 @@ CBaseDevice::~CBaseDevice()
     m_wPortID    = INVALID_WORD;
     m_ucQueueNum = 0;
     m_ucDevType  = 0;
+    m_dwMBufNum       = MBUF_NUM_PER_PORT;
+    m_dwMBufCacheSize = MBUF_CACHE_SIZE;
+    m_dwMBufPrivSize  = MBUF_PRIV_SIZE;
+    m_dwMBufRoomSize  = MBUF_DATA_ROOM_SIZE;
 
     memset(&m_tEthConf, 0x00, sizeof(m_tEthConf));
     memset(&m_tDevInfo, 0x00, sizeof(m_tDevInfo));
@@ -186,6 +217,10 @@ WORD32 CBaseDevice::Initialize(rte_eth_dev_cb_fn pFunc)
     for (WORD16 wIndex = 0; wIndex < m_ucQueueNum; wIndex++)
     {
         m_apQueue[wIndex] = CreateQueue(wIndex,
+                                        m_dwMBufNum,
+                                        m_dwMBufCacheSize,
+                                        m_dwMBufPrivSize,
+                                        m_dwMBufRoomSize,
                                         iSocketID,
                                         m_wRxDescNum,
                                         m_wTxDescNum,
@@ -228,6 +263,10 @@ VOID CBaseDevice::Dump()
 
 
 CDevQueue * CBaseDevice::CreateQueue(WORD16  wQueueID,
+                                     WORD32  dwMBufNum,
+                                     WORD32  dwMBufCacheSize,
+                                     WORD32  dwMBufPrivSize,
+                                     WORD32  dwMBufRoomSize,
                                      SWORD32 iSocketID,
                                      WORD16  wRxDescNum,
                                      WORD16  wTxDescNum,
@@ -244,7 +283,12 @@ CDevQueue * CBaseDevice::CreateQueue(WORD16  wQueueID,
 
     CDevQueue *pQueue = new (pMem) CDevQueue(this);
 
-    WORD32 dwResult = pQueue->Initialize(m_wPortID, wQueueID);
+    WORD32 dwResult = pQueue->Initialize(m_wPortID,
+                                         wQueueID,
+                                         dwMBufNum,
+                                         dwMBufCacheSize,
+                                         dwMBufPrivSize,
+                                         dwMBufRoomSize);
     if (SUCCESS != dwResult)
     {
         delete pQueue;
@@ -257,7 +301,7 @@ CDevQueue * CBaseDevice::CreateQueue(WORD16  wQueueID,
                                       wRxDescNum,
                                       iSocketID,
                                       &rtRxConf,
-                                      pQueue->m_pMbufPool);
+                                      pQueue->m_pRxMbufPool);
     if (SUCCESS != dwResult)
     {
         delete pQueue;

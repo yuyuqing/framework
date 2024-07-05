@@ -200,10 +200,10 @@
         "init_args"        :                                      //DPDK启动参数
         [
             {"cmd_line"    : "gnb_du"},                           //启动DPDK的第一个参数
-            {"cmd_line"    : "-c 0x02"},                          //DPDK核配置, 不启动LCore线程
+            {"cmd_line"    : "-c 0x42"},                          //DPDK核配置, 核配置bit掩码(01000010, 核1/6预分配给DPDK, 1号核预留给DPDK, 6号核预留给SCTP)
             {"cmd_line"    : "-m 1024"},                          //DPDK启动时为每个Socket分配大页内存数量(若为双Socket系统, 1024,1024), 单位:MB
             {"cmd_line"    : "-n 1"},                             //DPDK启动时为每个Socket设置的内存通道数
-            {"cmd_line"    : "--file-prefix=ft"},                 //DPDK设置共享内存文件前缀
+            {"cmd_line"    : "--file-prefix=wls0"},               //DPDK设置共享内存文件前缀
             {"cmd_line"    : "--proc-type=auto"},                 //DPDK设置进程类型(primary/secondary/auto)
             {"cmd_line"    : "--iova-mode=pa"},                   //DPDK设置IOVA模式(pa/va)
             {"cmd_line"    : "--vdev=net_tap0,iface=cm0"},        //DPDK设置虚拟网络设备
@@ -216,13 +216,25 @@
                 "type"            : "CBBDevice",                  //DPDK设备类型名
                 "pci_addr"        : "0000:0b:00.0",               //DPDK设备地址
                 "dev_id"          : 0,                            //DPDK设备ID(内部唯一标识)
-                "queue_num"       : 1                             //网卡队列数量(收发包队列数量保持一致)
+                "queue_num"       : 1,                            //网卡队列数量(收发包队列数量保持一致)
+                "mbuf_num"        : 4096,                         //为每个网卡队列创建收/发两个内存池, 指示每个内存池中内存块数量(取值为2^N)
+                "mbuf_cache_size" : 128,                          //每个内存池预留缓存数量
+                "mbuf_priv_size"  : 0,                            //每个内存池priv_size大小
+                "mbuf_room_size"  : 2176,                         //每个内存池room_size大小(2048+128)
+                "rx_desc_num"     : 128,                          //收队列描述符数量
+                "tx_desc_num"     : 128                           //发队列描述数量
             },
             {
                 "type"            : "CEthDevice",                 //DPDK设备类型名
                 "pci_addr"        : "0000:13:00.0",               //DPDK设备地址
                 "dev_id"          : 1,                            //DPDK设备ID(内部唯一标识)
                 "queue_num"       : 1                             //网卡队列数量(收发包队列数量保持一致)
+                "mbuf_num"        : 4096,                         //为每个网卡队列创建收/发两个内存池, 指示每个内存池中内存块数量(取值为2^N)
+                "mbuf_cache_size" : 128,                          //每个内存池预留缓存数量
+                "mbuf_priv_size"  : 0,                            //每个内存池priv_size大小
+                "mbuf_room_size"  : 2176,                         //每个内存池room_size大小(2048+128)
+                "rx_desc_num"     : 128,                          //收队列描述符数量
+                "tx_desc_num"     : 128                           //发队列描述数量
             }
         ],
         "bbdev"            :

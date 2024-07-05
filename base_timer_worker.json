@@ -194,10 +194,10 @@
         "init_args"        :                                      //DPDK启动参数
         [
             {"cmd_line"    : "gnb_du"},                           //启动DPDK的第一个参数
-            {"cmd_line"    : "-c 0x02"},                          //DPDK核配置, 不启动LCore线程
+            {"cmd_line"    : "-c 0x42"},                          //DPDK核配置, 核配置bit掩码(01000010, 核1/6预分配给DPDK, 1号核预留给DPDK, 6号核预留给SCTP)
             {"cmd_line"    : "-m 1024"},                          //DPDK启动时为每个Socket分配大页内存数量(若为双Socket系统, 1024,1024), 单位:MB
             {"cmd_line"    : "-n 1"},                             //DPDK启动时为每个Socket设置的内存通道数
-            {"cmd_line"    : "--file-prefix=ft"},                 //DPDK设置共享内存文件前缀
+            {"cmd_line"    : "--file-prefix=wls0"},               //DPDK设置共享内存文件前缀
             {"cmd_line"    : "--proc-type=auto"},                 //DPDK设置进程类型(primary/secondary/auto)
             {"cmd_line"    : "--iova-mode=pa"},                   //DPDK设置IOVA模式(pa/va)
             {"cmd_line"    : "--vdev=net_tap0,iface=cm0"},        //DPDK设置虚拟网络设备

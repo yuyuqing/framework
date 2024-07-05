@@ -32,7 +32,7 @@
 #define MBUF_NUM_PER_PORT        ((WORD32)(16384))
 #define MBUF_CACHE_SIZE          ((WORD32)(128))
 #define MBUF_PRIV_SIZE           ((WORD32)(0))
-#define MBUF_DATA_ROOM_SIZE      ((WORD32)(2048))
+#define MBUF_DATA_ROOM_SIZE      ((WORD32)(2048 + 128))
 
 
 typedef struct rte_mbuf          T_MBuf;
@@ -61,6 +61,7 @@ typedef enum tagE_DeviceType
 
     E_ETH_DEVICE,       /* 以太网设备 */
     E_BB_DEVICE,        /* 基带设备 */
+    E_BKQ_DEVICE,       /* 比科奇基带设备 */
 }E_DeviceType;
 
 

@@ -208,6 +208,12 @@ typedef struct tagT_DpdkDevJsonCfg
     WORD32        dwDeviceID;
     WORD32        dwPortID;
     WORD32        dwQueueNum;
+    WORD32        dwMBufNum;
+    WORD32        dwMBufCacheSize;
+    WORD32        dwMBufPrivSize;
+    WORD32        dwMBufRoomSize;
+    WORD32        dwRxDescNum;
+    WORD32        dwTxDescNum;
 }T_DpdkDevJsonCfg;
 
 

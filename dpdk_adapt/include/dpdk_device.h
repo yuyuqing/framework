@@ -12,6 +12,12 @@ typedef struct tagT_DeviceParam
     WORD32           dwDeviceID;             /* 设备ID */
     WORD32           dwPortID;               /* DPDK PortID */
     WORD32           dwQueueNum;             /* DPDK队列数量 */
+    WORD32           dwMBufNum;
+    WORD32           dwMBufCacheSize;
+    WORD32           dwMBufPrivSize;
+    WORD32           dwMBufRoomSize;
+    WORD32           dwRxDescNum;
+    WORD32           dwTxDescNum;
     CCentralMemPool *pMemPool;
 }T_DeviceParam;
 
@@ -28,7 +34,12 @@ public :
     CDevQueue(CBaseDevice *pDevice);
     virtual ~CDevQueue();
 
-    WORD32 Initialize(WORD16 wPortID, WORD16 wQueueID);
+    WORD32 Initialize(WORD16 wPortID,
+                      WORD16 wQueueID,
+                      WORD32 dwMBufNum,
+                      WORD32 dwMBufCacheSize,
+                      WORD32 dwMBufPrivSize,
+                      WORD32 dwMBufRoomSize);
 
     /* 一次性处理设备队列中指定数量的报文 */
     WORD32 RecvPacket(WORD32 dwNum, VOID *pObj, PMBufCallBack pFunc);
@@ -43,7 +54,8 @@ public :
 
     WORD32 GetDeviceID();
 
-    struct rte_mempool * GetMemPool();
+    struct rte_mempool * GetTxMemPool();
+    struct rte_mempool * GetRxMemPool();
 
 protected :
     CBaseDevice         *m_pDev;
@@ -52,7 +64,8 @@ protected :
     WORD16               m_wPortID;
     WORD16               m_wQueueID;
 
-    struct rte_mempool  *m_pMbufPool;
+    struct rte_mempool  *m_pTxMbufPool;
+    struct rte_mempool  *m_pRxMbufPool;
 };
 
 
@@ -123,9 +136,15 @@ inline WORD32 CDevQueue::GetDeviceID()
 }
 
 
-inline struct rte_mempool * CDevQueue::GetMemPool()
+inline struct rte_mempool * CDevQueue::GetTxMemPool()
 {
-    return m_pMbufPool;
+    return m_pTxMbufPool;
+}
+
+
+inline struct rte_mempool * CDevQueue::GetRxMemPool()
+{
+    return m_pRxMbufPool;
 }
 
 
@@ -159,6 +178,10 @@ protected :
     WORD32 Initialize(rte_eth_dev_cb_fn pFunc);
 
     CDevQueue * CreateQueue(WORD16  wQueueID,
+                            WORD32  dwMBufNum,
+                            WORD32  dwMBufCacheSize,
+                            WORD32  dwMBufPrivSize,
+                            WORD32  dwMBufRoomSize,
                             SWORD32 iSocketID,
                             WORD16  wRxDescNum,
                             WORD16  wTxDescNum,
@@ -172,6 +195,11 @@ protected :
     WORD16                   m_wPortID;
     BYTE                     m_ucQueueNum;
     BYTE                     m_ucDevType;
+
+    WORD32                   m_dwMBufNum;
+    WORD32                   m_dwMBufCacheSize;
+    WORD32                   m_dwMBufPrivSize;
+    WORD32                   m_dwMBufRoomSize;
 
     WORD16                   m_wRxDescNum;
     WORD16                   m_wTxDescNum;
@@ -226,6 +254,12 @@ typedef struct tagT_DeviceInfo
     WORD32           dwDeviceID;             /* 设备ID */
     WORD32           dwPortID;               /* DPDK PortID */
     WORD32           dwQueueNum;             /* DPDK队列数量 */
+    WORD32           dwMBufNum;
+    WORD32           dwMBufCacheSize;
+    WORD32           dwMBufPrivSize;
+    WORD32           dwMBufRoomSize;
+    WORD32           dwRxDescNum;
+    WORD32           dwTxDescNum;
     WORD32           dwMemSize;              /* 设备实例大小 */
     PCreateProduct   pCreateFunc;
     PDestroyProduct  pDestroyFunc;

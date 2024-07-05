@@ -208,6 +208,12 @@ WORD32 CDpdkMgr::InitDevice(T_DpdkJsonCfg &rtCfg)
         ptDevInfo = CreateInfo(rtDevCfg.dwDeviceID,
                                rtDevCfg.dwPortID,
                                rtDevCfg.dwQueueNum,
+                               rtDevCfg.dwMBufNum,
+                               rtDevCfg.dwMBufCacheSize,
+                               rtDevCfg.dwMBufPrivSize,
+                               rtDevCfg.dwMBufRoomSize,
+                               rtDevCfg.dwRxDescNum,
+                               rtDevCfg.dwTxDescNum,
                                ptDefInfo);
         if (NULL == ptDevInfo)
         {
@@ -226,10 +232,16 @@ WORD32 CDpdkMgr::InitDevice(T_DpdkJsonCfg &rtCfg)
         m_atDevInfo[dwIndex].pMem = m_pMemInterface->Malloc(m_atDevInfo[dwIndex].dwMemSize);
 
         T_DeviceParam tParam;
-        tParam.dwDeviceID = m_atDevInfo[dwIndex].dwDeviceID;
-        tParam.dwPortID   = m_atDevInfo[dwIndex].dwPortID;
-        tParam.dwQueueNum = m_atDevInfo[dwIndex].dwQueueNum;
-        tParam.pMemPool   = m_pMemInterface;
+        tParam.dwDeviceID      = m_atDevInfo[dwIndex].dwDeviceID;
+        tParam.dwPortID        = m_atDevInfo[dwIndex].dwPortID;
+        tParam.dwQueueNum      = m_atDevInfo[dwIndex].dwQueueNum;
+        tParam.dwMBufNum       = m_atDevInfo[dwIndex].dwMBufNum;
+        tParam.dwMBufCacheSize = m_atDevInfo[dwIndex].dwMBufCacheSize;
+        tParam.dwMBufPrivSize  = m_atDevInfo[dwIndex].dwMBufPrivSize;
+        tParam.dwMBufRoomSize  = m_atDevInfo[dwIndex].dwMBufRoomSize;
+        tParam.dwRxDescNum     = m_atDevInfo[dwIndex].dwRxDescNum;
+        tParam.dwTxDescNum     = m_atDevInfo[dwIndex].dwTxDescNum;
+        tParam.pMemPool        = m_pMemInterface;
 
         m_atDevInfo[dwIndex].pDevice = (CBaseDevice *)((*(m_atDevInfo[dwIndex].pCreateFunc)) (m_atDevInfo[dwIndex].pMem, &tParam));
         dwResult = m_atDevInfo[dwIndex].pDevice->Initialize();
@@ -247,6 +259,12 @@ WORD32 CDpdkMgr::InitDevice(T_DpdkJsonCfg &rtCfg)
 T_DeviceInfo * CDpdkMgr::CreateInfo(WORD32            dwDeviceID,
                                     WORD32            dwPortID,
                                     WORD32            dwQueueNum,
+                                    WORD32            dwMBufNum,
+                                    WORD32            dwMBufCacheSize,
+                                    WORD32            dwMBufPrivSize,
+                                    WORD32            dwMBufRoomSize,
+                                    WORD32            dwRxDescNum,
+                                    WORD32            dwTxDescNum,
                                     T_ProductDefInfo *ptDefInfo)
 {
     if ((NULL == ptDefInfo) || (m_dwDevNum >= MAX_DEV_PORT_NUM))
@@ -259,14 +277,20 @@ T_DeviceInfo * CDpdkMgr::CreateInfo(WORD32            dwDeviceID,
     /* 设备类型名 */
     memcpy(ptDevInfo->aucName, ptDefInfo->aucName, DEV_NAME_LEN);
 
-    ptDevInfo->dwDeviceID   = dwDeviceID;
-    ptDevInfo->dwPortID     = dwPortID;
-    ptDevInfo->dwQueueNum   = dwQueueNum;
-    ptDevInfo->dwMemSize    = ptDefInfo->dwMemSize;
-    ptDevInfo->pCreateFunc  = ptDefInfo->pCreateFunc;
-    ptDevInfo->pDestroyFunc = ptDefInfo->pDestroyFunc;
-    ptDevInfo->pMem         = NULL;
-    ptDevInfo->pDevice      = NULL;
+    ptDevInfo->dwDeviceID      = dwDeviceID;
+    ptDevInfo->dwPortID        = dwPortID;
+    ptDevInfo->dwQueueNum      = dwQueueNum;
+    ptDevInfo->dwMBufNum       = dwMBufNum;
+    ptDevInfo->dwMBufCacheSize = dwMBufCacheSize;
+    ptDevInfo->dwMBufPrivSize  = dwMBufPrivSize;
+    ptDevInfo->dwMBufRoomSize  = dwMBufRoomSize;
+    ptDevInfo->dwRxDescNum     = dwRxDescNum;
+    ptDevInfo->dwTxDescNum     = dwTxDescNum;
+    ptDevInfo->dwMemSize       = ptDefInfo->dwMemSize;
+    ptDevInfo->pCreateFunc     = ptDefInfo->pCreateFunc;
+    ptDevInfo->pDestroyFunc    = ptDefInfo->pDestroyFunc;
+    ptDevInfo->pMem            = NULL;
+    ptDevInfo->pDevice         = NULL;
 
     m_dwDevNum++;
 

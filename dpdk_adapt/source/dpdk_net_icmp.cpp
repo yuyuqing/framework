@@ -91,7 +91,7 @@ WORD32 CIcmpStack::ProcIcmpRequest(BYTE          *pSrcMacAddr,
     CEthApp            *pEthApp  = (CEthApp *)pApp;
     CDevQueue          *pQueue   = pEthApp->GetQueue();
     CEthDevice         *pDevice  = (CEthDevice *)(pQueue->GetDevice());
-    struct rte_mempool *pMemPool = pQueue->GetMemPool();
+    struct rte_mempool *pMemPool = pQueue->GetTxMemPool();
 
     /* 目的IP不属于本设备 */
     if (FALSE == pDevice->IsMatch(dwDstIP))

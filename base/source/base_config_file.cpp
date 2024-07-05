@@ -481,9 +481,15 @@ WORD32 ParseDpdk(T_DpdkJsonCfg &tConfig, CJsonValue &rRoot)
         CString<DEV_NAME_LEN> cAddr(rDevice["pci_addr"].AsString());
         memcpy(rtDevCfg.aucAddr, cAddr.toChar(), cAddr.Length());
 
-        rtDevCfg.dwDeviceID = rDevice["dev_id"].AsDWORD();
-        rtDevCfg.dwPortID   = INVALID_DWORD;
-        rtDevCfg.dwQueueNum = rDevice["queue_num"].AsDWORD();
+        rtDevCfg.dwDeviceID      = rDevice["dev_id"].AsDWORD();
+        rtDevCfg.dwPortID        = INVALID_DWORD;
+        rtDevCfg.dwQueueNum      = rDevice["queue_num"].AsDWORD();
+        rtDevCfg.dwMBufNum       = rDevice["mbuf_num"].AsDWORD();
+        rtDevCfg.dwMBufCacheSize = rDevice["mbuf_cache_size"].AsDWORD();
+        rtDevCfg.dwMBufPrivSize  = rDevice["mbuf_priv_size"].AsDWORD();
+        rtDevCfg.dwMBufRoomSize  = rDevice["mbuf_room_size"].AsDWORD();
+        rtDevCfg.dwRxDescNum     = rDevice["rx_desc_num"].AsDWORD();
+        rtDevCfg.dwTxDescNum     = rDevice["tx_desc_num"].AsDWORD();
     }
 
     for (WORD32 dwIndex = 0; dwIndex < tConfig.dwBBNum; dwIndex++)
