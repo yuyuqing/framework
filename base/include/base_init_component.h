@@ -60,16 +60,16 @@ protected :
 };
 
 
-#define INIT_EXPORT(FUNC, Level)          \
-    CHAR __init_##FUNC##_name[] = #FUNC;  \
-    const T_InitFunc __pInit_##FUNC##_ =  \
-    {                                     \
-        Level,                            \
-        __init_##FUNC##_name,             \
-        (PINITFUNC) &FUNC,                \
-        (PEXITFUNC) NULL,                 \
-    };                                    \
-    WORD32 __dwInit_##FUNC##_ = CInitList::CreateFunc(&(__pInit_##FUNC##_));
+#define INIT_EXPORT(FUNC, Level)                                \
+    CHAR __attribute__((used)) __init_##FUNC##_name[] = #FUNC;  \
+    const T_InitFunc __attribute__((used)) __pInit_##FUNC##_ =  \
+    {                                                           \
+        Level,                                                  \
+        __init_##FUNC##_name,                                   \
+        (PINITFUNC) &FUNC,                                      \
+        (PEXITFUNC) NULL,                                       \
+    };                                                          \
+    WORD32 __attribute__((used)) __dwInit_##FUNC##_ = CInitList::CreateFunc(&(__pInit_##FUNC##_));
 
 
 #endif
