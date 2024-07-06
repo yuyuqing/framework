@@ -20,4 +20,4 @@ set(main_log_srcs
     ${CMAKE_CURRENT_SOURCE_DIR}/main_log.cpp)
 add_executable(main_log ${main_log_srcs})
 redefine_file_macro(main_log)
-target_link_libraries(main_log -lglib-2.0 ${lib_obj} -lrt -pthread)
+target_link_libraries(main_log -lglib-2.0 -Wl,--whole-archive ${lib_obj} -Wl,--no-whole-archive -lrt -pthread)

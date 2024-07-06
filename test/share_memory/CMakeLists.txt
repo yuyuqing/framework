@@ -39,7 +39,7 @@ set(main_primary_srcs
     ${CMAKE_CURRENT_SOURCE_DIR}/main_primary.cpp)
 add_executable(main_primary ${main_primary_srcs})
 redefine_file_macro(main_primary)
-target_link_libraries(main_primary -lglib-2.0 ${lib_obj} -Wl,--whole-archive;-L/home/wrk1/dpdk_install/lib/x86_64-linux-gnu;
+target_link_libraries(main_primary -lglib-2.0 -Wl,--whole-archive; ${lib_obj} -L/home/wrk1/dpdk_install/lib/x86_64-linux-gnu;
                       -l:librte_common_cpt.a;-l:librte_common_dpaax.a;-l:librte_common_iavf.a;-l:librte_common_idpf.a;
                       -l:librte_common_octeontx.a;-l:librte_bus_auxiliary.a;-l:librte_bus_cdx.a;-l:librte_bus_dpaa.a;
                       -l:librte_bus_fslmc.a;-l:librte_bus_ifpga.a;-l:librte_bus_pci.a;-l:librte_bus_platform.a;
@@ -82,7 +82,7 @@ set(main_secondary_srcs
     ${CMAKE_CURRENT_SOURCE_DIR}/main_secondary.cpp)
 add_executable(main_secondary ${main_secondary_srcs})
 redefine_file_macro(main_secondary)
-target_link_libraries(main_secondary -lglib-2.0 ${lib_obj} -Wl,--whole-archive;-L/home/wrk1/dpdk_install/lib/x86_64-linux-gnu;
+target_link_libraries(main_secondary -lglib-2.0 -Wl,--whole-archive; ${lib_obj} -L/home/wrk1/dpdk_install/lib/x86_64-linux-gnu;
                       -l:librte_common_cpt.a;-l:librte_common_dpaax.a;-l:librte_common_iavf.a;-l:librte_common_idpf.a;
                       -l:librte_common_octeontx.a;-l:librte_bus_auxiliary.a;-l:librte_bus_cdx.a;-l:librte_bus_dpaa.a;
                       -l:librte_bus_fslmc.a;-l:librte_bus_ifpga.a;-l:librte_bus_pci.a;-l:librte_bus_platform.a;
