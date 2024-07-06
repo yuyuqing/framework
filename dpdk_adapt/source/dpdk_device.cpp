@@ -120,10 +120,10 @@ CBaseDevice::~CBaseDevice()
         }
     }
 
-    m_dwDeviceID = INVALID_DWORD;
-    m_wPortID    = INVALID_WORD;
-    m_ucQueueNum = 0;
-    m_ucDevType  = 0;
+    m_dwDeviceID      = INVALID_DWORD;
+    m_wPortID         = INVALID_WORD;
+    m_ucQueueNum      = 0;
+    m_ucDevType       = 0;
     m_dwMBufNum       = MBUF_NUM_PER_PORT;
     m_dwMBufCacheSize = MBUF_CACHE_SIZE;
     m_dwMBufPrivSize  = MBUF_PRIV_SIZE;

@@ -205,16 +205,7 @@ WORD32 CDpdkMgr::InitDevice(T_DpdkJsonCfg &rtCfg)
 
         rtDevCfg.dwPortID = wPortID;
 
-        ptDevInfo = CreateInfo(rtDevCfg.dwDeviceID,
-                               rtDevCfg.dwPortID,
-                               rtDevCfg.dwQueueNum,
-                               rtDevCfg.dwMBufNum,
-                               rtDevCfg.dwMBufCacheSize,
-                               rtDevCfg.dwMBufPrivSize,
-                               rtDevCfg.dwMBufRoomSize,
-                               rtDevCfg.dwRxDescNum,
-                               rtDevCfg.dwTxDescNum,
-                               ptDefInfo);
+        ptDevInfo = CreateInfo(rtDevCfg, ptDefInfo);
         if (NULL == ptDevInfo)
         {
             /* 设备创建失败 */
@@ -256,15 +247,7 @@ WORD32 CDpdkMgr::InitDevice(T_DpdkJsonCfg &rtCfg)
 }
 
 
-T_DeviceInfo * CDpdkMgr::CreateInfo(WORD32            dwDeviceID,
-                                    WORD32            dwPortID,
-                                    WORD32            dwQueueNum,
-                                    WORD32            dwMBufNum,
-                                    WORD32            dwMBufCacheSize,
-                                    WORD32            dwMBufPrivSize,
-                                    WORD32            dwMBufRoomSize,
-                                    WORD32            dwRxDescNum,
-                                    WORD32            dwTxDescNum,
+T_DeviceInfo * CDpdkMgr::CreateInfo(T_DpdkDevJsonCfg &rtDevCfg,
                                     T_ProductDefInfo *ptDefInfo)
 {
     if ((NULL == ptDefInfo) || (m_dwDevNum >= MAX_DEV_PORT_NUM))
@@ -277,15 +260,15 @@ T_DeviceInfo * CDpdkMgr::CreateInfo(WORD32            dwDeviceID,
     /* 设备类型名 */
     memcpy(ptDevInfo->aucName, ptDefInfo->aucName, DEV_NAME_LEN);
 
-    ptDevInfo->dwDeviceID      = dwDeviceID;
-    ptDevInfo->dwPortID        = dwPortID;
-    ptDevInfo->dwQueueNum      = dwQueueNum;
-    ptDevInfo->dwMBufNum       = dwMBufNum;
-    ptDevInfo->dwMBufCacheSize = dwMBufCacheSize;
-    ptDevInfo->dwMBufPrivSize  = dwMBufPrivSize;
-    ptDevInfo->dwMBufRoomSize  = dwMBufRoomSize;
-    ptDevInfo->dwRxDescNum     = dwRxDescNum;
-    ptDevInfo->dwTxDescNum     = dwTxDescNum;
+    ptDevInfo->dwDeviceID      = rtDevCfg.dwDeviceID;
+    ptDevInfo->dwPortID        = rtDevCfg.dwPortID;
+    ptDevInfo->dwQueueNum      = rtDevCfg.dwQueueNum;
+    ptDevInfo->dwMBufNum       = rtDevCfg.dwMBufNum;
+    ptDevInfo->dwMBufCacheSize = rtDevCfg.dwMBufCacheSize;
+    ptDevInfo->dwMBufPrivSize  = rtDevCfg.dwMBufPrivSize;
+    ptDevInfo->dwMBufRoomSize  = rtDevCfg.dwMBufRoomSize;
+    ptDevInfo->dwRxDescNum     = rtDevCfg.dwRxDescNum;
+    ptDevInfo->dwTxDescNum     = rtDevCfg.dwTxDescNum;
     ptDevInfo->dwMemSize       = ptDefInfo->dwMemSize;
     ptDevInfo->pCreateFunc     = ptDefInfo->pCreateFunc;
     ptDevInfo->pDestroyFunc    = ptDefInfo->pDestroyFunc;
