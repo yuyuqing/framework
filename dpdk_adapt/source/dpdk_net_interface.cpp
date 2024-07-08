@@ -1,6 +1,5 @@
 
 
-#include "dpdk_mgr.h"
 #include "dpdk_app_eth.h"
 #include "dpdk_net_arp.h"
 #include "dpdk_net_ipv4.h"
@@ -284,7 +283,7 @@ CNetStack::~CNetStack()
 WORD32 CNetStack::Initialize(CCentralMemPool *pMemInterface)
 {
     m_pMemInterface = pMemInterface;
-    m_pVlanTable    = &(g_pDpdkMgr->GetVlanTable());
+    m_pVlanTable    = &(g_pNetIntfHandler->GetVlanTable());
 
     return SUCCESS;
 }
@@ -454,7 +453,12 @@ CNetIntfHandler::~CNetIntfHandler()
 
 WORD32 CNetIntfHandler::Initialize(CCentralMemPool *pMemInterface)
 {
+    TRACE_STACK("CNetIntfHandler::Initialize()");
+
     CNetStack::Initialize(pMemInterface);
+
+    m_cIPTable.Initialize();
+    m_cVlanTable.Initialize();
 
     BYTE *pArpMem  = m_pMemInterface->Malloc(sizeof(CArpStack));
     BYTE *pIPv4Mem = m_pMemInterface->Malloc(sizeof(CIPv4Stack));
@@ -474,6 +478,16 @@ WORD32 CNetIntfHandler::Initialize(CCentralMemPool *pMemInterface)
     m_pArpStack->Initialize(pMemInterface);
     m_pIPv4Stack->Initialize(pMemInterface);
     m_pIPv6Stack->Initialize(pMemInterface);
+
+    return SUCCESS;
+}
+
+
+WORD32 CNetIntfHandler::InitArpTable()
+{
+    TRACE_STACK("CNetIntfHandler::InitArpTable()");
+
+    m_cArpTable.Initialize(m_cIPTable);
 
     return SUCCESS;
 }

@@ -106,8 +106,6 @@ WORD32 CDpdkMgr::Initialize(CCentralMemPool *pMemInterface,
 
     m_pMemInterface = pMemInterface;
 
-    m_cIPTable.Initialize();
-    m_cVlanTable.Initialize();
     m_cNetHandler.Initialize(pMemInterface);
 
     WORD32 dwResult   = INVALID_DWORD;
@@ -134,7 +132,7 @@ WORD32 CDpdkMgr::Initialize(CCentralMemPool *pMemInterface,
     }
 
     /* 遍历所有设备的IP/VLAN配置, 并初始化本地ARP表 */
-    m_cArpTable.Initialize(m_cIPTable);
+    m_cNetHandler.InitArpTable();
 
     return SUCCESS;
 }

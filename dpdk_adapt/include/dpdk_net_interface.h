@@ -6,6 +6,7 @@
 
 #include "dpdk_device.h"
 #include "dpdk_vlan_table.h"
+#include "dpdk_arp_table.h"
 
 #include "base_app_interface.h"
 
@@ -72,21 +73,49 @@ public :
 
     virtual WORD32 Initialize(CCentralMemPool *pMemInterface);
 
+    WORD32 InitArpTable();
+
     /* 接收以太网报文处理; pHead : 以太网头 */
     virtual WORD32 RecvPacket(CAppInterface *pApp,
                               T_OffloadInfo &rtInfo,
                               T_MBuf        *pMBuf,
                               CHAR          *pHead);
 
+    CIPTable   & GetIPTable();
+    CVlanTable & GetVlanTable();
+    CArpTable  & GetArpTable();
+
     WORD16 FetchAddIPIdentity();
 
 protected :
     std::atomic<WORD16>  m_wIPIdentity;  /* IP报文头中的ID标识 */
 
+    CIPTable             m_cIPTable;
+    CVlanTable           m_cVlanTable;
+    CArpTable            m_cArpTable;
+
     CNetStack           *m_pArpStack;
     CNetStack           *m_pIPv4Stack;
     CNetStack           *m_pIPv6Stack;
 };
+
+
+inline CIPTable & CNetIntfHandler::GetIPTable()
+{
+    return m_cIPTable;
+}
+
+
+inline CVlanTable & CNetIntfHandler::GetVlanTable()
+{
+    return m_cVlanTable;
+}
+
+
+inline CArpTable & CNetIntfHandler::GetArpTable()
+{
+    return m_cArpTable;
+}
 
 
 inline WORD16 CNetIntfHandler::FetchAddIPIdentity()

@@ -5,8 +5,6 @@
 
 
 #include "dpdk_device.h"
-#include "dpdk_vlan_table.h"
-#include "dpdk_arp_table.h"
 #include "dpdk_net_interface.h"
 
 
@@ -26,10 +24,6 @@ public :
 
     WORD32 GetDeviceNum();
 
-    CIPTable   & GetIPTable();
-    CVlanTable & GetVlanTable();
-    CArpTable  & GetArpTable();
-
     VOID Dump();
 
 protected :
@@ -44,10 +38,6 @@ protected :
     CCentralMemPool    *m_pMemInterface;
     WORD32              m_dwDevNum;
     T_DeviceInfo        m_atDevInfo[MAX_DEV_PORT_NUM];
-
-    CIPTable            m_cIPTable;
-    CVlanTable          m_cVlanTable;
-    CArpTable           m_cArpTable;
 
     CNetIntfHandler     m_cNetHandler;
 };
@@ -99,24 +89,6 @@ inline CBaseDevice * CDpdkMgr::FindDevice(E_DeviceType eType, WORD16 wPortID)
 inline WORD32 CDpdkMgr::GetDeviceNum()
 {
     return m_dwDevNum;
-}
-
-
-inline CIPTable & CDpdkMgr::GetIPTable()
-{
-    return m_cIPTable;
-}
-
-
-inline CVlanTable & CDpdkMgr::GetVlanTable()
-{
-    return m_cVlanTable;
-}
-
-
-inline CArpTable & CDpdkMgr::GetArpTable()
-{
-    return m_cArpTable;
 }
 
 

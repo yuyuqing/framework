@@ -85,8 +85,8 @@ WORD32 CEthDevice::Initialize()
     m_ucIPNum     = (BYTE)(ptCfg->dwIpNum);
     m_dwPrimaryIP = FetchPrimaryIP(*ptCfg);
 
-    CIPTable   &rIPTalbe   = g_pDpdkMgr->GetIPTable();
-    CVlanTable &rVlanTable = g_pDpdkMgr->GetVlanTable();
+    CIPTable   &rIPTalbe   = g_pNetIntfHandler->GetIPTable();
+    CVlanTable &rVlanTable = g_pNetIntfHandler->GetVlanTable();
 
     WORD32 dwResult = CBaseDevice::Initialize(NULL);
     if (SUCCESS != dwResult)

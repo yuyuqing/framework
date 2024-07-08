@@ -1,7 +1,9 @@
 
 
-#include "dpdk_device_eth.h"
 #include "dpdk_mgr.h"
+#include "dpdk_device_eth.h"
+
+#include "base_log.h"
 
 
 CArpInst::CArpInst (WORD32        dwDevID,

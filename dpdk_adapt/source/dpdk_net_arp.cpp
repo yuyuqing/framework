@@ -1,7 +1,6 @@
 
 
 #include "dpdk_net_arp.h"
-#include "dpdk_mgr.h"
 #include "dpdk_app_eth.h"
 #include "dpdk_device_eth.h"
 
@@ -24,8 +23,8 @@ WORD32 CArpStack::Initialize(CCentralMemPool *pMemInterface)
 {
     CNetStack::Initialize(pMemInterface);
 
-    m_pIPTable  = &(g_pDpdkMgr->GetIPTable());
-    m_pArpTable = &(g_pDpdkMgr->GetArpTable());
+    m_pIPTable  = &(g_pNetIntfHandler->GetIPTable());
+    m_pArpTable = &(g_pNetIntfHandler->GetArpTable());
 
     return SUCCESS;
 }
