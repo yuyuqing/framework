@@ -24,6 +24,9 @@ public :
 
     WORD32 GetDeviceNum();
 
+    /* 获取指定类型的所有设备实例 */
+    WORD32 GetDevices(E_DeviceType eType, CBaseDevice **pDevices);
+
     VOID Dump();
 
 protected :
@@ -89,6 +92,23 @@ inline CBaseDevice * CDpdkMgr::FindDevice(E_DeviceType eType, WORD16 wPortID)
 inline WORD32 CDpdkMgr::GetDeviceNum()
 {
     return m_dwDevNum;
+}
+
+
+/* 获取指定类型的所有设备实例 */
+inline WORD32 CDpdkMgr::GetDevices(E_DeviceType eType, CBaseDevice **pDevices)
+{
+    WORD32 dwDevNum = 0;
+
+    for (WORD32 dwIndex = 0; dwIndex < m_dwDevNum; dwIndex++)
+    {
+        if (eType == m_atDevInfo[dwIndex].pDevice->GetType())
+        {
+            pDevices[dwDevNum++] = m_atDevInfo[dwIndex].pDevice;
+        }
+    }
+
+    return dwDevNum;
 }
 
 

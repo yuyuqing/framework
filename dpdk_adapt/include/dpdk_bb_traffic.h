@@ -26,6 +26,14 @@ public :
 
     virtual WORD32 Initialize();
 
+    E_TrafficType GetType();
+
+    WORD32 GetDeviceID();
+    WORD32 GetPortID();
+    WORD32 GetTrafficID();
+    WORD32 GetFAPICellID();
+    WORD32 GetBindCellID();
+
 protected :
     E_TrafficType    m_eType;
 
@@ -36,6 +44,42 @@ protected :
     WORD32           m_dwFAPICellID;
     WORD32           m_dwBindCellID;
 };
+
+
+inline E_TrafficType CBaseTraffic::GetType()
+{
+    return m_eType;
+}
+
+
+inline WORD32 CBaseTraffic::GetDeviceID()
+{
+    return m_dwDeviceID;
+}
+
+
+inline WORD32 CBaseTraffic::GetPortID()
+{
+    return m_dwPortID;
+}
+
+
+inline WORD32 CBaseTraffic::GetTrafficID()
+{
+    return m_dwTrafficID;
+}
+
+
+inline WORD32 CBaseTraffic::GetFAPICellID()
+{
+    return m_dwFAPICellID;
+}
+
+
+inline WORD32 CBaseTraffic::GetBindCellID()
+{
+    return m_dwBindCellID;
+}
 
 
 typedef struct tagT_TrafficInfo

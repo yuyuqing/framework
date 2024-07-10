@@ -8,6 +8,9 @@
 #include "dpdk_bb_traffic.h"
 
 
+extern CBaseTraffic * GetBBTraffic(E_TrafficType eType, WORD32 dwBindCellID);
+
+
 class CBBDevice : public CBaseDevice
 {
 public :
@@ -29,6 +32,8 @@ public :
     virtual WORD32 Initialize();
 
     T_TrafficInfo * FindTrafficInfo(WORD32 dwTrafficID);
+    CBaseTraffic  * FindTraffic(WORD32 dwTrafficID);
+    CBaseTraffic  * FindTraffic(E_TrafficType eType, WORD32 dwBindCellID);
 
 protected :
     WORD32 InitTraffic(T_DpdkBBDevJsonCfg &rtCfg);
@@ -50,6 +55,35 @@ inline T_TrafficInfo * CBBDevice::FindTrafficInfo(WORD32 dwTrafficID)
         if (dwTrafficID == m_atTrafficInfo[dwIndex].dwTrafficID)
         {
             return &(m_atTrafficInfo[dwIndex]);
+        }
+    }
+
+    return NULL;
+}
+
+
+inline CBaseTraffic * CBBDevice::FindTraffic(WORD32 dwTrafficID)
+{
+    for (WORD32 dwIndex = 0; dwIndex < m_dwTrafficNum; dwIndex++)
+    {
+        if (dwTrafficID == m_atTrafficInfo[dwIndex].dwTrafficID)
+        {
+            return m_atTrafficInfo[dwIndex].pTraffic;
+        }
+    }
+
+    return NULL;
+}
+
+
+inline CBaseTraffic * CBBDevice::FindTraffic(E_TrafficType eType, WORD32 dwBindCellID)
+{
+    for (WORD32 dwIndex = 0; dwIndex < m_dwTrafficNum; dwIndex++)
+    {
+        if ( (dwBindCellID == m_atTrafficInfo[dwIndex].dwBindCellID)
+          && (eType == m_atTrafficInfo[dwIndex].pTraffic->GetType()))
+        {
+            return m_atTrafficInfo[dwIndex].pTraffic;
         }
     }
 
