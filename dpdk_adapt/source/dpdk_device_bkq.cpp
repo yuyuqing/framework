@@ -83,6 +83,14 @@ WORD32 CBKQDevice::Initialize()
         return FAIL;
     }
 
+    /* ≥ı ºªØFAPI_Traffic */
+
+    dwResult = DevStart();
+    if (SUCCESS != dwResult)
+    {
+        return FAIL;
+    }
+
     return SUCCESS;
 }
 

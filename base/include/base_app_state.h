@@ -23,6 +23,7 @@ typedef enum tagE_AppClass
     E_APP_DMAC,           /* CDmacApp */
     E_APP_EGTP,           /* CEgtpApp */
     E_APP_NRUP,           /* CNrupApp */
+    E_APP_SCH_UCI,
 
     E_APP_DPDK_BB,
     E_APP_DPDK_ETH,

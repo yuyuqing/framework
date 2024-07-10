@@ -177,6 +177,8 @@ public :
 protected :
     WORD32 Initialize(rte_eth_dev_cb_fn pFunc);
 
+    WORD32 DevStart();
+
     CDevQueue * CreateQueue(WORD16  wQueueID,
                             WORD32  dwMBufNum,
                             WORD32  dwMBufCacheSize,

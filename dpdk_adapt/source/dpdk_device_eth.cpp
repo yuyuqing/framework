@@ -94,6 +94,12 @@ WORD32 CEthDevice::Initialize()
         return FAIL;
     }
 
+    dwResult = DevStart();
+    if (SUCCESS != dwResult)
+    {
+        return FAIL;
+    }
+
     dwResult = rte_eth_macaddr_get(m_wPortID, &m_tEthAddr);
     if (SUCCESS != dwResult)
     {

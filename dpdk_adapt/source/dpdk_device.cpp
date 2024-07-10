@@ -136,6 +136,20 @@ CBaseDevice::~CBaseDevice()
 }
 
 
+VOID CBaseDevice::Dump()
+{
+    TRACE_STACK("CBaseDevice::Dump()");
+
+    LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+               "m_dwDeviceID : %d, m_wPortID : %d, m_ucQueueNum : %d, "
+               "m_ucDevType : %d\n",
+               m_dwDeviceID,
+               m_wPortID,
+               m_ucQueueNum,
+               m_ucDevType);
+}
+
+
 WORD32 CBaseDevice::Initialize(rte_eth_dev_cb_fn pFunc)
 {
     TRACE_STACK("CBaseDevice::Initialize()");
@@ -232,7 +246,15 @@ WORD32 CBaseDevice::Initialize(rte_eth_dev_cb_fn pFunc)
         }
     }
 
-    dwResult = rte_eth_dev_start(m_wPortID);
+    return SUCCESS;
+}
+
+
+WORD32 CBaseDevice::DevStart()
+{
+    TRACE_STACK("CBaseDevice::DevStart()");
+
+    WORD32 dwResult = rte_eth_dev_start(m_wPortID);
     if (SUCCESS != dwResult)
     {
         return FAIL;
@@ -245,20 +267,6 @@ WORD32 CBaseDevice::Initialize(rte_eth_dev_cb_fn pFunc)
     }
 
     return SUCCESS;
-}
-
-
-VOID CBaseDevice::Dump()
-{
-    TRACE_STACK("CBaseDevice::Dump()");
-
-    LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
-               "m_dwDeviceID : %d, m_wPortID : %d, m_ucQueueNum : %d, "
-               "m_ucDevType : %d\n",
-               m_dwDeviceID,
-               m_wPortID,
-               m_ucQueueNum,
-               m_ucDevType);
 }
 
 
