@@ -36,6 +36,9 @@
 #define IPV6_STRING_LEN              ((WORD32)(40))
 #define MAX_DEV_IP_NUM               ((WORD32)(2))
 #define MAX_DEV_VLAN_NUM             ((WORD32)(16))
+#define BB_TRAFFIC_NAME_LEN          ((WORD32)(32))
+#define MAX_BB_TRAFFIC_NUM           ((WORD32)(8))
+#define BB_TRAFFIC_CELL_INVALID      ((WORD32)(255))
 
 
 extern const BYTE s_aucModule[E_LOG_MODULE_NUM][LOG_MODULE_LEN];
@@ -195,9 +198,21 @@ typedef struct tagT_DpdkEthDevJsonCfg
 }T_DpdkEthDevJsonCfg;
 
 
+typedef struct tagT_DpdkBBFapiTrafficJsonCfg
+{
+    CHAR    aucType[BB_TRAFFIC_NAME_LEN];
+    WORD32  dwTrafficID;
+    WORD32  dwFAPICell;
+    WORD32  dwBindCell;
+}T_DpdkBBFapiTrafficJsonCfg;
+
+
 typedef struct tagT_DpdkBBDevJsonCfg
 {
-    WORD32        dwDeviceID;
+    WORD32                      dwDeviceID;
+    WORD32                      dwQueueID;
+    WORD32                      dwFapiTrafficNum;
+    T_DpdkBBFapiTrafficJsonCfg  atFAPITraffic[MAX_BB_TRAFFIC_NUM];
 }T_DpdkBBDevJsonCfg;
 
 

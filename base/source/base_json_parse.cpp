@@ -819,7 +819,7 @@ BOOL CJsonReader::DecodeNumber(CJsonToken &rToken, WORD32 &rdwValue)
     while (pCurrent < pEnd)
     {
         /* ÊýÖµÒç³ö */
-        if (dwTmpValue >= 0x19999999)
+        if (dwTmpValue >= 0x7FFFFFFF)
         {
             return FALSE;
         }

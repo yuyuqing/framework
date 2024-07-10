@@ -5,6 +5,7 @@
 
 
 #include "dpdk_device.h"
+#include "dpdk_bb_traffic.h"
 
 
 class CBBDevice : public CBaseDevice
@@ -27,8 +28,33 @@ public :
 
     virtual WORD32 Initialize();
 
+    T_TrafficInfo * FindTrafficInfo(WORD32 dwTrafficID);
+
 protected :
+    WORD32 InitTraffic(T_DpdkBBDevJsonCfg &rtCfg);
+
+    T_TrafficInfo * CreateInfo(WORD32                      dwQueueID,
+                               T_DpdkBBFapiTrafficJsonCfg &rtCfg,
+                               T_ProductDefInfo           *ptDefInfo);
+
+protected :
+    WORD32           m_dwTrafficNum;
+    T_TrafficInfo    m_atTrafficInfo[MAX_BB_TRAFFIC_NUM];
 };
+
+
+inline T_TrafficInfo * CBBDevice::FindTrafficInfo(WORD32 dwTrafficID)
+{
+    for (WORD32 dwIndex = 0; dwIndex < m_dwTrafficNum; dwIndex++)
+    {
+        if (dwTrafficID == m_atTrafficInfo[dwIndex].dwTrafficID)
+        {
+            return &(m_atTrafficInfo[dwIndex]);
+        }
+    }
+
+    return NULL;
+}
 
 
 #endif

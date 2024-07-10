@@ -155,6 +155,8 @@ VOID CDpdkMgr::Dump()
 
 WORD32 CDpdkMgr::InitDpdkEal(T_DpdkJsonCfg &rtCfg)
 {
+    TRACE_STACK("CDpdkMgr::InitDpdkEal()");
+
     CHAR *pArgs[EAL_ARG_NUM] = {NULL, };
 
     for (WORD32 dwIndex = 0; dwIndex < rtCfg.dwArgNum; dwIndex++)
@@ -174,6 +176,8 @@ WORD32 CDpdkMgr::InitDpdkEal(T_DpdkJsonCfg &rtCfg)
 
 WORD32 CDpdkMgr::InitDevice(T_DpdkJsonCfg &rtCfg)
 {
+    TRACE_STACK("CDpdkMgr::InitDevice()");
+
     WORD32          dwResult = INVALID_DWORD;
     WORD16          wPortID  = INVALID_WORD;
     CFactoryDevice *pFactory = CFactoryDevice::GetInstance();
@@ -248,6 +252,8 @@ WORD32 CDpdkMgr::InitDevice(T_DpdkJsonCfg &rtCfg)
 T_DeviceInfo * CDpdkMgr::CreateInfo(T_DpdkDevJsonCfg &rtDevCfg,
                                     T_ProductDefInfo *ptDefInfo)
 {
+    TRACE_STACK("CDpdkMgr::CreateInfo()");
+
     if ((NULL == ptDefInfo) || (m_dwDevNum >= MAX_DEV_PORT_NUM))
     {
         return NULL;

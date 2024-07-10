@@ -494,11 +494,30 @@ WORD32 ParseDpdk(T_DpdkJsonCfg &tConfig, CJsonValue &rRoot)
 
     for (WORD32 dwIndex = 0; dwIndex < tConfig.dwBBNum; dwIndex++)
     {
-        CJsonValue &rBBItem = rBBDev[dwIndex];
+        CJsonValue &rBBItem      = rBBDev[dwIndex];
+        CJsonValue &rFAPITraffic = rBBItem["fapi_traffic"];
 
         T_DpdkBBDevJsonCfg &rtBBCfg = tConfig.atBBDev[dwIndex];
 
-        rtBBCfg.dwDeviceID = rBBItem["dev_id"].AsDWORD();
+        rtBBCfg.dwDeviceID       = rBBItem["dev_id"].AsDWORD();
+        rtBBCfg.dwQueueID        = rBBItem["queue_id"].AsDWORD();
+        rtBBCfg.dwFapiTrafficNum = rFAPITraffic.size();
+        rtBBCfg.dwFapiTrafficNum = MIN(rtBBCfg.dwFapiTrafficNum, MAX_BB_TRAFFIC_NUM);
+
+        for (WORD32 dwIndex1 = 0; dwIndex1 < rtBBCfg.dwFapiTrafficNum; dwIndex1++)
+        {
+            CJsonValue                 &rFAPIItem = rFAPITraffic[dwIndex1];
+            T_DpdkBBFapiTrafficJsonCfg &rtFAPICfg = rtBBCfg.atFAPITraffic[dwIndex1];
+
+            CString<BB_TRAFFIC_NAME_LEN> cFapiTraffic(rFAPIItem["type"].AsString());
+            memcpy(rtFAPICfg.aucType, cFapiTraffic.toChar(), cFapiTraffic.Length());
+
+            rtFAPICfg.dwTrafficID = rFAPIItem["traffic_id"].AsDWORD();
+            rtFAPICfg.dwFAPICell  = rFAPIItem["fapi_cell"].AsDWORD();
+            rtFAPICfg.dwBindCell  = rFAPIItem["bind_cell"].AsDWORD();
+            rtFAPICfg.dwFAPICell  = (BB_TRAFFIC_CELL_INVALID == rtFAPICfg.dwFAPICell) ? INVALID_DWORD : rtFAPICfg.dwFAPICell;
+            rtFAPICfg.dwBindCell  = (BB_TRAFFIC_CELL_INVALID == rtFAPICfg.dwBindCell) ? INVALID_DWORD : rtFAPICfg.dwBindCell;
+        }
     }
 
     for (WORD32 dwIndex = 0; dwIndex < tConfig.dwEthNum; dwIndex++)

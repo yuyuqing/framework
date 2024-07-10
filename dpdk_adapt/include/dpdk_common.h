@@ -9,8 +9,6 @@
 #include <rte_eal.h>
 #include <rte_byteorder.h>
 
-#include "pub_typedef.h"
-
 #include "base_call_back.h"
 #include "base_factory_tpl.h"
 #include "base_config_file.h"
@@ -61,8 +59,18 @@ typedef enum tagE_DeviceType
 
     E_ETH_DEVICE,       /* 以太网设备 */
     E_BB_DEVICE,        /* 基带设备 */
-    E_BKQ_DEVICE,       /* 比科奇基带设备 */
 }E_DeviceType;
+
+
+typedef enum tagE_TrafficType
+{
+    E_TRAFFIC_INVALID = 0,
+
+    E_ETH_TRAFFIC,          /* 基带设备(BKQ/AR)的以太网业务 */
+    E_OAM_TRAFFIC,          /* 基带设备(BKQ/AR)的OAM业务 */
+    E_FAPI_DATA_TRAFFIC,    /* 基带设备(BKQ/AR)的FAPI数据业务 */
+    E_FAPI_CTRL_TRAFFIC,    /* 基带设备(BKQ/AR)的FAPI控制业务 */
+}E_TrafficType;
 
 
 typedef struct tagT_OffloadInfo

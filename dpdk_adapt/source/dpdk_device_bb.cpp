@@ -2,6 +2,7 @@
 
 #include "dpdk_device_bb.h"
 #include "base_log.h"
+#include "base_sort.h"
 
 
 DEFINE_DEVICE(CBBDevice);
@@ -84,6 +85,11 @@ WORD32 CBBDevice::Initialize()
     }
 
     /* 初始化FAPI_Traffic */
+    dwResult = InitTraffic(*ptCfg);
+    if (SUCCESS != dwResult)
+    {
+        return FAIL;
+    }
 
     dwResult = DevStart();
     if (SUCCESS != dwResult)
@@ -92,6 +98,107 @@ WORD32 CBBDevice::Initialize()
     }
 
     return SUCCESS;
+}
+
+
+WORD32 CBBDevice::InitTraffic(T_DpdkBBDevJsonCfg &rtCfg)
+{
+    TRACE_STACK("CBBDevice::InitTraffic()");
+
+    WORD32 dwResult    = INVALID_DWORD;
+    WORD32 dwQueueID   = rtCfg.dwQueueID;
+    WORD32 dwTrafficID = INVALID_DWORD;
+
+    CFactoryTraffic *pFactory = CFactoryTraffic::GetInstance();
+
+    for (WORD32 dwIndex = 0; dwIndex < rtCfg.dwFapiTrafficNum; dwIndex++)
+    {
+        T_TrafficInfo              *ptTrafficInfo = NULL;
+        T_ProductDefInfo           *ptDefInfo     = NULL;
+        T_DpdkBBFapiTrafficJsonCfg &rtTrafficCfg  = rtCfg.atFAPITraffic[dwIndex];
+
+        dwTrafficID   = rtTrafficCfg.dwTrafficID;
+        ptTrafficInfo = FindTrafficInfo(dwTrafficID);
+        if (NULL != ptTrafficInfo)
+        {
+            continue ;
+        }
+
+        ptDefInfo = pFactory->FindDef(rtTrafficCfg.aucType);
+        if (NULL == ptDefInfo)
+        {
+            /* 配置错误 */
+            return FAIL;
+        }
+
+        ptTrafficInfo = CreateInfo(dwQueueID, rtTrafficCfg, ptDefInfo);
+        if (NULL == ptTrafficInfo)
+        {
+            /* 创建Traffic失败 */
+            return FAIL;
+        }
+    }
+
+    /* 从小到大排序 */
+    HeapSort<T_TrafficInfo, WORD32> (m_atTrafficInfo, m_dwTrafficNum,
+                                     (&T_TrafficInfo::dwTrafficID),
+                                     (PComparePFunc<T_TrafficInfo, WORD32>)(& GreaterV<T_TrafficInfo, WORD32>));
+
+    for (WORD32 dwIndex = 0; dwIndex < m_dwTrafficNum; dwIndex++)
+    {
+        m_atTrafficInfo[dwIndex].pMem = m_rCentralMemPool.Malloc(m_atTrafficInfo[dwIndex].dwMemSize);
+
+        T_TrafficParam tParam;
+        tParam.dwDeviceID   = m_atTrafficInfo[dwIndex].dwDeviceID;
+        tParam.dwPortID     = m_atTrafficInfo[dwIndex].dwPortID;
+        tParam.dwQueueID    = m_atTrafficInfo[dwIndex].dwQueueID;
+        tParam.dwTrafficID  = m_atTrafficInfo[dwIndex].dwTrafficID;
+        tParam.dwFAPICellID = m_atTrafficInfo[dwIndex].dwFAPICellID;
+        tParam.dwBindCellID = m_atTrafficInfo[dwIndex].dwBindCellID;
+
+        m_atTrafficInfo[dwIndex].pTraffic = (CBaseTraffic *)((*(m_atTrafficInfo[dwIndex].pCreateFunc)) (m_atTrafficInfo[dwIndex].pMem, &tParam));
+        dwResult = m_atTrafficInfo[dwIndex].pTraffic->Initialize();
+        if (SUCCESS != dwResult)
+        {
+            /* 初始化Traffic失败 */
+            return FAIL;
+        }
+    }
+
+    return SUCCESS;
+}
+
+
+T_TrafficInfo * CBBDevice::CreateInfo(WORD32                      dwQueueID,
+                                      T_DpdkBBFapiTrafficJsonCfg &rtCfg,
+                                      T_ProductDefInfo           *ptDefInfo)
+{
+    TRACE_STACK("CBBDevice::CreateInfo()");
+
+    if ((NULL == ptDefInfo) || (m_dwTrafficNum >= MAX_BB_TRAFFIC_NUM))
+    {
+        return NULL;
+    }
+
+    T_TrafficInfo *ptTrafficInfo = &(m_atTrafficInfo[m_dwTrafficNum]);
+
+    memcpy(ptTrafficInfo->aucName, ptDefInfo->aucName, BB_TRAFFIC_NAME_LEN);
+
+    ptTrafficInfo->dwDeviceID   = m_dwDeviceID;
+    ptTrafficInfo->dwPortID     = m_wPortID;
+    ptTrafficInfo->dwQueueID    = dwQueueID;
+    ptTrafficInfo->dwTrafficID  = rtCfg.dwTrafficID;
+    ptTrafficInfo->dwFAPICellID = rtCfg.dwFAPICell;
+    ptTrafficInfo->dwBindCellID = rtCfg.dwBindCell;
+    ptTrafficInfo->dwMemSize    = ptDefInfo->dwMemSize;
+    ptTrafficInfo->pCreateFunc  = ptDefInfo->pCreateFunc;
+    ptTrafficInfo->pDestroyFunc = ptDefInfo->pDestroyFunc;
+    ptTrafficInfo->pMem         = NULL;
+    ptTrafficInfo->pTraffic     = NULL;
+
+    m_dwTrafficNum++;
+
+    return ptTrafficInfo;
 }
 
 

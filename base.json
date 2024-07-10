@@ -242,41 +242,45 @@
             {
                 "dev_id"          : 0,                            //DPDK设备ID(内部内部唯一标识)
                 "queue_id"        : 0,                            //DPDK设备队列ID(目前针对BKQ/AR基带设备, 每个设备只配置1个队列, 因此本字段固定为0)
-                "eth_traffic"     :                               //以太网业务类型(目前针对BKQ/AR基带设备存在以太网类型的业务通道, 暂不清楚该业务通道的作用)
-                {
-                    "traffic_id"  : 0                             //业务通道ID(对应FAPI接口的queue_id)
-                },
                 "fapi_traffic"    :
                 [
                     {
-                        "type"        : "CFAPIDataTraffic",       //FAPI业务类型
-                        "fapi_cell"   : 0,                        //FAPI接口上小区0的数据通道
+                        "type"        : "CEthTraffic",            //FAPI以太网业务类型(目前针对BKQ/AR基带设备存在以太网类型的业务通道, 暂不清楚该业务通道的作用)
+                        "traffic_id"  : 0,                        //业务通道ID(对应FAPI接口的queue_id)
+                        "fapi_cell"   : 255,                      //无效值
+                        "bind_cell"   : 0                         //0 : 不与任何高层小区绑定
+                    },
+                    {
+                        "type"        : "CFAPIDataTraffic",       //FAPI数据业务类型
                         "traffic_id"  : 1,                        //业务通道ID(对应FAPI接口的queue_id)
-                        "bind_cell"   : 1,                        //绑定高层小区ID(高层APP通过本字段找到对应的FAPI-Traffic实例)
+                        "fapi_cell"   : 0,                        //FAPI接口上小区0的数据通道
+                        "bind_cell"   : 1                         //绑定高层小区ID(高层APP通过本字段找到对应的FAPI-Traffic实例)
                     },
                     {
-                        "type"        : "CFAPICtrlTraffic",       //FAPI业务类型
-                        "fapi_cell"   : 0,                        //FAPI接口上小区0的控制通道
+                        "type"        : "CFAPICtrlTraffic",       //FAPI控制业务类型
                         "traffic_id"  : 2,                        //业务通道ID(对应FAPI接口的queue_id)
-                        "bind_cell"   : 1,                        //绑定高层小区ID(高层APP通过本字段找到对应的FAPI-Traffic实例)
+                        "fapi_cell"   : 0,                        //FAPI接口上小区0的控制通道
+                        "bind_cell"   : 1                         //绑定高层小区ID(高层APP通过本字段找到对应的FAPI-Traffic实例)
                     },
                     {
-                        "type"        : "CFAPIDataTraffic",       //FAPI业务类型
-                        "fapi_cell"   : 1,                        //FAPI接口上小区1的数据通道
+                        "type"        : "CFAPIDataTraffic",       //FAPI数据业务类型
                         "traffic_id"  : 4,                        //业务通道ID(对应FAPI接口的queue_id)
-                        "bind_cell"   : 2,                        //绑定高层小区ID(高层APP通过本字段找到对应的FAPI-Traffic实例)
+                        "fapi_cell"   : 1,                        //FAPI接口上小区1的数据通道
+                        "bind_cell"   : 2                         //绑定高层小区ID(高层APP通过本字段找到对应的FAPI-Traffic实例)
                     },
                     {
-                        "type"        : "CFAPICtrlTraffic",       //FAPI业务类型
-                        "fapi_cell"   : 1,                        //FAPI接口上小区0的控制通道
+                        "type"        : "CFAPICtrlTraffic",       //FAPI控制业务类型
                         "traffic_id"  : 5,                        //业务通道ID(对应FAPI接口的queue_id)
-                        "bind_cell"   : 2,                        //绑定高层小区ID(高层APP通过本字段找到对应的FAPI-Traffic实例)
+                        "fapi_cell"   : 1,                        //FAPI接口上小区0的控制通道
+                        "bind_cell"   : 2                         //绑定高层小区ID(高层APP通过本字段找到对应的FAPI-Traffic实例)
+                    },
+                    {
+                        "type"        : "COamTraffic",            //FAPI接口OAM业务类型(目前针对BKQ/AR基带设备存在以太网类型的业务通道, 暂不清楚该业务通道的作用)
+                        "traffic_id"  : 0,                        //业务通道ID(对应FAPI接口的queue_id)
+                        "fapi_cell"   : 255,                      //无效值
+                        "bind_cell"   : 0                         //0 : 不与任何高层小区绑定
                     }
-                ],
-                "oam_traffic"     :
-                {
-                    "traffic_id"  : 6                             //业务通道ID(对应FAPI接口的queue_id)
-                }
+                ]
             }
         ],
         "ethdev"           :
