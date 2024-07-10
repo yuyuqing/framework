@@ -4,7 +4,7 @@
 #define _DPDK_ARP_TABLE_H_
 
 
-#include "dpdk_ip_table.h"
+#include "dpdk_net_ip_table.h"
 
 
 #define MAX_ARP_NUM                     ((WORD32)(256))

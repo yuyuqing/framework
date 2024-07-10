@@ -5,8 +5,8 @@
 
 
 #include "dpdk_device.h"
-#include "dpdk_vlan_table.h"
-#include "dpdk_arp_table.h"
+#include "dpdk_net_vlan_table.h"
+#include "dpdk_net_arp_table.h"
 
 #include "base_app_interface.h"
 

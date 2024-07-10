@@ -1,6 +1,6 @@
 
 
-#include "dpdk_ip_table.h"
+#include "dpdk_net_ip_table.h"
 
 
 CIPInst::CIPInst (WORD32                     dwDeviceID,

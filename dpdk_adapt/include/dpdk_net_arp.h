@@ -5,7 +5,7 @@
 
 
 #include "dpdk_net_interface.h"
-#include "dpdk_arp_table.h"
+#include "dpdk_net_arp_table.h"
 
 
 class CArpStack : public CNetStack

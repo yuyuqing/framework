@@ -1,6 +1,6 @@
 
 
-#include "dpdk_vlan_table.h"
+#include "dpdk_net_vlan_table.h"
 
 
 CVlanInst::CVlanInst ()

@@ -5,7 +5,7 @@
 
 
 #include "dpdk_device.h"
-#include "dpdk_ip_table.h"
+#include "dpdk_net_ip_table.h"
 
 
 typedef enum tagE_EthLinkType

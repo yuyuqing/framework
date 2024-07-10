@@ -4,7 +4,7 @@
 #define _DPDK_VLAN_TABLE_H_
 
 
-#include "dpdk_ip_table.h"
+#include "dpdk_net_ip_table.h"
 
 
 #define MAX_VLAN_NUM        ((WORD32)(64))
