@@ -58,6 +58,26 @@ SWORD32 CBBDevice::LsiEventCallBack(WORD16          wPortID,
 }
 
 
+WORD32 CBBDevice::RecvPacket(const CHAR *pBuf,
+                             WORD32      dwPayloadSize,
+                             WORD16      wDevID,
+                             WORD16      wFAPICellID)
+{
+    TRACE_STACK("CBBDevice::RecvPacket()");
+    return SUCCESS;
+}
+
+
+WORD32 CBBDevice::SendPacket(const CHAR *pBuf,
+                             WORD32      dwPayloadSize,
+                             WORD16      wDevID,
+                             WORD16      wFAPICellID)
+{
+    TRACE_STACK("CBBDevice::SendPacket()");
+    return SUCCESS;
+}
+
+
 CBBDevice::CBBDevice (const T_DeviceParam &rtParam)
     : CBaseDevice(E_BB_DEVICE, rtParam)
 {
@@ -78,6 +98,11 @@ CBBDevice::CBBDevice (const T_DeviceParam &rtParam)
     m_tEthConf.rx_adv_conf.vmdq_dcb_conf.enable_default_pool = 1;
     m_tEthConf.rx_adv_conf.vmdq_dcb_conf.default_pool        = 0;
     m_tEthConf.rx_adv_conf.vmdq_dcb_conf.nb_pool_maps        = 0;
+
+#ifdef PICOCOM_FAPI
+    m_tCallBackInfo.readHandle  = CBBDevice::RecvPacket;
+    m_tCallBackInfo.writeHandle = CBBDevice::SendPacket;
+#endif
 }
 
 
@@ -111,11 +136,17 @@ WORD32 CBBDevice::Initialize()
         return FAIL;
     }
 
+    /* 初始化DPDK设备及队列 */
     WORD32 dwResult = CBaseDevice::Initialize(CBBDevice::LsiEventCallBack);
     if (SUCCESS != dwResult)
     {
         return FAIL;
     }
+
+#ifdef PICOCOM_FAPI
+    WORD32 dwPortID = pc802_get_port_id(m_dwDeviceID);
+    assert(dwPortID == m_wPortID);
+#endif
 
     /* 初始化FAPI_Traffic */
     dwResult = InitTraffic(*ptCfg);
@@ -123,6 +154,13 @@ WORD32 CBBDevice::Initialize()
     {
         return FAIL;
     }
+
+#ifdef PICOCOM_FAPI
+    dwResult = pcxxCtrlOpen(&m_tCallBackInfo,
+                            (WORD16)m_dwDeviceID,
+                            MAC_NMM_LEGACY_CELL_INDEX);
+    assert(0 == dwResult);
+#endif
 
     dwResult = DevStart();
     if (SUCCESS != dwResult)

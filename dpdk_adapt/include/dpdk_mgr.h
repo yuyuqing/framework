@@ -6,6 +6,7 @@
 
 #include "dpdk_device.h"
 #include "dpdk_net_interface.h"
+#include "dpdk_bb_handler.h"
 
 
 class CDpdkMgr : public CSingleton<CDpdkMgr>, public CBaseData
@@ -43,6 +44,7 @@ protected :
     T_DeviceInfo        m_atDevInfo[MAX_DEV_PORT_NUM];
 
     CNetIntfHandler     m_cNetHandler;
+    CBBHandler          m_cBBHandler;
 };
 
 

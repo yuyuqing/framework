@@ -19,6 +19,10 @@ public :
                                     VOID           *pParam,
                                     VOID           *pRetParam);
 
+    /* 用于注册NMM消息回调 */
+    static WORD32 RecvPacket(const CHAR *pBuf, WORD32 dwPayloadSize, WORD16 wDevID, WORD16 wFAPICellID);
+    static WORD32 SendPacket(const CHAR *pBuf, WORD32 dwPayloadSize, WORD16 wDevID, WORD16 wFAPICellID);
+
 public :
     CBBDevice (const T_DeviceParam &rtParam);
     virtual ~CBBDevice();
@@ -45,6 +49,10 @@ protected :
 protected :
     WORD32           m_dwTrafficNum;
     T_TrafficInfo    m_atTrafficInfo[MAX_BB_TRAFFIC_NUM];
+
+#ifdef PICOCOM_FAPI
+    pcxxInfo_s       m_tCallBackInfo;
+#endif
 };
 
 
