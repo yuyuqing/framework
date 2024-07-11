@@ -99,6 +99,9 @@ CBBDevice::CBBDevice (const T_DeviceParam &rtParam)
     m_tEthConf.rx_adv_conf.vmdq_dcb_conf.default_pool        = 0;
     m_tEthConf.rx_adv_conf.vmdq_dcb_conf.nb_pool_maps        = 0;
 
+    m_dwTrafficNum = 0;
+    memset((BYTE *)(&(m_atTrafficInfo[0])), 0x00, sizeof(m_atTrafficInfo));
+
 #ifdef PICOCOM_FAPI
     m_tCallBackInfo.readHandle  = CBBDevice::RecvPacket;
     m_tCallBackInfo.writeHandle = CBBDevice::SendPacket;
@@ -108,6 +111,17 @@ CBBDevice::CBBDevice (const T_DeviceParam &rtParam)
 
 CBBDevice::~CBBDevice()
 {
+    for (WORD32 dwIndex = 0; dwIndex < m_dwTrafficNum; dwIndex++)
+    {
+        if (NULL != m_atTrafficInfo[dwIndex].pTraffic)
+        {
+            (*(m_atTrafficInfo[dwIndex].pDestroyFunc)) (m_atTrafficInfo[dwIndex].pMem);
+            m_rCentralMemPool.Free(m_atTrafficInfo[dwIndex].pMem);
+        }
+    }
+
+    m_dwTrafficNum = 0;
+    memset((BYTE *)(&(m_atTrafficInfo[0])), 0x00, sizeof(m_atTrafficInfo));
 }
 
 
