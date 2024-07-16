@@ -4,6 +4,8 @@
 #define _DPDK_IP_TABLE_H_
 
 
+#include "dpdk_common.h"
+
 #include "base_list.h"
 #include "base_config_file.h"
 
@@ -12,6 +14,9 @@
 
 #define ARP_MAC_ADDR_LEN                ((WORD32)(6))
 #define IPV6_ADDR_LEN                   ((WORD32)(16))
+#define IPV6_ADDR_WLEN                  ((WORD32)(8))
+#define IPV6_ADDR_DWLEN                 ((WORD32)(4))
+#define IPV6_ADDR_LWLEN                 ((WORD32)(2))
 
 
 typedef struct tagT_MacAddr
@@ -25,6 +30,176 @@ typedef enum tagE_IPAddrType
     E_IPV4_TYPE = 0,
     E_IPV6_TYPE,
 }E_IPAddrType;
+
+
+typedef struct tagT_IPv4Addr
+{
+    WORD32    dwIPAddr;    /* °´ÍøÂç×Ö½ÚÐò */
+}T_IPv4Addr;
+
+
+typedef struct tagT_IPv6Addr
+{
+    union
+    {
+        BYTE     aucIPAddr[IPV6_ADDR_LEN];    /* °´ÍøÂç×Ö½ÚÐò */
+        WORD16   awIPAddr[IPV6_ADDR_WLEN];    /* °´ÍøÂç×Ö½ÚÐò */
+        WORD32   adwIPAddr[IPV6_ADDR_DWLEN];  /* °´ÍøÂç×Ö½ÚÐò */
+        WORD64   alwIPAddr[IPV6_ADDR_LWLEN];  /* °´ÍøÂç×Ö½ÚÐò */
+    };
+}T_IPv6Addr;
+
+
+typedef struct tagT_IPNetAddr
+{
+    union
+    {
+        T_IPv4Addr  tIPv4;  /* °´ÍøÂç×Ö½ÚÐò */
+        T_IPv6Addr  tIPv6;  /* °´ÍøÂç×Ö½ÚÐò */
+    };
+
+    E_IPAddrType    eType;
+
+    BOOL operator== (tagT_IPNetAddr &rtIPAddr)
+    {
+        return (0 == memcmp(rtIPAddr.tIPv6.aucIPAddr, this->tIPv6.aucIPAddr, IPV6_ADDR_LEN));
+    }
+
+    WORD32 SetIPv4(CHAR *pIPv4Addr)
+    {
+        this->eType = E_IPV4_TYPE;
+
+        WORD32  dwLen = strlen(pIPv4Addr);
+        CHAR   *pData = pIPv4Addr;
+
+        WORD32 dwByteNum = 0;
+        WORD32 dwValue   = 0;
+        WORD32 adwIP[4]  = {0, 0, 0, 0};
+
+        for (WORD32 dwIndex = 0; dwIndex < dwLen; dwIndex++)
+        {
+            WORD32 dwByte = pData[dwIndex];
+
+            if (dwByte == '.')
+            {
+                adwIP[dwByteNum++] = dwValue;
+                dwValue = 0;
+            }
+            else
+            {
+                dwByte -= '0';
+                dwValue = (dwValue * 10) + dwByte;
+
+                if (dwIndex == (dwLen - 1))
+                {
+                    adwIP[dwByteNum++] = dwValue;
+                    break ;
+                }
+            }
+        }
+
+        this->tIPv4.dwIPAddr = (adwIP[3] << 24) | (adwIP[2] << 16) | (adwIP[1] << 8) | adwIP[0];
+
+        return SUCCESS;
+    }
+
+    WORD32 SetIPv6(CHAR *pIPv6Addr)
+    {
+        this->eType              = E_IPV6_TYPE;
+        this->tIPv6.alwIPAddr[0] = 0;
+        this->tIPv6.alwIPAddr[1] = 0;
+
+        WORD32  dwLen = strlen(pIPv6Addr);
+        CHAR    cLast = 0;
+        CHAR   *pData = pIPv6Addr;
+
+        WORD32 dwByteNum = 0;
+        WORD16 wColonIdx = INVALID_WORD;
+        WORD16 wColonNum = 0;
+        WORD16 wSkipNum  = 0;
+        WORD16 wValue    = 0;
+        WORD16 awIP[IPV6_ADDR_WLEN]   = {0, 0, 0, 0, 0, 0, 0, 0};
+
+        for (WORD32 dwIndex = 0; dwIndex < dwLen; dwIndex++)
+        {
+            WORD16 wByte = pData[dwIndex];
+
+            if ((cLast == ':') && (wByte == ':'))
+            {
+                if (wColonIdx != INVALID_WORD)
+                {
+                    assert(0);
+                }
+
+                wColonIdx = (WORD16)dwByteNum;
+            }
+            else if (wByte == ':')
+            {
+                awIP[dwByteNum++] = wValue;
+                wValue = 0;
+            }
+            else
+            {
+                if ((wByte >= '0') && (wByte <= '9'))
+                {
+                    wByte -= '0';
+                }
+                else if ((wByte >= 'a') && (wByte <= 'f'))
+                {
+                    wByte = 10 + (wByte - 'a');
+                }
+                else if ((wByte >= 'A') && (wByte <= 'F'))
+                {
+                    wByte = 10 + (wByte - 'A');
+                }
+                else
+                {
+                    assert(0);
+                }
+
+                wValue  = (wValue << 4) + wByte;
+
+                if (dwIndex == (dwLen - 1))
+                {
+                    awIP[dwByteNum++] = wValue;
+                    break ;
+                }
+            }
+
+            cLast = pData[dwIndex];
+
+            if (dwByteNum >= IPV6_ADDR_WLEN)
+            {
+                assert(0);
+            }
+        }
+
+        if (wColonIdx != INVALID_WORD)
+        {
+            for (WORD32 dwIndex = 0; dwIndex < wColonIdx; dwIndex++)
+            {
+                this->tIPv6.awIPAddr[dwIndex] = HTONS(awIP[dwIndex]);
+            }
+
+            wSkipNum = IPV6_ADDR_WLEN - dwByteNum;
+
+            for (WORD32 dwIndex = 0; dwIndex < (dwByteNum - wColonIdx); dwIndex++)
+            {
+                this->tIPv6.awIPAddr[dwIndex + wColonIdx + wSkipNum] = HTONS(awIP[dwIndex + wColonIdx]);
+            }
+        }
+        else
+        {
+            for (WORD32 dwIndex = 0; dwIndex < IPV6_ADDR_WLEN; dwIndex++)
+            {
+                this->tIPv6.awIPAddr[dwIndex] = HTONS(awIP[dwIndex]);
+            }
+        }
+
+        return SUCCESS;
+    }
+
+}T_IPNetAddr;
 
 
 typedef union tagT_IPAddr
