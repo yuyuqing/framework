@@ -145,8 +145,8 @@ WORD32 CArpStack::ProcArpRequest(CAppInterface *pApp,
                                        pArpHead->arp_data.arp_sha.addr_bytes,
                                        rtInfo.dwDeviceID,
                                        rtInfo.dwVlanID,
-                                       pIPInst->GetIPAddr().dwIPv4,
-                                       pArpHead->arp_data.arp_sip,
+                                       dwDstIP,
+                                       dwSrcIP,
                                        pMemPool);
     if (NULL == pArpReply)
     {
@@ -200,10 +200,11 @@ WORD32 CArpStack::UpdateArpTable(WORD32 dwDevID, WORD32 dwIP, BYTE *pMacAddr)
         T_IPAddr  tIPAddr;
         T_MacAddr tMacAddr;
 
-        tIPAddr.dwIPv4 = dwIP;
+        tIPAddr.eType          = E_IPV4_TYPE;
+        tIPAddr.tIPv4.dwIPAddr = dwIP;
         memcpy(tMacAddr.aucMacAddr, pMacAddr, ARP_MAC_ADDR_LEN);
 
-        pArpInst = m_pArpTable->RegistArp(dwDevID, E_IPV4_TYPE, tIPAddr, tMacAddr);
+        pArpInst = m_pArpTable->RegistArp(dwDevID, tIPAddr, tMacAddr);
         if (NULL == pArpInst)
         {
             return FAIL;

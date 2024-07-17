@@ -6,13 +6,11 @@
 #include "base_log.h"
 
 
-CArpInst::CArpInst (WORD32        dwDevID,
-                    E_IPAddrType  eType,
-                    T_IPAddr     &rtIPAddr,
-                    BYTE         *pMacAddr)
+CArpInst::CArpInst (WORD32     dwDevID,
+                    T_IPAddr  &rtIPAddr,
+                    BYTE      *pMacAddr)
 {
     m_dwDeviceID = dwDevID;
-    m_eAddrType  = eType;
 
     memcpy(&m_tIPAddr,  &rtIPAddr, sizeof(T_IPAddr));
     memcpy(m_tMacAddr.aucMacAddr, pMacAddr, ARP_MAC_ADDR_LEN);
@@ -22,7 +20,6 @@ CArpInst::CArpInst (WORD32        dwDevID,
 CArpInst::~CArpInst()
 {
     m_dwDeviceID = INVALID_DWORD;
-    m_eAddrType  = E_IPV4_TYPE;
 
     memset(&m_tIPAddr,  0x00, sizeof(m_tIPAddr));
     memset(&m_tMacAddr, 0x00, sizeof(m_tMacAddr));
@@ -41,12 +38,12 @@ VOID CArpInst::Dump()
 
     CString <IPV6_STRING_LEN>  tIPAddr;
 
-    m_tIPAddr.toStr(m_eAddrType, tIPAddr);
+    m_tIPAddr.toStr(tIPAddr);
 
     LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
                "DeviceID : %d, Type : %d, IPAddr : %s, MacAddr : %s\n",
                m_dwDeviceID,
-               m_eAddrType,
+               m_tIPAddr.eType,
                tIPAddr.toChar(),
                aucMacAddr);
 }
@@ -70,7 +67,6 @@ WORD32 CArpTable::Initialize(CIPTable &rIPTable)
     while (pCur)
     {
         WORD32        dwDeviceID = pCur->GetDeviceID();
-        E_IPAddrType  eType      = pCur->GetIPType();
         T_IPAddr     &rtIPAddr   = pCur->GetIPAddr();
         CEthDevice   *pDevice    = (CEthDevice *)(g_pDpdkMgr->FindDevice(dwDeviceID));
         BYTE         *pMacAddr   = pDevice->GetMacAddr();
@@ -80,7 +76,7 @@ WORD32 CArpTable::Initialize(CIPTable &rIPTable)
             return FAIL;
         }
 
-        new (pInst) CArpInst(dwDeviceID, eType, rtIPAddr, pMacAddr);
+        new (pInst) CArpInst(dwDeviceID, rtIPAddr, pMacAddr);
 
         pCur = rIPTable.Next(pCur);
     }
@@ -89,10 +85,9 @@ WORD32 CArpTable::Initialize(CIPTable &rIPTable)
 }
 
 
-CArpInst * CArpTable::RegistArp(WORD32        dwDeviceID,
-                                E_IPAddrType  eType,
-                                T_IPAddr     &rtIPAddr,
-                                T_MacAddr    &rtMacAddr)
+CArpInst * CArpTable::RegistArp(WORD32      dwDeviceID,
+                                T_IPAddr   &rtIPAddr,
+                                T_MacAddr  &rtMacAddr)
 {
     CGuardLock<CSpinLock> cGuard(m_cLock);
 
@@ -102,7 +97,7 @@ CArpInst * CArpTable::RegistArp(WORD32        dwDeviceID,
         return NULL;
     }
 
-    new (pInst) CArpInst(dwDeviceID, eType, rtIPAddr, rtMacAddr.aucMacAddr);
+    new (pInst) CArpInst(dwDeviceID, rtIPAddr, rtMacAddr.aucMacAddr);
 
     return pInst;
 }
@@ -115,8 +110,8 @@ CArpInst * CArpTable::FindArp(WORD32 dwIPv4)
     CArpInst *pCur = GetHead();
     while (pCur)
     {
-        if ( (E_IPV4_TYPE == pCur->m_eAddrType)
-          && (dwIPv4 == pCur->m_tIPAddr.dwIPv4))
+        if ( (E_IPV4_TYPE == pCur->m_tIPAddr.eType)
+          && (dwIPv4 == pCur->m_tIPAddr.tIPv4.dwIPAddr))
         {
             return pCur;
         }

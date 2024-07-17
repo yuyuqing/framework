@@ -16,9 +16,9 @@ CEthDevice::CEthDevice (const T_DeviceParam &rtParam)
     m_ucIPNum     = 0;
     m_dwPrimaryIP = 0;
 
-    memset(m_aucIPType, 0x00, sizeof(m_aucIPType));
-    memset(m_atIPAddr,  0x00, sizeof(m_atIPAddr));
-    memset(&m_tEthAddr, 0x00, sizeof(m_tEthAddr));
+    memset(&m_tLinkLocalIP, 0x00, sizeof(m_tLinkLocalIP));
+    memset(m_atIPAddr,      0x00, sizeof(m_atIPAddr));
+    memset(&m_tEthAddr,     0x00, sizeof(m_tEthAddr));
 
 #if RTE_VERSION >= RTE_VERSION_NUM(21, 11, 1, 0)
     m_tEthConf.rxmode.mq_mode               = RTE_ETH_MQ_RX_RSS;
@@ -83,7 +83,8 @@ WORD32 CEthDevice::Initialize()
     m_ucLinkType  = (BYTE)(ptCfg->dwLinkType);
     m_ucVlanNum   = (BYTE)(ptCfg->dwVlanNum);
     m_ucIPNum     = (BYTE)(ptCfg->dwIpNum);
-    m_dwPrimaryIP = FetchPrimaryIP(*ptCfg);
+
+    InitIPConfig(*ptCfg);
 
     CIPTable   &rIPTalbe   = g_pNetIntfHandler->GetIPTable();
     CVlanTable &rVlanTable = g_pNetIntfHandler->GetVlanTable();
@@ -109,6 +110,8 @@ WORD32 CEthDevice::Initialize()
     T_MacAddr tMacAddr;
     memcpy(tMacAddr.aucMacAddr, m_tEthAddr.addr_bytes, ARP_MAC_ADDR_LEN);
 
+    InitLinkLocalIP(tMacAddr);
+
     /* 注册本地IP表项 */
     dwResult = rIPTalbe.RegistIP(*ptCfg);
     if (SUCCESS != dwResult)
@@ -127,10 +130,9 @@ WORD32 CEthDevice::Initialize()
 }
 
 
-WORD32 CEthDevice::FetchPrimaryIP(T_DpdkEthDevJsonCfg &rtCfg)
+WORD32 CEthDevice::InitIPConfig(T_DpdkEthDevJsonCfg &rtCfg)
 {
-    WORD32   dwIPNum     = rtCfg.dwIpNum;
-    WORD32   dwPrimaryIP = 0;
+    WORD32 dwIPNum = rtCfg.dwIpNum;
 
     for (WORD32 dwIndex = 0; dwIndex < dwIPNum; dwIndex++)
     {
@@ -138,23 +140,27 @@ WORD32 CEthDevice::FetchPrimaryIP(T_DpdkEthDevJsonCfg &rtCfg)
 
         if (E_IPV4_TYPE == rtIPCfg.dwIPType)
         {
-            m_aucIPType[dwIndex] = (BYTE)(E_IPV4_TYPE);
             m_atIPAddr[dwIndex].SetIPv4(rtIPCfg.aucIpv4Addr);
 
             /* 取第一个配置IPv4地址作为主IP */
-            if (0 == dwPrimaryIP)
+            if (0 == m_dwPrimaryIP)
             {
-                dwPrimaryIP = m_atIPAddr[dwIndex].dwIPv4;
+                m_dwPrimaryIP = m_atIPAddr[dwIndex].tIPv4.dwIPAddr;
             }
         }
         else
         {
-            m_aucIPType[dwIndex] = (BYTE)(E_IPV6_TYPE);
             m_atIPAddr[dwIndex].SetIPv6(rtIPCfg.aucIpv6Addr);
         }
     }
 
-    return dwPrimaryIP;
+    return SUCCESS;
+}
+
+
+WORD32 CEthDevice::InitLinkLocalIP(T_MacAddr &rtAddr)
+{
+    return SUCCESS;
 }
 
 

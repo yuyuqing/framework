@@ -19,10 +19,9 @@ public :
     friend class CArpTable;
 
 public :
-    CArpInst (WORD32        dwDevID,
-              E_IPAddrType  eType,
-              T_IPAddr     &rtIPAddr,
-              BYTE         *pMacAddr);
+    CArpInst (WORD32     dwDevID,
+              T_IPAddr  &rtIPAddr,
+              BYTE      *pMacAddr);
 
     virtual ~CArpInst();
 
@@ -34,10 +33,9 @@ public :
     VOID Dump();
 
 protected :
-    WORD32        m_dwDeviceID;  /* 记录设备ID(本地MAC地址所属设备 or 对端MAC地址所连接设备) */
-    E_IPAddrType  m_eAddrType;
-    T_IPAddr      m_tIPAddr;
-    T_MacAddr     m_tMacAddr;
+    WORD32     m_dwDeviceID;  /* 记录设备ID(本地MAC地址所属设备 or 对端MAC地址所连接设备) */
+    T_IPAddr   m_tIPAddr;
+    T_MacAddr  m_tMacAddr;
 };
 
 
@@ -75,10 +73,9 @@ public :
 
     WORD32 Initialize(CIPTable &rIPTable);
 
-    CArpInst * RegistArp(WORD32        dwDeviceID,
-                         E_IPAddrType  eType,
-                         T_IPAddr     &rtIPAddr,
-                         T_MacAddr    &rtMacAddr);
+    CArpInst * RegistArp(WORD32      dwDeviceID,
+                         T_IPAddr   &rtIPAddr,
+                         T_MacAddr  &rtMacAddr);
 
     CArpInst * FindArp(WORD32 dwIPv4);
 

@@ -38,16 +38,17 @@ public :
     BOOL IsMatch(WORD32 dwIPv4);
 
 protected :
-    WORD32 FetchPrimaryIP(T_DpdkEthDevJsonCfg &rtCfg);
+    WORD32 InitIPConfig(T_DpdkEthDevJsonCfg &rtCfg);
+    WORD32 InitLinkLocalIP(T_MacAddr &rtAddr);
 
 protected :
     BYTE                   m_ucLinkType;
     BYTE                   m_ucVlanNum;
     BYTE                   m_ucIPNum;
 
-    WORD32                 m_dwPrimaryIP;  /* 取第一个IPv4配置作为主IPv4地址 */
+    WORD32                 m_dwPrimaryIP;   /* 取第一个IPv4配置作为主IPv4地址 */
+    T_IPv6Addr             m_tLinkLocalIP;  /* 链路本地IP作为主IPv6地址 */
 
-    BYTE                   m_aucIPType[MAX_DEV_IP_NUM];
     T_IPAddr               m_atIPAddr[MAX_DEV_IP_NUM];
 
     struct rte_ether_addr  m_tEthAddr;
@@ -71,8 +72,8 @@ inline BOOL CEthDevice::IsMatch(WORD32 dwIPv4)
 {
     for (WORD32 dwIndex = 0; dwIndex < m_ucIPNum; dwIndex++)
     {
-        if ( (E_IPV4_TYPE == m_aucIPType[dwIndex])
-          && (dwIPv4 == m_atIPAddr[dwIndex].dwIPv4))
+        if ( (E_IPV4_TYPE == m_atIPAddr[dwIndex].eType)
+          && (dwIPv4 == m_atIPAddr[dwIndex].tIPv4.dwIPAddr))
         {
             return TRUE;
         }

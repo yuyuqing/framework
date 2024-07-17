@@ -13,7 +13,6 @@ CIPInst::CIPInst (WORD32                     dwDeviceID,
     m_dwDeviceID = dwDeviceID;
     m_bVlanFlag  = bVlanFlag;
     m_dwVlanID   = dwVlanID;
-    m_eAddrType  = eType;
 
     memset(&m_tAddr, 0x00, sizeof(m_tAddr));
 
@@ -123,8 +122,8 @@ CIPInst * CIPTable::FindByIPv4(WORD32 dwIP)
 
     while (pCur)
     {
-        if ( (E_IPV4_TYPE == pCur->m_eAddrType)
-          && (dwIP == pCur->m_tAddr.dwIPv4))
+        if ( (E_IPV4_TYPE == pCur->m_tAddr.eType)
+          && (dwIP == pCur->m_tAddr.tIPv4.dwIPAddr))
         {
             return pCur;
         }
@@ -142,7 +141,7 @@ CIPInst * CIPTable::FindByIPv6(T_IPAddr &rtIPAddr)
 
     while (pCur)
     {
-        if ( (E_IPV6_TYPE == pCur->m_eAddrType)
+        if ( (E_IPV6_TYPE == pCur->m_tAddr.eType)
           && (rtIPAddr == pCur->m_tAddr))
         {
             return pCur;

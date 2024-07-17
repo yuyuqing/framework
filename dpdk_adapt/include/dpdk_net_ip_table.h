@@ -50,7 +50,7 @@ typedef struct tagT_IPv6Addr
 }T_IPv6Addr;
 
 
-typedef struct tagT_IPNetAddr
+typedef struct tagT_IPAddr
 {
     union
     {
@@ -60,9 +60,22 @@ typedef struct tagT_IPNetAddr
 
     E_IPAddrType    eType;
 
-    BOOL operator== (tagT_IPNetAddr &rtIPAddr)
+    BOOL operator== (tagT_IPAddr &rtIPAddr)
     {
-        return (0 == memcmp(rtIPAddr.tIPv6.aucIPAddr, this->tIPv6.aucIPAddr, IPV6_ADDR_LEN));
+        if (rtIPAddr.eType != this->eType)
+        {
+            return FALSE;
+        }
+
+        if (E_IPV4_TYPE == rtIPAddr.eType)
+        {
+            return (rtIPAddr.tIPv4.dwIPAddr == this->tIPv4.dwIPAddr);
+        }
+        else
+        {
+            return ((rtIPAddr.tIPv6.alwIPAddr[0] == this->tIPv6.alwIPAddr[0])
+                 && (rtIPAddr.tIPv6.alwIPAddr[1] == this->tIPv6.alwIPAddr[1]));
+        }
     }
 
     WORD32 SetIPv4(CHAR *pIPv4Addr)
@@ -199,151 +212,14 @@ typedef struct tagT_IPNetAddr
         return SUCCESS;
     }
 
-}T_IPNetAddr;
-
-
-typedef union tagT_IPAddr
-{
-    WORD32    dwIPv4;                  /* ∞¥Õ¯¬Á◊÷Ω⁄–Ú */
-    BYTE      aucIPv6[IPV6_ADDR_LEN];  /* ∞¥Õ¯¬Á◊÷Ω⁄–Ú */
-
-    BOOL operator== (tagT_IPAddr &rIPAddr)
-    {
-        return (0 == memcmp(rIPAddr.aucIPv6, this->aucIPv6, IPV6_ADDR_LEN));
-    }
-
-    WORD32 SetIPv4(CHAR *pIPv4Addr)
-    {
-        WORD32  dwLen = strlen(pIPv4Addr);
-        CHAR   *pData = pIPv4Addr;
-
-        WORD32 dwByteNum = 0;
-        WORD32 dwValue   = 0;
-        WORD32 adwIP[4]  = {0, 0, 0, 0};
-
-        for (WORD32 dwIndex = 0; dwIndex < dwLen; dwIndex++)
-        {
-            WORD32 dwByte = pData[dwIndex];
-
-            if (dwByte == '.')
-            {
-                adwIP[dwByteNum++] = dwValue;
-                dwValue = 0;
-            }
-            else
-            {
-                dwByte -= '0';
-                dwValue = (dwValue * 10) + dwByte;
-
-                if (dwIndex == (dwLen - 1))
-                {
-                    adwIP[dwByteNum++] = dwValue;
-                    break ;
-                }
-            }
-        }
-
-        this->dwIPv4 = (adwIP[3] << 24) | (adwIP[2] << 16) | (adwIP[1] << 8) | adwIP[0];
-
-        return SUCCESS;
-    }
-
-    WORD32 SetIPv6(CHAR *pIPv6Addr)
-    {
-        WORD32  dwLen = strlen(pIPv6Addr);
-        CHAR   *pData = pIPv6Addr;
-
-        WORD32 dwByteNum = 0;
-        WORD16 wValue    = 0;
-        WORD16 awIP[8]   = {0, 0, 0, 0, 0, 0, 0, 0};
-
-        for (WORD32 dwIndex = 0; dwIndex < dwLen; dwIndex++)
-        {
-            WORD16 wByte = pData[dwIndex];
-
-            if (wByte == ':')
-            {
-                awIP[dwByteNum++] = wValue;
-                wValue = 0;
-            }
-            else if (wByte > '9')
-            {
-                switch (wByte)
-                {
-                case 'a' :
-                case 'A' :
-                    wByte = 10;
-                    break;
-
-                case 'b' :
-                case 'B' :
-                    wByte = 11;
-                    break;
-
-                case 'c' :
-                case 'C' :
-                    wByte = 12;
-                    break;
-
-                case 'd' :
-                case 'D' :
-                    wByte = 13;
-                    break;
-
-                case 'e' :
-                case 'E' :
-                    wByte = 14;
-                    break;
-
-                case 'f' :
-                case 'F' :
-                    wByte = 15;
-                    break;
-
-                default :
-                    /* ≈‰÷√¥ÌŒÛ */
-                    assert(0);
-                    break ;
-                }
-
-                wValue  = (wValue << 4) + wByte;
-
-                if (dwIndex == (dwLen - 1))
-                {
-                    awIP[dwByteNum++] = wValue;
-                    break ;
-                }
-            }
-            else
-            {
-                wByte  -= '0';
-                wValue  = (wValue << 4) + wByte;
-
-                if (dwIndex == (dwLen - 1))
-                {
-                    awIP[dwByteNum++] = wValue;
-                    break ;
-                }
-            }
-        }
-
-        for (WORD32 dwIndex = 0; dwIndex < 8; dwIndex++)
-        {
-            this->aucIPv6[(2 * dwIndex) + 0] = (BYTE)(awIP[dwIndex] >> 8);
-            this->aucIPv6[(2 * dwIndex) + 1] = (BYTE)(awIP[dwIndex] & 0x00FF);
-        }
-
-        return SUCCESS;
-    }
-
-    WORD32 toStr(E_IPAddrType eType, CString<IPV6_STRING_LEN> &rIPAddr)
+    WORD32 toStr(CString<IPV6_STRING_LEN> &rIPAddr)
     {
         WORD32 dwLen      = 0;
         WORD32 dwTotalLen = 0;
 
-        if (E_IPV4_TYPE == eType)
+        if (E_IPV4_TYPE == this->eType)
         {
-            WORD32 dwIP     = this->dwIPv4;
+            WORD32 dwIP     = this->tIPv4.dwIPAddr;
             WORD32 adwIP[4] = {0, 0, 0, 0};
             CHAR   aucData[IPV4_STRING_LEN] = {0,};
 
@@ -372,7 +248,7 @@ typedef union tagT_IPAddr
         else
         {
             CHAR aucIP[IPV6_ADDR_LEN];
-            memcpy(aucIP, this->aucIPv6, IPV6_ADDR_LEN);
+            memcpy(aucIP, this->tIPv6.aucIPAddr, IPV6_ADDR_LEN);
 
             for (WORD32 dwIndex = 0; dwIndex < IPV6_ADDR_LEN; dwIndex++)
             {
@@ -425,7 +301,6 @@ protected :
     WORD32                    m_dwDeviceID;
     BOOL                      m_bVlanFlag;
     WORD32                    m_dwVlanID;
-    E_IPAddrType              m_eAddrType;
     T_IPAddr                  m_tAddr;
 
     CString<IPV6_STRING_LEN>  m_cIPStr;
@@ -446,13 +321,13 @@ inline WORD32 CIPInst::GetVlanID()
 
 inline WORD32 CIPInst::GetIPV4()
 {
-    return (E_IPV4_TYPE == m_eAddrType) ? (m_tAddr.dwIPv4) : 0;
+    return (E_IPV4_TYPE == m_tAddr.eType) ? (m_tAddr.tIPv4.dwIPAddr) : 0;
 }
 
 
 inline E_IPAddrType CIPInst::GetIPType()
 {
-    return m_eAddrType;
+    return m_tAddr.eType;
 }
 
 

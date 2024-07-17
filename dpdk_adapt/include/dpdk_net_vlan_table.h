@@ -38,13 +38,12 @@ public :
     WORD32 GetVlanID();
     WORD32 GetPriority();
 
-    T_IPAddr & GetIPAddr(BYTE &rucType);
+    T_IPAddr & GetIPAddr();
 
 protected :
     WORD32        m_dwDeviceID;       /* 设备ID */
     WORD32        m_dwVlanID;         /* (VLANID1 << 12) | (VLANID2) */
     WORD32        m_dwPriority;       /* 优先级 */
-    E_IPAddrType  m_eAddrType;
     T_IPAddr      m_tIPAddr;
 };
 
@@ -67,9 +66,8 @@ inline WORD32 CVlanInst::GetPriority()
 }
 
 
-inline T_IPAddr & CVlanInst::GetIPAddr(BYTE &rucType)
+inline T_IPAddr & CVlanInst::GetIPAddr()
 {
-    rucType = (BYTE)m_eAddrType;
     return m_tIPAddr;
 }
 
