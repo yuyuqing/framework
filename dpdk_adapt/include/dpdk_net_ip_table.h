@@ -128,7 +128,6 @@ typedef struct tagT_IPAddr
 
         WORD32 dwByteNum = 0;
         WORD16 wColonIdx = INVALID_WORD;
-        WORD16 wColonNum = 0;
         WORD16 wSkipNum  = 0;
         WORD16 wValue    = 0;
         WORD16 awIP[IPV6_ADDR_WLEN]   = {0, 0, 0, 0, 0, 0, 0, 0};

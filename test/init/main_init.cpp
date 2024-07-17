@@ -14,23 +14,10 @@
 
 #include "base_init_component.h"
 #include "base_oam_app.h"
-#include "dpdk_net_ip_table.h"
 
 
 int main(int argc, char **argv)
 {
-    T_IPAddr  tIP0;
-    T_IPAddr  tIP1;
-    T_IPAddr  tIP2;
-    T_IPAddr  tIP3;
-    T_IPAddr  tIP4;
-
-    tIP0.SetIPv6("2001:0102:0304:0506:0708:090A:0B0C:0D0E");
-    tIP1.SetIPv6("::1");
-    tIP2.SetIPv6("2001:0102:0304::1");
-    tIP3.SetIPv6("2001:102:304::1");
-    tIP4.SetIPv6("2001:0102::0304:1");
-
     CInitList::GetInstance()->InitComponent((WORD32)E_PROC_DU);
 
     g_pOamApp->NotifyOamStartUP();
