@@ -39,7 +39,7 @@ public :
 
 protected :
     WORD32 InitIPConfig(T_DpdkEthDevJsonCfg &rtCfg);
-    WORD32 InitLinkLocalIP(T_MacAddr &rtAddr);
+    WORD32 InitLinkLocalIP(T_MacAddr &rtAddr, CIPTable &rIPTalbe);
 
 protected :
     BYTE                   m_ucLinkType;

@@ -48,6 +48,31 @@ WORD32 CIPTable::Initialize()
 }
 
 
+WORD32 CIPTable::RegistIP(T_IPv6Addr *ptAddr,
+                          WORD32      dwDeviceID,
+                          BOOL        bVlanFlag,
+                          WORD32      dwVlanID)
+{
+    T_IPAddr                  tIPAddr;
+    CString<IPV6_STRING_LEN>  cIPStr;
+
+    tIPAddr.eType = E_IPV6_TYPE;
+    memcpy(&(tIPAddr.tIPv6), ptAddr, sizeof(T_IPv6Addr));
+
+    tIPAddr.toStr(cIPStr);
+
+    CIPInst *pInst = CreateTail();
+    if (NULL == pInst)
+    {
+        return FAIL;
+    }
+
+    new (pInst) CIPInst(dwDeviceID, bVlanFlag, dwVlanID, E_IPV6_TYPE, cIPStr);
+
+    return SUCCESS;
+}
+
+
 WORD32 CIPTable::RegistIP(T_DpdkEthDevJsonCfg &rtCfg)
 {
     WORD32    dwDeviceID = rtCfg.dwDeviceID;

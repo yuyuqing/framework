@@ -110,7 +110,7 @@ WORD32 CEthDevice::Initialize()
     T_MacAddr tMacAddr;
     memcpy(tMacAddr.aucMacAddr, m_tEthAddr.addr_bytes, ARP_MAC_ADDR_LEN);
 
-    InitLinkLocalIP(tMacAddr);
+    InitLinkLocalIP(tMacAddr, rIPTalbe);
 
     /* 注册本地IP表项 */
     dwResult = rIPTalbe.RegistIP(*ptCfg);
@@ -158,8 +158,25 @@ WORD32 CEthDevice::InitIPConfig(T_DpdkEthDevJsonCfg &rtCfg)
 }
 
 
-WORD32 CEthDevice::InitLinkLocalIP(T_MacAddr &rtAddr)
+/* 采用EUI-64规则构造IPv6 Link-Local Address */
+WORD32 CEthDevice::InitLinkLocalIP(T_MacAddr &rtAddr, CIPTable &rIPTalbe)
 {
+    m_tLinkLocalIP.aucIPAddr[0] = 0xFE;
+    m_tLinkLocalIP.aucIPAddr[1] = 0x80;
+
+    BYTE ucMask = 1 << 1;  /* 第7位 */
+
+    m_tLinkLocalIP.aucIPAddr[8]  = rtAddr.aucMacAddr[0] ^ ucMask;
+    m_tLinkLocalIP.aucIPAddr[9]  = rtAddr.aucMacAddr[1];
+    m_tLinkLocalIP.aucIPAddr[10] = rtAddr.aucMacAddr[2];
+    m_tLinkLocalIP.aucIPAddr[11] = 0xFF;
+    m_tLinkLocalIP.aucIPAddr[12] = 0xFE;
+    m_tLinkLocalIP.aucIPAddr[13] = rtAddr.aucMacAddr[3];
+    m_tLinkLocalIP.aucIPAddr[14] = rtAddr.aucMacAddr[4];
+    m_tLinkLocalIP.aucIPAddr[15] = rtAddr.aucMacAddr[5];
+
+    rIPTalbe.RegistIP(&m_tLinkLocalIP, m_dwDeviceID, FALSE, INVALID_DWORD);
+
     return SUCCESS;
 }
 

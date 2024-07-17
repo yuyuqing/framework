@@ -246,17 +246,16 @@ typedef struct tagT_IPAddr
         }
         else
         {
-            CHAR aucIP[IPV6_ADDR_LEN];
-            memcpy(aucIP, this->tIPv6.aucIPAddr, IPV6_ADDR_LEN);
-
-            for (WORD32 dwIndex = 0; dwIndex < IPV6_ADDR_LEN; dwIndex++)
+            for (WORD32 dwIndex = 0; dwIndex < IPV6_ADDR_WLEN; dwIndex++)
             {
-                CHAR aucData[4] = {0, 0, 0, 0};
+                CHAR aucData[5] = {0, 0, 0, 0, 0};
 
-                dwLen    = IntToStr(aucData, aucIP[0], E_DECIMAL_16, 2, '0');
+                dwLen    = IntToStr(aucData,
+                                    HTONS(this->tIPv6.awIPAddr[dwIndex]),
+                                    E_DECIMAL_16, 4, '0');
                 rIPAddr += aucData;
 
-                if ((dwIndex + 1) == IPV6_ADDR_LEN)
+                if ((dwIndex + 1) == IPV6_ADDR_WLEN)
                 {
                     break ;
                 }
@@ -349,6 +348,11 @@ public :
     virtual ~CIPTable();
 
     WORD32 Initialize();
+
+    WORD32 RegistIP(T_IPv6Addr *ptAddr,
+                    WORD32      dwDeviceID,
+                    BOOL        bVlanFlag,
+                    WORD32      dwVlanID);
 
     WORD32 RegistIP(T_DpdkEthDevJsonCfg &rtCfg);
 
