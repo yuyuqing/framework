@@ -81,6 +81,8 @@ public :
 
     CArpInst * FindArp(T_IPAddr &rtIPAddr);
 
+    VOID Dump();
+
 protected :
     CSpinLock    m_cLock;
 };

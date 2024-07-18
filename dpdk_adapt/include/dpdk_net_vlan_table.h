@@ -40,6 +40,8 @@ public :
 
     T_IPAddr & GetIPAddr();
 
+    VOID Dump();
+
 protected :
     WORD32        m_dwDeviceID;       /* …Ë±∏ID */
     WORD32        m_dwVlanID;         /* (VLANID1 << 12) | (VLANID2) */
@@ -83,6 +85,8 @@ public :
     WORD32 RegistVlan(T_DpdkEthDevJsonCfg &rtCfg);
 
     CVlanInst * FindVlan(WORD32 dwDeviceID, WORD32 dwVlanID);
+
+    VOID Dump();
 };
 
 

@@ -5,6 +5,8 @@
 #include "dpdk_net_ipv4.h"
 #include "dpdk_net_ipv6.h"
 
+#include "base_log.h"
+
 
 CNetIntfHandler *g_pNetIntfHandler = NULL;
 
@@ -554,6 +556,16 @@ WORD32 CNetIntfHandler::RecvPacket(CAppInterface *pApp,
     }
 
     return dwResult;
+}
+
+
+VOID CNetIntfHandler::Dump()
+{
+    TRACE_STACK("CNetIntfHandler::Dump()");
+
+    m_cIPTable.Dump();
+    m_cVlanTable.Dump();
+    m_cArpTable.Dump();
 }
 
 

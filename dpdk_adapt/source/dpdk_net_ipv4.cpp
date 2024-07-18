@@ -2,6 +2,7 @@
 
 #include "dpdk_net_ipv4.h"
 #include "dpdk_net_icmp.h"
+#include "dpdk_net_ipsec.h"
 #include "dpdk_net_udp.h"
 #include "dpdk_net_sctp.h"
 #include "dpdk_net_tcp.h"
@@ -9,10 +10,11 @@
 
 CIPv4Stack::CIPv4Stack ()
 {
-    m_pIcmpStack = NULL;
-    m_pUdpStack  = NULL;
-    m_pSctpStack = NULL;
-    m_pTcpStack  = NULL;
+    m_pIcmpStack  = NULL;
+    m_pIpSecStack = NULL;
+    m_pUdpStack   = NULL;
+    m_pSctpStack  = NULL;
+    m_pTcpStack   = NULL;
 }
 
 
@@ -22,6 +24,12 @@ CIPv4Stack::~CIPv4Stack()
     {
         delete m_pIcmpStack;
         m_pMemInterface->Free((BYTE *)m_pIcmpStack);
+    }
+
+    if (NULL != m_pIpSecStack)
+    {
+        delete m_pIpSecStack;
+        m_pMemInterface->Free((BYTE *)m_pIpSecStack);
     }
 
     if (NULL != m_pUdpStack)
@@ -42,10 +50,11 @@ CIPv4Stack::~CIPv4Stack()
         m_pMemInterface->Free((BYTE *)m_pTcpStack);
     }
 
-    m_pIcmpStack = NULL;
-    m_pUdpStack  = NULL;
-    m_pSctpStack = NULL;
-    m_pTcpStack  = NULL;
+    m_pIcmpStack  = NULL;
+    m_pIpSecStack = NULL;
+    m_pUdpStack   = NULL;
+    m_pSctpStack  = NULL;
+    m_pTcpStack   = NULL;
 }
 
 
@@ -53,12 +62,14 @@ WORD32 CIPv4Stack::Initialize(CCentralMemPool *pMemInterface)
 {
     CNetStack::Initialize(pMemInterface);
 
-    BYTE *pIcmpMem = m_pMemInterface->Malloc(sizeof(CIcmpStack));
-    BYTE *pUdpMem  = m_pMemInterface->Malloc(sizeof(CUdpStack));
-    BYTE *pSctpMem = m_pMemInterface->Malloc(sizeof(CSctpStack));
-    BYTE *pTcpMem  = m_pMemInterface->Malloc(sizeof(CTcpStack));
+    BYTE *pIcmpMem  = m_pMemInterface->Malloc(sizeof(CIcmpStack));
+    BYTE *pIpSecMem = m_pMemInterface->Malloc(sizeof(CIpSecStack));
+    BYTE *pUdpMem   = m_pMemInterface->Malloc(sizeof(CUdpStack));
+    BYTE *pSctpMem  = m_pMemInterface->Malloc(sizeof(CSctpStack));
+    BYTE *pTcpMem   = m_pMemInterface->Malloc(sizeof(CTcpStack));
 
     if ( (NULL == pIcmpMem)
+      || (NULL == pIpSecMem)
       || (NULL == pUdpMem)
       || (NULL == pSctpMem)
       || (NULL == pTcpMem))
@@ -66,12 +77,14 @@ WORD32 CIPv4Stack::Initialize(CCentralMemPool *pMemInterface)
         assert(0);
     }
 
-    m_pIcmpStack = new (pIcmpMem) CIcmpStack();
-    m_pUdpStack  = new (pUdpMem)  CUdpStack();
-    m_pSctpStack = new (pSctpMem) CSctpStack();
-    m_pTcpStack  = new (pTcpMem)  CTcpStack();
+    m_pIcmpStack  = new (pIcmpMem) CIcmpStack();
+    m_pIpSecStack = new (pIpSecMem) CIpSecStack();
+    m_pUdpStack   = new (pUdpMem)  CUdpStack();
+    m_pSctpStack  = new (pSctpMem) CSctpStack();
+    m_pTcpStack   = new (pTcpMem)  CTcpStack();
 
     m_pIcmpStack->Initialize(pMemInterface);
+    m_pIpSecStack->Initialize(pMemInterface);
     m_pUdpStack->Initialize(pMemInterface);
     m_pSctpStack->Initialize(pMemInterface);
     m_pTcpStack->Initialize(pMemInterface);
@@ -121,6 +134,16 @@ WORD32 CIPv4Stack::RecvPacket(CAppInterface *pApp,
                                             rtInfo,
                                             pMBuf,
                                             (pHead + rtInfo.wL3Len));
+        }
+        break ;
+
+    case IPPROTO_AH  :
+    case IPPROTO_ESP :
+        {
+            return m_pIpSecStack->RecvPacket(pApp,
+                                             rtInfo,
+                                             pMBuf,
+                                             (pHead + rtInfo.wL3Len));
         }
         break ;
 

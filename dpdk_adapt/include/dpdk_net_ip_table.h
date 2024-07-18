@@ -116,6 +116,15 @@ typedef struct tagT_IPAddr
         return SUCCESS;
     }
 
+    WORD32 SetIPv6(T_IPv6Addr &rtIPv6Addr)
+    {
+        this->eType              = E_IPV6_TYPE;
+        this->tIPv6.alwIPAddr[0] = rtIPv6Addr.alwIPAddr[0];
+        this->tIPv6.alwIPAddr[1] = rtIPv6Addr.alwIPAddr[1];
+
+        return SUCCESS;
+    }
+
     WORD32 SetIPv6(CHAR *pIPv6Addr)
     {
         this->eType              = E_IPV6_TYPE;
@@ -295,6 +304,8 @@ public :
 
     CHAR * toChar();
 
+    VOID Dump();
+
 protected :
     WORD32                    m_dwDeviceID;
     BOOL                      m_bVlanFlag;
@@ -357,9 +368,11 @@ public :
     WORD32 RegistIP(T_DpdkEthDevJsonCfg &rtCfg);
 
     /* dwIP : °´ÍøÂç×Ö½ÚÐò */
-    CIPInst * FindByIPv4(WORD32 dwIP);
+    CIPInst * FindByIPv4(WORD32 dwDeviceID, WORD32 dwIP);
 
-    CIPInst * FindByIPv6(T_IPAddr &rtIPAddr);
+    CIPInst * FindByIPv6(WORD32 dwDeviceID, T_IPAddr &rtIPAddr);
+
+    VOID Dump();
 };
 
 

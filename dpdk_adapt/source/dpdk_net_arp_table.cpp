@@ -142,3 +142,17 @@ CArpInst * CArpTable::FindArp(T_IPAddr &rtIPAddr)
 }
 
 
+VOID CArpTable::Dump()
+{
+    TRACE_STACK("CArpTable::Dump()");
+
+    CArpInst *pCur = GetHead();
+
+    while (pCur)
+    {
+        pCur->Dump();
+        pCur = Next(pCur);
+    }
+}
+
+

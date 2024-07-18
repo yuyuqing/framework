@@ -34,8 +34,13 @@ public :
 
     BYTE * GetMacAddr();
 
-    /* dwIPv4是否为本设备的IP地址(dwIPv4 : 按网络字节序) */
-    BOOL IsMatch(WORD32 dwIPv4);
+    /* 检查目标IP是否与本设备IP匹配; dwIPv4(网络字节序) */
+    BOOL IsMatch(WORD32 dwVlanID, WORD32 dwIPv4);
+
+    /* 检查目标IP是否与本设备IP匹配 */
+    BOOL IsMatch(WORD32 dwVlanID, T_IPAddr &rtIPAddr);
+
+    virtual VOID Dump();
 
 protected :
     WORD32 InitIPConfig(T_DpdkEthDevJsonCfg &rtCfg);
@@ -49,7 +54,8 @@ protected :
     WORD32                 m_dwPrimaryIP;   /* 取第一个IPv4配置作为主IPv4地址 */
     T_IPv6Addr             m_tLinkLocalIP;  /* 链路本地IP作为主IPv6地址 */
 
-    T_IPAddr               m_atIPAddr[MAX_DEV_IP_NUM];
+    WORD32                 m_adwVlanID[MAX_DEV_IP_NUM];  /* 每个IP对应的VLANID */
+    T_IPAddr               m_atIPAddr[MAX_DEV_IP_NUM];   /* 当前接口上的IP地址 */
 
     struct rte_ether_addr  m_tEthAddr;
 };
@@ -67,13 +73,30 @@ inline BYTE * CEthDevice::GetMacAddr()
 }
 
 
-/* dwIPv4是否为本设备的IP地址(dwIPv4 : 按网络字节序) */
-inline BOOL CEthDevice::IsMatch(WORD32 dwIPv4)
+/* 检查目标IP是否与本设备IP匹配; dwIPv4(网络字节序) */
+inline BOOL CEthDevice::IsMatch(WORD32 dwVlanID, WORD32 dwIPv4)
 {
     for (WORD32 dwIndex = 0; dwIndex < m_ucIPNum; dwIndex++)
     {
-        if ( (E_IPV4_TYPE == m_atIPAddr[dwIndex].eType)
-          && (dwIPv4 == m_atIPAddr[dwIndex].tIPv4.dwIPAddr))
+        if ( (dwVlanID    == m_adwVlanID[dwIndex])
+          && (E_IPV4_TYPE == m_atIPAddr[dwIndex].eType)
+          && (dwIPv4      == m_atIPAddr[dwIndex].tIPv4.dwIPAddr))
+        {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
+
+/* 检查目标IP是否与本设备IP匹配 */
+inline BOOL CEthDevice::IsMatch(WORD32 dwVlanID, T_IPAddr &rtIPAddr)
+{
+    for (WORD32 dwIndex = 0; dwIndex < m_ucIPNum; dwIndex++)
+    {
+        if ( (dwVlanID == m_adwVlanID[dwIndex])
+          && (rtIPAddr == m_atIPAddr[dwIndex]))
         {
             return TRUE;
         }

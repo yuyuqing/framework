@@ -87,6 +87,8 @@ public :
 
     WORD16 FetchAddIPIdentity();
 
+    VOID Dump();
+
 protected :
     std::atomic<WORD16>  m_wIPIdentity;  /* IP报文头中的ID标识 */
 

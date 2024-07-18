@@ -23,6 +23,7 @@ public :
 
 protected :
     CNetStack  *m_pIcmpStack;
+    CNetStack  *m_pIpSecStack;
     CNetStack  *m_pUdpStack;
     CNetStack  *m_pSctpStack;
     CNetStack  *m_pTcpStack;

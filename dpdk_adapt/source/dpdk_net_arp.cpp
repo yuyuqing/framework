@@ -75,8 +75,10 @@ WORD32 CArpStack::SendArpRequest(CDevQueue *pQueue,
                                  WORD32     dwDstIP,
                                  WORD32     dwVlanID)
 {
+    WORD32 dwDeviceID = pQueue->GetDeviceID();
+
     /* 不需要向自己发送ARP请求 */
-    CIPInst *pIPInst = m_pIPTable->FindByIPv4(dwDstIP);
+    CIPInst *pIPInst = m_pIPTable->FindByIPv4(dwDeviceID, dwDstIP);
     if (NULL != pIPInst)
     {
         return FAIL;
@@ -86,7 +88,7 @@ WORD32 CArpStack::SendArpRequest(CDevQueue *pQueue,
     struct rte_mempool *pMemPool = pQueue->GetTxMemPool();
 
     T_MBuf *pArpReq = EncodeArpRequest(pDevice->GetMacAddr(),
-                                       pQueue->GetDeviceID(),
+                                       dwDeviceID,
                                        dwVlanID,
                                        pDevice->GetPrimaryIPv4(),
                                        dwDstIP,
@@ -112,34 +114,33 @@ WORD32 CArpStack::ProcArpRequest(CAppInterface *pApp,
     WORD32  dwDstIP = pArpHead->arp_data.arp_tip;
     BYTE   *pSrcMac = pArpHead->arp_data.arp_sha.addr_bytes;
 
-    UpdateArpTable(rtInfo.dwDeviceID, dwSrcIP, pSrcMac);
-
-    /* 根据目的IP查找IP表, 获取本地接口信息 */
-    CIPInst *pIPInst = m_pIPTable->FindByIPv4(dwDstIP);
-    if (NULL == pIPInst)
-    {
-        return FAIL;
-    }
-
-    /* 校验设备ID */
-    if (rtInfo.dwDeviceID != pIPInst->GetDeviceID())
-    {
-        return FAIL;
-    }
-
-    /* 校验VLANID */
-    if (0 != rtInfo.dwVlanID)
-    {
-        if (rtInfo.dwVlanID != pIPInst->GetVlanID())
-        {
-            return FAIL;
-        }
-    }
-
     CEthApp            *pEthApp  = (CEthApp *)pApp;
     CDevQueue          *pQueue   = pEthApp->GetQueue();
     CEthDevice         *pDevice  = (CEthDevice *)(pQueue->GetDevice());
     struct rte_mempool *pMemPool = pQueue->GetTxMemPool();
+
+    UpdateArpTable(rtInfo.dwDeviceID, dwSrcIP, pSrcMac);
+
+    if (FALSE == pDevice->IsMatch(rtInfo.dwVlanID, dwDstIP))
+    {
+        T_IPAddr                 tIPAddr;
+        CString<IPV6_STRING_LEN> cIPAddr;
+
+        tIPAddr.eType          = E_IPV4_TYPE;
+        tIPAddr.tIPv4.dwIPAddr = dwDstIP;
+        tIPAddr.toStr(cIPAddr);
+
+        LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_WARN, TRUE,
+                   "DstAddr is not match; DeviceID : %d, PortID : %d, "
+                   "QueueID : %d, VlanID : %d, DstIPAddr : %s\n",
+                   rtInfo.dwDeviceID,
+                   rtInfo.dwPortID,
+                   rtInfo.dwQueueID,
+                   rtInfo.dwVlanID,
+                   cIPAddr.toChar());
+
+        return FAIL;
+    }
 
     T_MBuf *pArpReply = EncodeArpReply(pDevice->GetMacAddr(),
                                        pArpHead->arp_data.arp_sha.addr_bytes,

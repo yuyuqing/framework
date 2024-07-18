@@ -88,24 +88,29 @@ WORD32 CIcmpStack::ProcIcmpRequest(BYTE          *pSrcMacAddr,
 {
     TRACE_STACK("CIcmpStack::ProcIcmpRequest()");
 
+    T_IPAddr            tIPAddr;
     CEthApp            *pEthApp  = (CEthApp *)pApp;
     CDevQueue          *pQueue   = pEthApp->GetQueue();
     CEthDevice         *pDevice  = (CEthDevice *)(pQueue->GetDevice());
     struct rte_mempool *pMemPool = pQueue->GetTxMemPool();
 
-    /* 目的IP不属于本设备 */
-    if (FALSE == pDevice->IsMatch(dwDstIP))
-    {
-        return FAIL;
-    }
+    tIPAddr.eType          = E_IPV4_TYPE;
+    tIPAddr.tIPv4.dwIPAddr = dwDstIP;
 
-    if (0 != dwVlanID)
+    /* 目的IP不属于本设备 */
+    if (FALSE == pDevice->IsMatch(dwVlanID, tIPAddr))
     {
-        CVlanInst *pVlanInst = m_pVlanTable->FindVlan(dwDeviceID, dwVlanID);
-        if (NULL == pVlanInst)
-        {
-            return FAIL;
-        }
+        CString<IPV6_STRING_LEN> cIPAddr;
+        tIPAddr.toStr(cIPAddr);
+
+        LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_WARN, TRUE,
+                   "DstAddr is not match; DeviceID : %d, VlanID : %d, "
+                   "DstIPAddr : %s\n",
+                   dwDeviceID,
+                   dwVlanID,
+                   cIPAddr.toChar());
+
+        return FAIL;
     }
 
     WORD16 wIcmpPayLen = ntohs(ptIpv4Head->total_length)

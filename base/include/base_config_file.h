@@ -34,7 +34,7 @@
 #define MAX_DEV_PORT_NUM             ((WORD32)(8))
 #define IPV4_STRING_LEN              ((WORD32)(16))
 #define IPV6_STRING_LEN              ((WORD32)(40))
-#define MAX_DEV_IP_NUM               ((WORD32)(2))
+#define MAX_DEV_IP_NUM               ((WORD32)(16))
 #define MAX_DEV_VLAN_NUM             ((WORD32)(16))
 #define BB_TRAFFIC_NAME_LEN          ((WORD32)(32))
 #define MAX_BB_TRAFFIC_NUM           ((WORD32)(8))

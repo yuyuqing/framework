@@ -1170,7 +1170,9 @@ inline T * CBaseSequence<K, T, NODE_NUM>::GetHead()
         return NULL;
     }
 
-    return *m_ptHeader;
+    CSequenceData *pData = (*m_ptHeader);
+
+    return *pData;
 }
 
 
@@ -1182,19 +1184,21 @@ inline T * CBaseSequence<K, T, NODE_NUM>::GetTail()
         return NULL;
     }
 
-    return *m_ptTailer;
+    CSequenceData *pData = (*m_ptTailer);
+
+    return *pData;
 }
 
 
 template <typename K, class T, WORD32 NODE_NUM>
 inline T * CBaseSequence<K, T, NODE_NUM>::Next(T *pData)
 {
-    if (FALSE == m_cList.IsValid(pData))
+    WORD64 lwAddr = (WORD64)(pData) - s_dwValueOffset;
+
+    if (FALSE == m_cList.IsValid((VOID *)lwAddr))
     {
         return NULL;
     }
-
-    WORD64 lwAddr = (WORD64)pData;
 
     T_SequenceHeader *pCurNode = (T_SequenceHeader *)(lwAddr - m_cList.s_dwDataOffset);
     if (pCurNode->m_bFree)
@@ -1209,19 +1213,21 @@ inline T * CBaseSequence<K, T, NODE_NUM>::Next(T *pData)
         return NULL;
     }
 
-    return *pNextNode;
+    CSequenceData *pInnerData = (*pNextNode);
+
+    return *pInnerData;
 }
 
 
 template <typename K, class T, WORD32 NODE_NUM>
 inline T * CBaseSequence<K, T, NODE_NUM>::Prev(T *pData)
 {
-    if (FALSE == m_cList.IsValid(pData))
+    WORD64 lwAddr = (WORD64)(pData) - s_dwValueOffset;
+
+    if (FALSE == m_cList.IsValid((VOID *)lwAddr))
     {
         return NULL;
     }
-
-    WORD64 lwAddr = (WORD64)pData;
 
     T_SequenceHeader *pCurNode = (T_SequenceHeader *)(lwAddr - m_cList.s_dwDataOffset);
     if (pCurNode->m_bFree)
@@ -1236,7 +1242,9 @@ inline T * CBaseSequence<K, T, NODE_NUM>::Prev(T *pData)
         return NULL;
     }
 
-    return *pPrevNode;
+    CSequenceData *pInnerData = (*pPrevNode);
+
+    return *pInnerData;
 }
 
 

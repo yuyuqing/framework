@@ -65,6 +65,8 @@ WORD32 InitDpdk(WORD32 dwProcID, VOID *pArg)
         assert(0);
     }
 
+    g_pDpdkMgr->Dump();
+
     return SUCCESS;
 }
 INIT_EXPORT(InitDpdk, 10);
@@ -151,6 +153,8 @@ VOID CDpdkMgr::Dump()
     {
         m_atDevInfo[dwIndex].pDevice->Dump();
     }
+
+    m_cNetHandler.Dump();
 }
 
 

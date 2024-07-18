@@ -2,6 +2,8 @@
 
 #include "dpdk_net_ip_table.h"
 
+#include "base_log.h"
+
 
 CIPInst::CIPInst (WORD32                     dwDeviceID,
                   BOOL                       bVlanFlag,
@@ -29,6 +31,22 @@ CIPInst::CIPInst (WORD32                     dwDeviceID,
 
 CIPInst::~CIPInst()
 {
+}
+
+
+VOID CIPInst::Dump()
+{
+    CString<IPV6_STRING_LEN> cIPAddr;
+    m_tAddr.toStr(cIPAddr);
+
+    LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+               "m_dwDeviceID : %d, m_bVlanFlag : %d, m_dwVlanID : %d, "
+               "IPAddr : %s, IPStr : %s\n",
+               m_dwDeviceID,
+               m_bVlanFlag,
+               m_dwVlanID,
+               cIPAddr.toChar(),
+               m_cIPStr.toChar());
 }
 
 
@@ -141,13 +159,14 @@ WORD32 CIPTable::RegistIP(T_DpdkEthDevJsonCfg &rtCfg)
 
 
 /* dwIP : °´ÍøÂç×Ö½ÚÐò */
-CIPInst * CIPTable::FindByIPv4(WORD32 dwIP)
+CIPInst * CIPTable::FindByIPv4(WORD32 dwDeviceID, WORD32 dwIP)
 {
     CIPInst *pCur = GetHead();
 
     while (pCur)
     {
-        if ( (E_IPV4_TYPE == pCur->m_tAddr.eType)
+        if ( (dwDeviceID == pCur->m_dwDeviceID)
+          && (E_IPV4_TYPE == pCur->m_tAddr.eType)
           && (dwIP == pCur->m_tAddr.tIPv4.dwIPAddr))
         {
             return pCur;
@@ -160,13 +179,14 @@ CIPInst * CIPTable::FindByIPv4(WORD32 dwIP)
 }
 
 
-CIPInst * CIPTable::FindByIPv6(T_IPAddr &rtIPAddr)
+CIPInst * CIPTable::FindByIPv6(WORD32 dwDeviceID, T_IPAddr &rtIPAddr)
 {
     CIPInst *pCur = GetHead();
 
     while (pCur)
     {
-        if ( (E_IPV6_TYPE == pCur->m_tAddr.eType)
+        if ( (dwDeviceID == pCur->m_dwDeviceID)
+          && (E_IPV6_TYPE == pCur->m_tAddr.eType)
           && (rtIPAddr == pCur->m_tAddr))
         {
             return pCur;
@@ -176,6 +196,20 @@ CIPInst * CIPTable::FindByIPv6(T_IPAddr &rtIPAddr)
     }
 
     return NULL;
+}
+
+
+VOID CIPTable::Dump()
+{
+    TRACE_STACK("CIPTable::Dump()");
+
+    CIPInst *pCur = GetHead();
+
+    while (pCur)
+    {
+        pCur->Dump();
+        pCur = Next(pCur);
+    }
 }
 
 

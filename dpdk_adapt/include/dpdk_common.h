@@ -17,8 +17,10 @@
 
 #if RTE_BYTE_ORDER == RTE_LITTLE_ENDIAN
 #define HTONS(x)  ((WORD16)((((x) & 0x00ffU) << 8) | (((x) & 0xff00U) >> 8)))
+#define NTOHS(x)  ((WORD16)((((x) & 0x00ffU) << 8) | (((x) & 0xff00U) >> 8)))
 #else
 #define HTONS(x)  (x)
+#define NTOHS(x)  (x)
 #endif
 
 

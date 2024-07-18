@@ -2,6 +2,8 @@
 
 #include "dpdk_net_vlan_table.h"
 
+#include "base_log.h"
+
 
 CVlanInst::CVlanInst ()
 {
@@ -45,6 +47,21 @@ WORD32 CVlanInst::Initialize(WORD32                     dwDeviceID,
     }
 
     return SUCCESS;
+}
+
+
+VOID CVlanInst::Dump()
+{
+    CString<IPV6_STRING_LEN> cIPAddr;
+    m_tIPAddr.toStr(cIPAddr);
+
+    LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+               "m_dwDeviceID : %d, m_dwVlanID : %d, m_dwPriority : %d, "
+               "IPAddr : %s\n",
+               m_dwDeviceID,
+               m_dwVlanID,
+               m_dwPriority,
+               cIPAddr.toChar());
 }
 
 
@@ -117,6 +134,20 @@ CVlanInst * CVlanTable::FindVlan(WORD32 dwDeviceID, WORD32 dwVlanID)
     tKey.dwVlanID   = dwVlanID;
 
     return Find(tKey);
+}
+
+
+VOID CVlanTable::Dump()
+{
+    TRACE_STACK("CVlanTable::Dump()");
+
+    CVlanInst *pCur = GetHead();
+
+    while (pCur)
+    {
+        pCur->Dump();
+        pCur = Next(pCur);
+    }
 }
 
 
