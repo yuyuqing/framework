@@ -2,6 +2,9 @@
 
 #include "dpdk_device_eth.h"
 #include "dpdk_mgr.h"
+#include "dpdk_net_ipv6.h"
+#include "dpdk_net_icmpv6.h"
+
 #include "base_log.h"
 
 
@@ -127,6 +130,91 @@ WORD32 CEthDevice::Initialize()
     }
 
     return SUCCESS;
+}
+
+
+WORD32 CEthDevice::Start(WORD16 wQueueID)
+{
+    TRACE_STACK("CEthDevice::Start()");
+
+    WORD32 dwResult = ProcDAD(wQueueID);
+    if (SUCCESS != dwResult)
+    {
+        assert(0);
+    }
+
+    return SUCCESS;
+}
+
+
+/* 执行地址重复检测 */
+WORD32 CEthDevice::ProcDAD(WORD16 wQueueID)
+{
+    TRACE_STACK("CEthDevice::ProcDAD()");
+
+    if (wQueueID >= m_ucQueueNum)
+    {
+        return FAIL;
+    }
+
+    CDevQueue *pQueue = m_apQueue[wQueueID];
+    if (NULL == pQueue)
+    {
+        return FAIL;
+    }
+
+    CIPv6Stack *pIPv6Stack = (CIPv6Stack *)(g_pNetIntfHandler->GetIPv6Stack());
+    if (NULL == pIPv6Stack)
+    {
+        return FAIL;
+    }
+
+    CIcmpV6Stack *pIcmpV6Stack = (CIcmpV6Stack *)(pIPv6Stack->GetIcmpStack());
+    if (NULL == pIcmpV6Stack)
+    {
+        return FAIL;
+    }
+
+    WORD64    lwOption = HTONL(0x0E01000000000000UL);
+    T_IPAddr  tTargetIP;
+    T_IPAddr  tSrcIP;
+    T_IPAddr  tDstIP;
+    T_MacAddr tDstMac;
+
+    tTargetIP.eType = E_IPV6_TYPE;
+    tSrcIP.eType    = E_IPV6_TYPE;
+    tDstIP.eType    = E_IPV6_TYPE;
+
+    /* link-local address作为TargetIP */
+    memcpy(tTargetIP.tIPv6.aucIPAddr, m_tLinkLocalIP.aucIPAddr, IPV6_ADDR_LEN);
+
+    /* 目的IP是被请求节点组播IP */
+    memset(tDstIP.tIPv6.aucIPAddr, 0x00, IPV6_ADDR_LEN);
+    tDstIP.tIPv6.aucIPAddr[0]  = 0xFF;
+    tDstIP.tIPv6.aucIPAddr[1]  = 0x02;
+    tDstIP.tIPv6.aucIPAddr[11] = 0x01;
+    tDstIP.tIPv6.aucIPAddr[12] = 0xFF;
+    tDstIP.tIPv6.aucIPAddr[13] = tTargetIP.tIPv6.aucIPAddr[13];
+    tDstIP.tIPv6.aucIPAddr[14] = tTargetIP.tIPv6.aucIPAddr[14];
+    tDstIP.tIPv6.aucIPAddr[15] = tTargetIP.tIPv6.aucIPAddr[15];
+
+    /* 源IP为无效值 */
+    memset(tSrcIP.tIPv6.aucIPAddr, 0x00, IPV6_ADDR_LEN);
+
+    /* 目的MAC为组播地址 */
+    tDstMac.aucMacAddr[0] = 0x33;
+    tDstMac.aucMacAddr[1] = 0x33;
+    tDstMac.aucMacAddr[2] = tDstIP.tIPv6.aucIPAddr[12];
+    tDstMac.aucMacAddr[3] = tDstIP.tIPv6.aucIPAddr[13];
+    tDstMac.aucMacAddr[4] = tDstIP.tIPv6.aucIPAddr[14];
+    tDstMac.aucMacAddr[5] = tDstIP.tIPv6.aucIPAddr[15];
+
+    return pIcmpV6Stack->SendNeighborSolication(pQueue,
+                                                lwOption,
+                                                tTargetIP,
+                                                tSrcIP,
+                                                tDstIP,
+                                                tDstMac);
 }
 
 

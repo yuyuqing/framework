@@ -54,6 +54,8 @@ WORD32 CEthApp::Init()
         assert(0);
     }
 
+    pDevice->Start(m_wQueueID);
+
     return SUCCESS;
 }
 

@@ -105,6 +105,8 @@ public :
     CVlanTable & GetVlanTable();
     CArpTable  & GetArpTable();
 
+    CNetStack * GetIPv6Stack();
+
     WORD16 FetchAddIPIdentity();
 
     VOID Dump();
@@ -137,6 +139,12 @@ inline CVlanTable & CNetIntfHandler::GetVlanTable()
 inline CArpTable & CNetIntfHandler::GetArpTable()
 {
     return m_cArpTable;
+}
+
+
+inline CNetStack * CNetIntfHandler::GetIPv6Stack()
+{
+    return m_pIPv6Stack;
 }
 
 

@@ -45,7 +45,26 @@ public :
                               T_MBuf        *pMBuf,
                               CHAR          *pHead);
 
+    /* 主动向目的IP发NS请求, 用于查询TargetIP对应的MAC地址 */
+    WORD32 SendNeighborSolication(CDevQueue *pQueue,
+                                  WORD64     lwOption,
+                                  T_IPAddr  &rtTargetIP,
+                                  T_IPAddr  &rtSrcIP,
+                                  T_IPAddr  &rtDstIP,
+                                  T_MacAddr &rtDstMac,
+                                  WORD32     dwVlanID = 0);
+
 protected :
+    T_MBuf * EncodeNeighborSolicitation(BYTE     *pSrcMacAddr,
+                                        BYTE     *pDstMacAddr,
+                                        WORD32    dwDeviceID,
+                                        WORD32    dwVlanID,
+                                        T_IPAddr &rtSrcIP,
+                                        T_IPAddr &rtDstIP,
+                                        T_IPAddr &rtTargetIP,
+                                        WORD64    lwOption,
+                                        struct rte_mempool *pMBufPool);
+
     /* 匹配二层多播地址 */
     BOOL IsMultiCastAddr(BYTE *pDstMac);
 

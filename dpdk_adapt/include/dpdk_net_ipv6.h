@@ -21,6 +21,8 @@ public :
                               T_MBuf        *pMBuf,
                               CHAR          *pHead);
 
+    CNetStack * GetIcmpStack();
+
 protected :
     CNetStack  *m_pIcmpStack;
     CNetStack  *m_pIpSecStack;
@@ -28,6 +30,12 @@ protected :
     CNetStack  *m_pSctpStack;
     CNetStack  *m_pTcpStack;
 };
+
+
+inline CNetStack * CIPv6Stack::GetIcmpStack()
+{
+    return m_pIcmpStack;
+}
 
 
 #endif

@@ -136,6 +136,15 @@ CBaseDevice::~CBaseDevice()
 }
 
 
+/* 当关联的App收到上电消息后调用 */
+WORD32 CBaseDevice::Start(WORD16 wQueueID)
+{
+    TRACE_STACK("CBaseDevice::Start()");
+
+    return SUCCESS;
+}
+
+
 VOID CBaseDevice::Dump()
 {
     TRACE_STACK("CBaseDevice::Dump()");

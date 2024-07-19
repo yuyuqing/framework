@@ -163,6 +163,9 @@ public :
 
     virtual WORD32 Initialize() = 0;
 
+    /* 当关联的App收到上电消息后调用 */
+    virtual WORD32 Start(WORD16 wQueueID);
+
     CDevQueue * GetQueue(WORD16 wQueueID);
 
     WORD32 GetDeviceID();

@@ -20,11 +20,15 @@
 #define NTOHS(x)  ((WORD16)((((x) & 0x00ffU) << 8) | (((x) & 0xff00U) >> 8)))
 #define HTONW(x)  __builtin_bswap32(x)
 #define NTOHW(x)  __builtin_bswap32(x)
+#define HTONL(x)  __builtin_bswap64(x)
+#define NTOHL(x)  __builtin_bswap64(x)
 #else
 #define HTONS(x)  (x)
 #define NTOHS(x)  (x)
 #define HTONW(x)  (x)
 #define NTOHW(x)  (x)
+#define HTONL(x)  (x)
+#define NTOHL(x)  (x)
 #endif
 
 

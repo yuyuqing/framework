@@ -91,6 +91,107 @@ WORD32 CIcmpV6Stack::RecvPacket(CAppInterface *pApp,
 }
 
 
+/* 主动向目的IP发NS请求, 用于查询TargetIP对应的MAC地址 */
+WORD32 CIcmpV6Stack::SendNeighborSolication(CDevQueue *pQueue,
+                                            WORD64     lwOption,
+                                            T_IPAddr  &rtTargetIP,
+                                            T_IPAddr  &rtSrcIP,
+                                            T_IPAddr  &rtDstIP,
+                                            T_MacAddr &rtDstMac,
+                                            WORD32     dwVlanID)
+{
+    TRACE_STACK("CIcmpV6Stack::SendNeighborSolication()");
+
+    WORD32              dwDeviceID = pQueue->GetDeviceID();
+    CEthDevice         *pDevice    = (CEthDevice *)(pQueue->GetDevice());
+    struct rte_mempool *pMemPool   = pQueue->GetTxMemPool();
+
+    T_MBuf *pNS = EncodeNeighborSolicitation(pDevice->GetMacAddr(),
+                                             rtDstMac.aucMacAddr,
+                                             dwDeviceID,
+                                             dwVlanID,
+                                             rtSrcIP,
+                                             rtDstIP,
+                                             rtTargetIP,
+                                             lwOption,
+                                             pMemPool);
+    if (NULL == pNS)
+    {
+        return FAIL;
+    }
+
+    pQueue->SendPacket(pNS);
+
+    return SUCCESS;
+}
+
+
+T_MBuf * CIcmpV6Stack::EncodeNeighborSolicitation(BYTE     *pSrcMacAddr,
+                                                  BYTE     *pDstMacAddr,
+                                                  WORD32    dwDeviceID,
+                                                  WORD32    dwVlanID,
+                                                  T_IPAddr &rtSrcIP,
+                                                  T_IPAddr &rtDstIP,
+                                                  T_IPAddr &rtTargetIP,
+                                                  WORD64    lwOption,
+                                                  struct rte_mempool *pMBufPool)
+{
+    TRACE_STACK("CIcmpV6Stack::EncodeNeighborSolicitation()");
+
+    BYTE       *pPkt      = NULL;
+    CHAR       *pOption   = NULL;
+    T_IcmpHead *pIcmpHead = NULL;
+
+    T_MBuf *pMBuf = rte_pktmbuf_alloc(pMBufPool);
+    if (NULL == pMBuf)
+    {
+        return NULL;
+    }
+
+    pPkt = rte_pktmbuf_mtod(pMBuf, BYTE *);
+
+    WORD16 wEthLen = EncodeEthPacket(pPkt,
+                                     pSrcMacAddr,
+                                     pDstMacAddr,
+                                     dwDeviceID,
+                                     dwVlanID,
+                                     RTE_ETHER_TYPE_IPV6);
+
+    WORD16 wIPv6Len = EncodeIpv6Packet((pPkt + wEthLen),
+                                       (24 + sizeof(T_IcmpHead)),
+                                       IPPROTO_ICMPV6,
+                                       rtSrcIP,
+                                       rtDstIP);
+
+    WORD16 wTotalLen = wEthLen + wIPv6Len + sizeof(T_IcmpHead) + 24;
+
+    pMBuf->data_len = wTotalLen;
+    pMBuf->pkt_len  = wTotalLen;
+
+    pIcmpHead              = (T_IcmpHead *)(pPkt + wEthLen + wIPv6Len);
+    pIcmpHead->icmp_type   = E_ICMP6_TYPE_NS;
+    pIcmpHead->icmp_code   = 0;
+    pIcmpHead->icmp_cksum  = 0;
+    pIcmpHead->icmp_ident  = 0;
+    pIcmpHead->icmp_seq_nb = 0;
+
+    memcpy((CHAR *)(pIcmpHead + 1), rtTargetIP.tIPv6.aucIPAddr, IPV6_ADDR_LEN);
+
+    pOption = (CHAR *)(pPkt + wEthLen + wIPv6Len + sizeof(T_IcmpHead) + IPV6_ADDR_LEN);
+    memcpy(pOption, &lwOption, sizeof(WORD64));
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+    pIcmpHead->icmp_cksum = CalcIcmpv6CheckSum((WORD16 *)pIcmpHead,
+                                               sizeof(T_IcmpHead) + 24,
+                                               rtSrcIP,
+                                               rtDstIP);
+#pragma GCC diagnostic pop
+
+    return pMBuf;
+}
+
+
 WORD32 CIcmpV6Stack::ProcNeighborSolicatation(CAppInterface  *pApp,
                                               T_OffloadInfo  &rtInfo,
                                               T_EthHead      *ptEthHead,

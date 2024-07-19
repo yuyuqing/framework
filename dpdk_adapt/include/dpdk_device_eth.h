@@ -30,6 +30,8 @@ public :
 
     virtual WORD32 Initialize();
 
+    virtual WORD32 Start(WORD16 wQueueID);
+
     WORD32 GetPrimaryIPv4();
 
     BYTE * GetMacAddr();
@@ -42,6 +44,9 @@ public :
 
     /* 检查目标IP是否与本设备IP匹配 */
     BOOL IsMatch(WORD32 dwVlanID, T_IPAddr &rtIPAddr);
+
+    /* 执行地址重复检测 */
+    WORD32 ProcDAD(WORD16 wQueueID);
 
     virtual VOID Dump();
 
