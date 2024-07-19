@@ -244,10 +244,13 @@ T_MBuf * CIcmpV6Stack::EncodeNeighborAdvertisement(BYTE      *pSrcMacAddr,
     pOption[1] = 0x01;
     memcpy((CHAR *)(pOption + 2), pSrcMacAddr, ARP_MAC_ADDR_LEN);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
     pIcmpHead->icmp_cksum = CalcIcmpv6CheckSum((WORD16 *)pIcmpHead,
                                                sizeof(T_IcmpHead) + 24,
                                                rtSrcIP,
                                                rtDstIP);
+#pragma GCC diagnostic pop
 
     return pMBuf;
 }
@@ -459,10 +462,13 @@ T_MBuf * CIcmpV6Stack::EncodeReply(BYTE      *pSrcMacAddr,
 
     rte_memcpy((BYTE *)(pIcmpHead + 1), pIcmpPayLoad, wPayLoadLen);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
     pIcmpHead->icmp_cksum = CalcIcmpv6CheckSum((WORD16 *)pIcmpHead,
                                                sizeof(T_IcmpHead) + wPayLoadLen,
                                                rtSrcIP,
                                                rtDstIP);
+#pragma GCC diagnostic pop
 
     return pMBuf;
 }
