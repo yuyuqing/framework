@@ -42,8 +42,6 @@ protected :
                              BYTE               *pIcmpPayLoad,
                              WORD16              wPayLoadLen,
                              struct rte_mempool *pMBufPool);
-
-    WORD16 CalcIcmpCheckSum(WORD16 *pwAddr, WORD32 dwCount);
 };
 
 

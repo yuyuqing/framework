@@ -431,6 +431,113 @@ WORD16 CNetStack::EncodeIpv4Packet(BYTE   *pPkt,
 }
 
 
+/* 封装IPv6报文头
+ * pPkt      : IPv6头地址
+ * wTotalLen : 不含IPv6头的载荷长度(如有IPv6扩展头部, 则包含扩展头部)
+ * wProto    : 上层协议(ICMP/TCP/UDP/SCTP)
+ */
+/********************************************************************
+ ****************************** IPv6 ********************************
+ * 0               1               2               3                *
+ * 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7  *
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+- *
+ * |Version|  TrafficClass |               Flow Label             | *
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+- *
+ * |         PayloadLength        |  NextHeader  |    HopLimit    | *
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+- *
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+- *
+ * |                   Source Address(128bit)                     | *
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+- *
+ * |                Destination Address(128bit)                   | *
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+- *
+ * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+- *
+ ****************************** IPv6 ********************************
+ *******************************************************************/
+WORD16 CNetStack::EncodeIpv6Packet(BYTE     *pPkt,
+                                   WORD16    wTotalLen,
+                                   WORD16    wProto,
+                                   T_IPAddr &rtSrcIP,
+                                   T_IPAddr &rtDstIP)
+{
+    WORD16      wIPv6Len  = sizeof(T_Ipv6Head);
+    T_Ipv6Head *pIPv6Head = (T_Ipv6Head *)pPkt;
+
+    pIPv6Head->vtc_flow    = HTONW(0x60000000);
+    pIPv6Head->payload_len = HTONS(wTotalLen);
+    pIPv6Head->proto       = wProto;
+    pIPv6Head->hop_limits  = IP_HEAD_TTL;
+
+    memcpy(pIPv6Head->src_addr, rtSrcIP.tIPv6.aucIPAddr, IPV6_ADDR_LEN);
+    memcpy(pIPv6Head->dst_addr, rtDstIP.tIPv6.aucIPAddr, IPV6_ADDR_LEN);
+
+    return wIPv6Len;
+}
+
+
+/* 计算ICMP校验和 */
+WORD16 CNetStack::CalcIcmpCheckSum(WORD16 *pwAddr, WORD32 dwCount)
+{
+    register long lwSum = 0;
+
+    while (dwCount > 1) 
+    {
+        lwSum   += *(WORD16 *)pwAddr++;
+        dwCount -= 2;
+    }
+
+    if (dwCount > 0)
+    {
+        lwSum += *(WORD16 *)pwAddr;
+    }
+
+    while (lwSum >> 16)
+    {
+        lwSum = (lwSum & 0xffff) + (lwSum >> 16);
+    }
+
+    return ~lwSum;
+}
+
+
+/* 计算ICMPv6校验和 */
+WORD16 CNetStack::CalcIcmpv6CheckSum(WORD16   *pwAddr,
+                                     WORD32    dwCount,
+                                     T_IPAddr &rtSrcAddr,
+                                     T_IPAddr &rtDstAddr)
+{
+    WORD32 dwAcc     = 0;
+    WORD32 dwAddr    = 0;
+    WORD16 wProtoLen = (WORD16)dwCount;
+    WORD16 wProto    = IPPROTO_ICMPV6;
+    WORD16 wCheckSum = CalcIcmpCheckSum(pwAddr, dwCount);
+
+    for (WORD32 dwIndex = 0; dwIndex < 4; dwIndex++)
+    {
+        dwAddr = rtSrcAddr.tIPv6.adwIPAddr[dwIndex];
+        dwAcc  = dwAcc + (dwAddr & 0xFFFFUL);
+        dwAcc  = dwAcc + ((dwAddr >> 16) & 0xFFFFUL);
+
+        dwAddr = rtDstAddr.tIPv6.adwIPAddr[dwIndex];
+        dwAcc  = dwAcc + (dwAddr & 0xFFFFUL);
+        dwAcc  = dwAcc + ((dwAddr >> 16) & 0xFFFFUL);
+    }
+
+    dwAcc = (dwAcc >> 16) + (dwAcc & 0x0000FFFFUL);
+    dwAcc = (dwAcc >> 16) + (dwAcc & 0x0000FFFFUL);
+
+    dwAcc += (WORD16)(~wCheckSum);
+    dwAcc  = (dwAcc >> 16) + (dwAcc & 0x0000FFFFUL);
+
+    dwAcc += (WORD32)(HTONS(wProto));
+    dwAcc += (WORD32)(HTONS(wProtoLen));
+
+    dwAcc  = (dwAcc >> 16) + (dwAcc & 0x0000FFFFUL);
+    dwAcc  = (dwAcc >> 16) + (dwAcc & 0x0000FFFFUL);
+
+    return (WORD16)(~(dwAcc & 0xFFFFUL));
+}
+
+
 CNetIntfHandler::CNetIntfHandler ()
 {
     m_pArpStack  = NULL;

@@ -58,6 +58,26 @@ public :
                             WORD32  dwSrcIP,
                             WORD32  dwDstIP);
 
+    /* 封装IPv6报文头
+     * pPkt      : IPv6头地址
+     * wTotalLen : 不含IPv6头的载荷长度(如有IPv6扩展头部, 则包含扩展头部)
+     * wProto    : 上层协议(ICMP/TCP/UDP/SCTP)
+     */
+    WORD16 EncodeIpv6Packet(BYTE     *pPkt,
+                            WORD16    wTotalLen,
+                            WORD16    wProto,
+                            T_IPAddr &rtSrcIP,
+                            T_IPAddr &rtDstIP);
+
+    /* 计算ICMP校验和 */
+    WORD16 CalcIcmpCheckSum(WORD16 *pwAddr, WORD32 dwCount);
+
+    /* 计算ICMPv6校验和 */
+    WORD16 CalcIcmpv6CheckSum(WORD16   *pwAddr,
+                              WORD32    dwCount,
+                              T_IPAddr &rtSrcAddr,
+                              T_IPAddr &rtDstAddr);
+
 protected :
     CCentralMemPool  *m_pMemInterface;
     CVlanTable       *m_pVlanTable;

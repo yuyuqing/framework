@@ -218,27 +218,3 @@ T_MBuf * CIcmpStack::EncodeIcmpReply(BYTE               *pSrcMacAddr,
 }
 
 
-WORD16 CIcmpStack::CalcIcmpCheckSum(WORD16 *pwAddr, WORD32 dwCount)
-{
-    register long lwSum = 0;
-
-    while (dwCount > 1) 
-    {
-        lwSum   += *(WORD16 *)pwAddr++;
-        dwCount -= 2;
-    }
-
-    if (dwCount > 0)
-    {
-        lwSum += *(WORD16 *)pwAddr;
-    }
-
-    while (lwSum >> 16)
-    {
-        lwSum = (lwSum & 0xffff) + (lwSum >> 16);
-    }
-
-    return ~lwSum;
-}
-
-

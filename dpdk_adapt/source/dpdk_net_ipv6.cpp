@@ -176,6 +176,23 @@ WORD32 CIPv6Stack::RecvPacket(CAppInterface *pApp,
         break ;
 
     default :
+        {
+            /* 忽略 Hop-By-Hop / Destination / Routing / Fragment 等头部选项 */
+
+            CString<IPV6_STRING_LEN> cIPAddr;
+            tIpv6Addr.toStr(cIPAddr);
+
+            LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_WARN, TRUE,
+                       "DstAddr is not match; DeviceID : %d, PortID : %d, "
+                       "QueueID : %d, VlanID : %d, NextHeader : %d, "
+                       "DstIPAddr : %s\n",
+                       rtInfo.dwDeviceID,
+                       rtInfo.dwPortID,
+                       rtInfo.dwQueueID,
+                       rtInfo.dwVlanID,
+                       rtInfo.ucL4Proto,
+                       cIPAddr.toChar());
+        }
         break ;
     }
 

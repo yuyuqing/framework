@@ -18,9 +18,19 @@
 #if RTE_BYTE_ORDER == RTE_LITTLE_ENDIAN
 #define HTONS(x)  ((WORD16)((((x) & 0x00ffU) << 8) | (((x) & 0xff00U) >> 8)))
 #define NTOHS(x)  ((WORD16)((((x) & 0x00ffU) << 8) | (((x) & 0xff00U) >> 8)))
+#define HTONW(x)  ((WORD32)(((x)  >> 24)              \
+                          | (((x) >>  8) & 0xFF00)    \
+                          | (((x) <<  8) & 0xFF0000)  \
+                          | (((x) << 24) & 0xFF000000)))
+#define NTOHW(x)  ((WORD32)(((x)  >> 24)              \
+                              | (((x) >>  8) & 0xFF00)    \
+                              | (((x) <<  8) & 0xFF0000)  \
+                              | (((x) << 24) & 0xFF000000)))
 #else
 #define HTONS(x)  (x)
 #define NTOHS(x)  (x)
+#define HTONW(x)  (x)
+#define NTOHW(x)  (x)
 #endif
 
 
@@ -35,16 +45,17 @@
 #define MBUF_DATA_ROOM_SIZE      ((WORD32)(2048 + 128))
 
 
-typedef struct rte_mbuf          T_MBuf;
-typedef enum rte_eth_event_type  E_EthEventType;
-typedef struct rte_ether_hdr     T_EthHead;
-typedef struct rte_vlan_hdr      T_VlanHead;
-typedef struct rte_arp_hdr       T_ArpHead;
-typedef struct rte_ipv4_hdr      T_Ipv4Head;
-typedef struct rte_ipv6_hdr      T_Ipv6Head;
-typedef struct rte_icmp_hdr      T_IcmpHead;
-typedef struct rte_udp_hdr       T_UdpHead;
-typedef struct rte_tcp_hdr       T_TcpHead;
+typedef struct rte_mbuf           T_MBuf;
+typedef enum rte_eth_event_type   E_EthEventType;
+typedef struct rte_ether_hdr      T_EthHead;
+typedef struct rte_vlan_hdr       T_VlanHead;
+typedef struct rte_arp_hdr        T_ArpHead;
+typedef struct rte_ipv4_hdr       T_Ipv4Head;
+typedef struct rte_ipv6_hdr       T_Ipv6Head;
+typedef struct rte_icmp_hdr       T_IcmpHead;
+typedef struct rte_icmp_base_hdr  T_IcmpBaseHead;
+typedef struct rte_udp_hdr        T_UdpHead;
+typedef struct rte_tcp_hdr        T_TcpHead;
 
 
 /* 报文回调处理函数 */

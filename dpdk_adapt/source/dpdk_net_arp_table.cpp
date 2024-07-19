@@ -103,14 +103,15 @@ CArpInst * CArpTable::RegistArp(WORD32      dwDeviceID,
 }
 
 
-CArpInst * CArpTable::FindArp(WORD32 dwIPv4)
+CArpInst * CArpTable::FindArp(WORD32 dwDevID, WORD32 dwIPv4)
 {
     CGuardLock<CSpinLock> cGuard(m_cLock);
 
     CArpInst *pCur = GetHead();
     while (pCur)
     {
-        if ( (E_IPV4_TYPE == pCur->m_tIPAddr.eType)
+        if ( (dwDevID == pCur->m_dwDeviceID)
+          && (E_IPV4_TYPE == pCur->m_tIPAddr.eType)
           && (dwIPv4 == pCur->m_tIPAddr.tIPv4.dwIPAddr))
         {
             return pCur;
@@ -123,14 +124,15 @@ CArpInst * CArpTable::FindArp(WORD32 dwIPv4)
 }
 
 
-CArpInst * CArpTable::FindArp(T_IPAddr &rtIPAddr)
+CArpInst * CArpTable::FindArp(WORD32 dwDevID, T_IPAddr &rtIPAddr)
 {
     CGuardLock<CSpinLock> cGuard(m_cLock);
 
     CArpInst *pCur = GetHead();
     while (pCur)
     {
-        if (rtIPAddr == pCur->m_tIPAddr)
+        if ( (dwDevID == pCur->m_dwDeviceID)
+          && (rtIPAddr == pCur->m_tIPAddr))
         {
             return pCur;
         }

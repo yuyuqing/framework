@@ -178,12 +178,10 @@ WORD32 CArpStack::ProcArpReply(T_ArpHead *pArpHead, WORD32 dwDevID)
 
 WORD32 CArpStack::UpdateArpTable(WORD32 dwDevID, WORD32 dwIP, BYTE *pMacAddr)
 {
-    CArpInst *pArpInst = m_pArpTable->FindArp(dwIP);
+    CArpInst *pArpInst = m_pArpTable->FindArp(dwDevID, dwIP);
     if (NULL != pArpInst)
     {
         m_cLock.Lock();
-
-        pArpInst->Update(dwDevID);
 
         if ((*pArpInst) == pMacAddr)
         {

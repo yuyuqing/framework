@@ -27,7 +27,6 @@ public :
 
     BOOL operator== (BYTE *pMacAddr);
 
-    VOID Update(WORD32 dwDevID);
     VOID Update(BYTE *pMacAddr);
 
     VOID Dump();
@@ -47,12 +46,6 @@ inline BOOL CArpInst::operator== (BYTE *pMacAddr)
          && (m_tMacAddr.aucMacAddr[3] == pMacAddr[3])
          && (m_tMacAddr.aucMacAddr[4] == pMacAddr[4])
          && (m_tMacAddr.aucMacAddr[5] == pMacAddr[5]));
-}
-
-
-inline VOID CArpInst::Update(WORD32 dwDevID)
-{
-    m_dwDeviceID = dwDevID;
 }
 
 
@@ -77,9 +70,9 @@ public :
                          T_IPAddr   &rtIPAddr,
                          T_MacAddr  &rtMacAddr);
 
-    CArpInst * FindArp(WORD32 dwIPv4);
+    CArpInst * FindArp(WORD32 dwDevID, WORD32 dwIPv4);
 
-    CArpInst * FindArp(T_IPAddr &rtIPAddr);
+    CArpInst * FindArp(WORD32 dwDevID, T_IPAddr &rtIPAddr);
 
     VOID Dump();
 

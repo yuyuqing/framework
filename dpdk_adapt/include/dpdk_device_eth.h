@@ -34,6 +34,9 @@ public :
 
     BYTE * GetMacAddr();
 
+    /* 检查目标MAC地址是否与本设备MAC匹配 */
+    BOOL IsMatch(BYTE *pDstMac);
+
     /* 检查目标IP是否与本设备IP匹配; dwIPv4(网络字节序) */
     BOOL IsMatch(WORD32 dwVlanID, WORD32 dwIPv4);
 
@@ -70,6 +73,18 @@ inline WORD32 CEthDevice::GetPrimaryIPv4()
 inline BYTE * CEthDevice::GetMacAddr()
 {
     return (BYTE *)(m_tEthAddr.addr_bytes);
+}
+
+
+/* 检查目标MAC地址是否与本设备MAC匹配 */
+inline BOOL CEthDevice::IsMatch(BYTE *pDstMac)
+{
+    return ((pDstMac[0] == m_tEthAddr.addr_bytes[0])
+         && (pDstMac[1] == m_tEthAddr.addr_bytes[1])
+         && (pDstMac[2] == m_tEthAddr.addr_bytes[2])
+         && (pDstMac[3] == m_tEthAddr.addr_bytes[3])
+         && (pDstMac[4] == m_tEthAddr.addr_bytes[4])
+         && (pDstMac[5] == m_tEthAddr.addr_bytes[5]));
 }
 
 
