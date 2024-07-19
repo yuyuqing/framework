@@ -18,19 +18,8 @@
 #if RTE_BYTE_ORDER == RTE_LITTLE_ENDIAN
 #define HTONS(x)  ((WORD16)((((x) & 0x00ffU) << 8) | (((x) & 0xff00U) >> 8)))
 #define NTOHS(x)  ((WORD16)((((x) & 0x00ffU) << 8) | (((x) & 0xff00U) >> 8)))
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wshift-overflow="
-#define HTONW(x)  ((WORD32)(((x)  >> 24)              \
-                          | (((x) >>  8) & 0xFF00)    \
-                          | (((x) <<  8) & 0xFF0000)  \
-                          | (((x) << 24) & 0xFF000000)))
-#define NTOHW(x)  ((WORD32)(((x)  >> 24)              \
-                              | (((x) >>  8) & 0xFF00)    \
-                              | (((x) <<  8) & 0xFF0000)  \
-                              | (((x) << 24) & 0xFF000000)))
-#pragma GCC diagnostic pop
-
+#define HTONW(x)  __builtin_bswap32(x)
+#define NTOHW(x)  __builtin_bswap32(x)
 #else
 #define HTONS(x)  (x)
 #define NTOHS(x)  (x)
