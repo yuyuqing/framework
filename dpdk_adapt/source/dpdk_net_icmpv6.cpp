@@ -8,12 +8,14 @@
 CIcmpV6Stack::CIcmpV6Stack ()
 {
     m_pArpTable = NULL;
+    m_pNdpTable = NULL;
 }
 
 
 CIcmpV6Stack::~CIcmpV6Stack()
 {
     m_pArpTable = NULL;
+    m_pNdpTable = NULL;
 }
 
 
@@ -22,6 +24,7 @@ WORD32 CIcmpV6Stack::Initialize(CCentralMemPool *pMemInterface)
     CNetStack::Initialize(pMemInterface);
 
     m_pArpTable = &(g_pNetIntfHandler->GetArpTable());
+    m_pNdpTable = &(g_pNetIntfHandler->GetNdpTable());
 
     return SUCCESS;
 }
@@ -126,6 +129,39 @@ WORD32 CIcmpV6Stack::SendNeighborSolication(CDevQueue *pQueue,
 }
 
 
+/* 主动向目的IP发RS请求, 用于查询路由器信息 */
+WORD32 CIcmpV6Stack::SendRouterSolication(CDevQueue *pQueue,
+                                          WORD64     lwOption,
+                                          T_IPAddr  &rtSrcIP,
+                                          T_IPAddr  &rtDstIP,
+                                          T_MacAddr &rtSrcMac,
+                                          T_MacAddr &rtDstMac)
+{
+    TRACE_STACK("CIcmpV6Stack::SendRouterSolication()");
+
+    WORD32              dwDeviceID = pQueue->GetDeviceID();
+    CEthDevice         *pDevice    = (CEthDevice *)(pQueue->GetDevice());
+    struct rte_mempool *pMemPool   = pQueue->GetTxMemPool();
+
+    T_MBuf *pNS = EncodeRouterSolicitation(rtSrcMac.aucMacAddr,
+                                           rtDstMac.aucMacAddr,
+                                           dwDeviceID,
+                                           0,
+                                           rtSrcIP,
+                                           rtDstIP,
+                                           lwOption,
+                                           pMemPool);
+    if (NULL == pNS)
+    {
+        return FAIL;
+    }
+
+    pQueue->SendPacket(pNS);
+
+    return SUCCESS;
+}
+
+
 T_MBuf * CIcmpV6Stack::EncodeNeighborSolicitation(BYTE     *pSrcMacAddr,
                                                   BYTE     *pDstMacAddr,
                                                   WORD32    dwDeviceID,
@@ -192,6 +228,69 @@ T_MBuf * CIcmpV6Stack::EncodeNeighborSolicitation(BYTE     *pSrcMacAddr,
 }
 
 
+T_MBuf * CIcmpV6Stack::EncodeRouterSolicitation(BYTE     *pSrcMacAddr,
+                                                BYTE     *pDstMacAddr,
+                                                WORD32    dwDeviceID,
+                                                WORD32    dwVlanID,
+                                                T_IPAddr &rtSrcIP,
+                                                T_IPAddr &rtDstIP,
+                                                WORD64    lwOption,
+                                                struct rte_mempool *pMBufPool)
+{
+    TRACE_STACK("CIcmpV6Stack::EncodeRouterSolicitation()");
+
+    BYTE       *pPkt      = NULL;
+    CHAR       *pOption   = NULL;
+    T_IcmpHead *pIcmpHead = NULL;
+
+    T_MBuf *pMBuf = rte_pktmbuf_alloc(pMBufPool);
+    if (NULL == pMBuf)
+    {
+        return NULL;
+    }
+
+    pPkt = rte_pktmbuf_mtod(pMBuf, BYTE *);
+
+    WORD16 wEthLen = EncodeEthPacket(pPkt,
+                                     pSrcMacAddr,
+                                     pDstMacAddr,
+                                     dwDeviceID,
+                                     dwVlanID,
+                                     RTE_ETHER_TYPE_IPV6);
+
+    WORD16 wIPv6Len = EncodeIpv6Packet((pPkt + wEthLen),
+                                       (sizeof(WORD64) + sizeof(T_IcmpHead)),
+                                       IPPROTO_ICMPV6,
+                                       rtSrcIP,
+                                       rtDstIP);
+
+    WORD16 wTotalLen = wEthLen + wIPv6Len + sizeof(T_IcmpHead) + sizeof(WORD64);
+
+    pMBuf->data_len = wTotalLen;
+    pMBuf->pkt_len  = wTotalLen;
+
+    pIcmpHead              = (T_IcmpHead *)(pPkt + wEthLen + wIPv6Len);
+    pIcmpHead->icmp_type   = E_ICMP6_TYPE_RS;
+    pIcmpHead->icmp_code   = 0;
+    pIcmpHead->icmp_cksum  = 0;
+    pIcmpHead->icmp_ident  = 0;
+    pIcmpHead->icmp_seq_nb = 0;
+
+    pOption = (CHAR *)(pPkt + wEthLen + wIPv6Len + sizeof(T_IcmpHead));
+    memcpy(pOption, &lwOption, sizeof(WORD64));
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+    pIcmpHead->icmp_cksum = CalcIcmpv6CheckSum((WORD16 *)pIcmpHead,
+                                               sizeof(T_IcmpHead) + sizeof(WORD64),
+                                               rtSrcIP,
+                                               rtDstIP);
+#pragma GCC diagnostic pop
+
+    return pMBuf;
+}
+
+
 WORD32 CIcmpV6Stack::ProcNeighborSolicatation(CAppInterface  *pApp,
                                               T_OffloadInfo  &rtInfo,
                                               T_EthHead      *ptEthHead,
@@ -228,6 +327,8 @@ WORD32 CIcmpV6Stack::ProcNeighborSolicatation(CAppInterface  *pApp,
 
     UpdateNeighbor(rtInfo.dwDeviceID, tSrcIP, pSrcMac);
 
+    ProcNDP(rtInfo.dwDeviceID, tSrcIP.tIPv6, pSrcMac);
+
     /* IPv6没有广播, 二层地址必须与单播或组播地址匹配 */
     if ( (FALSE == IsMultiCastAddr(pDstMac))
       && (FALSE == pDevice->IsMatch(pDstMac)))
@@ -253,7 +354,7 @@ WORD32 CIcmpV6Stack::ProcNeighborSolicatation(CAppInterface  *pApp,
         return FAIL;
     }
 
-    /* 被目的IP是否与本节点Link-Local或Global-Unicast地址匹配 */
+    /* 目的IP是否与本节点Link-Local或Global-Unicast地址匹配 */
     if (FALSE == pDevice->IsMatch(rtInfo.dwVlanID, tTargetIP))
     {
         CString<IPV6_STRING_LEN> cIPAddr;
@@ -286,6 +387,16 @@ WORD32 CIcmpV6Stack::ProcNeighborSolicatation(CAppInterface  *pApp,
     }
 
     pQueue->SendPacket(pNA);
+
+    /* 被动发起NS请求 */
+    PassiveNS(pQueue,
+              pDevice->GetMacAddr(),
+              pSrcMac,
+              rtInfo.dwDeviceID,
+              rtInfo.dwVlanID,
+              tTargetIP,
+              tSrcIP,
+              pMemPool);
 
     return SUCCESS;
 }
@@ -383,6 +494,8 @@ WORD32 CIcmpV6Stack::ProcNeighborAdvertisement(T_EthHead  *ptEthHead,
     UpdateNeighbor(dwDevID, tSrcIP, pSrcMac);
     UpdateNeighbor(dwDevID, tDstIP, pDstMac);
 
+    ProcNDP(dwDevID, tSrcIP.tIPv6, pSrcMac);
+
     return SUCCESS;
 }
 
@@ -420,6 +533,93 @@ WORD32 CIcmpV6Stack::UpdateNeighbor(WORD32    dwDevID,
     }
 
     pArpInst->Dump();
+
+    return SUCCESS;
+}
+
+
+WORD32 CIcmpV6Stack::ProcNDP(WORD32 dwDevID, T_IPv6Addr &rtIP, BYTE *pMacAddr)
+{
+    TRACE_STACK("CIcmpV6Stack::ProcNDP()");
+
+    /* 如果是多播地址, 忽略 */
+    if ((0x33 == pMacAddr[0]) || (0xFF == rtIP.aucIPAddr[0]))
+    {
+        return FAIL;
+    }
+
+    CDevNdpTable *pDevNdpTable = m_pNdpTable->GetDevTable(dwDevID);
+    if (NULL == pDevNdpTable)
+    {
+        return FAIL;
+    }
+
+    CNdpInst *pNdpInst = pDevNdpTable->FindNdpInst(rtIP);
+    if (NULL != pNdpInst)
+    {
+        if (FALSE == pNdpInst->IsMatch(pMacAddr))
+        {
+            pNdpInst->UpdateMacAddr(pMacAddr);
+        }
+
+        return SUCCESS;
+    }
+
+    pNdpInst = pDevNdpTable->CreateNdpInst(dwDevID, rtIP, pMacAddr);
+    if (NULL == pNdpInst)
+    {
+        return FAIL;
+    }
+
+    return SUCCESS;
+}
+
+
+WORD32 CIcmpV6Stack::PassiveNS(CDevQueue *pQueue,
+                               BYTE      *pSrcMacAddr,
+                               BYTE      *pDstMacAddr,
+                               WORD32     dwDeviceID,
+                               WORD32     dwVlanID,
+                               T_IPAddr  &rtSrcIP,
+                               T_IPAddr  &rtDstIP,
+                               struct rte_mempool *pMBufPool)
+{
+    TRACE_STACK("CIcmpV6Stack::PassiveNS()");
+
+    T_IcmpV6Option tOption;
+    T_IPAddr       tMultiCastIP;
+
+    tOption.aucOption[0] = 0x01;
+    tOption.aucOption[1] = 0x01;
+    memcpy(&(tOption.aucOption[2]), pSrcMacAddr, ARP_MAC_ADDR_LEN);
+
+    tMultiCastIP.eType = E_IPV6_TYPE;
+
+    /* 目的IP是被请求节点组播IP */
+    memset(tMultiCastIP.tIPv6.aucIPAddr, 0x00, IPV6_ADDR_LEN);
+    tMultiCastIP.tIPv6.aucIPAddr[0]  = 0xFF;
+    tMultiCastIP.tIPv6.aucIPAddr[1]  = 0x02;
+    tMultiCastIP.tIPv6.aucIPAddr[11] = 0x01;
+    tMultiCastIP.tIPv6.aucIPAddr[12] = 0xFF;
+    tMultiCastIP.tIPv6.aucIPAddr[13] = rtDstIP.tIPv6.aucIPAddr[13];
+    tMultiCastIP.tIPv6.aucIPAddr[14] = rtDstIP.tIPv6.aucIPAddr[14];
+    tMultiCastIP.tIPv6.aucIPAddr[15] = rtDstIP.tIPv6.aucIPAddr[15];
+
+    T_MBuf *pNS = EncodeNeighborSolicitation(pSrcMacAddr,
+                                             pDstMacAddr,
+                                             dwDeviceID,
+                                             dwVlanID,
+                                             rtSrcIP,
+                                             rtDstIP,
+                                             rtDstIP,
+                                             tOption.lwOption,
+                                             pMBufPool);
+    if (NULL == pNS)
+    {
+        return FAIL;
+    }
+
+    pQueue->SendPacket(pNS);
 
     return SUCCESS;
 }

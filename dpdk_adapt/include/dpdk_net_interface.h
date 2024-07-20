@@ -7,6 +7,7 @@
 #include "dpdk_device.h"
 #include "dpdk_net_vlan_table.h"
 #include "dpdk_net_arp_table.h"
+#include "dpdk_net_ndp_table.h"
 
 #include "base_app_interface.h"
 
@@ -104,6 +105,7 @@ public :
     CIPTable   & GetIPTable();
     CVlanTable & GetVlanTable();
     CArpTable  & GetArpTable();
+    CNdpTable  & GetNdpTable();
 
     CNetStack * GetIPv6Stack();
 
@@ -117,6 +119,7 @@ protected :
     CIPTable             m_cIPTable;
     CVlanTable           m_cVlanTable;
     CArpTable            m_cArpTable;
+    CNdpTable            m_cNdpTable;
 
     CNetStack           *m_pArpStack;
     CNetStack           *m_pIPv4Stack;
@@ -139,6 +142,12 @@ inline CVlanTable & CNetIntfHandler::GetVlanTable()
 inline CArpTable & CNetIntfHandler::GetArpTable()
 {
     return m_cArpTable;
+}
+
+
+inline CNdpTable & CNetIntfHandler::GetNdpTable()
+{
+    return m_cNdpTable;
 }
 
 

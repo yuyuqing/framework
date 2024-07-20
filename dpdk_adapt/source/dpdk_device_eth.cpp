@@ -51,6 +51,8 @@ CEthDevice::CEthDevice (const T_DeviceParam &rtParam)
                                             | ETH_RSS_IPV6
                                             | ETH_RSS_NONFRAG_IPV6_TCP;
 #endif
+
+    m_pDevNdpTable = NULL;
 }
 
 
@@ -91,6 +93,13 @@ WORD32 CEthDevice::Initialize()
 
     CIPTable   &rIPTalbe   = g_pNetIntfHandler->GetIPTable();
     CVlanTable &rVlanTable = g_pNetIntfHandler->GetVlanTable();
+    CNdpTable  &rNdpTable  = g_pNetIntfHandler->GetNdpTable();
+
+    m_pDevNdpTable = rNdpTable.CreateDevTable(m_dwDeviceID);
+    if (NULL == m_pDevNdpTable)
+    {
+        return FAIL;
+    }
 
     WORD32 dwResult = CBaseDevice::Initialize(NULL);
     if (SUCCESS != dwResult)
@@ -137,21 +146,6 @@ WORD32 CEthDevice::Start(WORD16 wQueueID)
 {
     TRACE_STACK("CEthDevice::Start()");
 
-    WORD32 dwResult = ProcDAD(wQueueID);
-    if (SUCCESS != dwResult)
-    {
-        assert(0);
-    }
-
-    return SUCCESS;
-}
-
-
-/* 执行地址重复检测 */
-WORD32 CEthDevice::ProcDAD(WORD16 wQueueID)
-{
-    TRACE_STACK("CEthDevice::ProcDAD()");
-
     if (wQueueID >= m_ucQueueNum)
     {
         return FAIL;
@@ -169,11 +163,32 @@ WORD32 CEthDevice::ProcDAD(WORD16 wQueueID)
         return FAIL;
     }
 
-    CIcmpV6Stack *pIcmpV6Stack = (CIcmpV6Stack *)(pIPv6Stack->GetIcmpStack());
+    CNetStack *pIcmpV6Stack = pIPv6Stack->GetIcmpStack();
     if (NULL == pIcmpV6Stack)
     {
         return FAIL;
     }
+
+    WORD32 dwResult = ProcDAD(pQueue, pIcmpV6Stack);
+    if (SUCCESS != dwResult)
+    {
+        assert(0);
+    }
+
+    dwResult = ProcRS(pQueue, pIcmpV6Stack);
+    if (SUCCESS != dwResult)
+    {
+        assert(0);
+    }
+
+    return SUCCESS;
+}
+
+
+/* 执行地址重复检测 */
+WORD32 CEthDevice::ProcDAD(CDevQueue *pQueue, CNetStack *pIcmpV6Stack)
+{
+    TRACE_STACK("CEthDevice::ProcDAD()");
 
     WORD64    lwOption = HTONL(0x0E01000000000000UL);
     T_IPAddr  tTargetIP;
@@ -209,12 +224,60 @@ WORD32 CEthDevice::ProcDAD(WORD16 wQueueID)
     tDstMac.aucMacAddr[4] = tDstIP.tIPv6.aucIPAddr[14];
     tDstMac.aucMacAddr[5] = tDstIP.tIPv6.aucIPAddr[15];
 
-    return pIcmpV6Stack->SendNeighborSolication(pQueue,
-                                                lwOption,
-                                                tTargetIP,
-                                                tSrcIP,
-                                                tDstIP,
-                                                tDstMac);
+    return ((CIcmpV6Stack *)pIcmpV6Stack)->SendNeighborSolication(pQueue,
+                                                                  lwOption,
+                                                                  tTargetIP,
+                                                                  tSrcIP,
+                                                                  tDstIP,
+                                                                  tDstMac);
+}
+
+
+/* 查询路由器信息 */
+WORD32 CEthDevice::ProcRS(CDevQueue *pQueue, CNetStack *pIcmpV6Stack)
+{
+    TRACE_STACK("CEthDevice::ProcRS()");
+
+    T_IcmpV6Option tOption;
+    T_IPAddr       tSrcIP;
+    T_IPAddr       tDstIP;
+    T_MacAddr      tSrcMac;
+    T_MacAddr      tDstMac;
+
+    /* Option为源链路层地址 */
+    tOption.aucOption[0] = 0x01;
+    tOption.aucOption[1] = 0x01;
+    memcpy(&(tOption.aucOption[2]), m_tEthAddr.addr_bytes, ARP_MAC_ADDR_LEN);
+
+    /* 源IP为link-local ip */
+    tSrcIP.eType = E_IPV6_TYPE;
+    tSrcIP.tIPv6.alwIPAddr[0] = m_tLinkLocalIP.alwIPAddr[0];
+    tSrcIP.tIPv6.alwIPAddr[1] = m_tLinkLocalIP.alwIPAddr[1];
+
+    /* 目的IP为路由器组播地址 */
+    tDstIP.eType = E_IPV6_TYPE;
+    tDstIP.tIPv6.alwIPAddr[0]  = 0;
+    tDstIP.tIPv6.alwIPAddr[1]  = 0;
+    tDstIP.tIPv6.aucIPAddr[0]  = 0xFF;
+    tDstIP.tIPv6.aucIPAddr[1]  = 0x02;
+    tDstIP.tIPv6.aucIPAddr[15] = 0x02;
+
+    memcpy(tSrcMac.aucMacAddr, m_tEthAddr.addr_bytes, ARP_MAC_ADDR_LEN);
+
+    /* 目的MAC地址为组播地址 */
+    tDstMac.aucMacAddr[0] = 0x33;
+    tDstMac.aucMacAddr[1] = 0x33;
+    tDstMac.aucMacAddr[2] = tDstIP.tIPv6.aucIPAddr[12];
+    tDstMac.aucMacAddr[3] = tDstIP.tIPv6.aucIPAddr[13];
+    tDstMac.aucMacAddr[4] = tDstIP.tIPv6.aucIPAddr[14];
+    tDstMac.aucMacAddr[5] = tDstIP.tIPv6.aucIPAddr[15];
+
+    return ((CIcmpV6Stack *)pIcmpV6Stack)->SendRouterSolication(pQueue,
+                                                                tOption.lwOption,
+                                                                tSrcIP,
+                                                                tDstIP,
+                                                                tSrcMac,
+                                                                tDstMac);
 }
 
 

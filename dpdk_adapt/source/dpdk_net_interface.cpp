@@ -584,6 +584,7 @@ WORD32 CNetIntfHandler::Initialize(CCentralMemPool *pMemInterface)
 
     m_cIPTable.Initialize();
     m_cVlanTable.Initialize();
+    m_cNdpTable.Initialize();
 
     BYTE *pArpMem  = m_pMemInterface->Malloc(sizeof(CArpStack));
     BYTE *pIPv4Mem = m_pMemInterface->Malloc(sizeof(CIPv4Stack));

@@ -4,8 +4,7 @@
 #define _DPDK_DEVICE_ETH_H_
 
 
-#include "dpdk_device.h"
-#include "dpdk_net_ip_table.h"
+#include "dpdk_net_interface.h"
 
 
 typedef enum tagE_EthLinkType
@@ -46,7 +45,10 @@ public :
     BOOL IsMatch(WORD32 dwVlanID, T_IPAddr &rtIPAddr);
 
     /* 执行地址重复检测 */
-    WORD32 ProcDAD(WORD16 wQueueID);
+    WORD32 ProcDAD(CDevQueue *pQueue, CNetStack *pIcmpV6Stack);
+
+    /* 查询路由器信息 */
+    WORD32 ProcRS(CDevQueue *pQueue, CNetStack *pIcmpV6Stack);
 
     virtual VOID Dump();
 
@@ -66,6 +68,8 @@ protected :
     T_IPAddr               m_atIPAddr[MAX_DEV_IP_NUM];   /* 当前接口上的IP地址 */
 
     struct rte_ether_addr  m_tEthAddr;
+
+    CDevNdpTable          *m_pDevNdpTable;  /* NDP邻居表 */
 };
 
 

@@ -6,6 +6,7 @@
 
 #include "dpdk_net_interface.h"
 #include "dpdk_net_arp_table.h"
+#include "dpdk_net_ndp_table.h"
 
 
 typedef enum tagE_Icmpv6Type
@@ -31,6 +32,16 @@ typedef enum tagE_Icmpv6Type
 }E_Icmpv6Type;
 
 
+typedef struct tagT_IcmpV6Option
+{
+    union
+    {
+        BYTE    aucOption[8];
+        WORD64  lwOption;
+    };
+}T_IcmpV6Option;
+
+
 class CIcmpV6Stack : public CNetStack
 {
 public :
@@ -54,6 +65,14 @@ public :
                                   T_MacAddr &rtDstMac,
                                   WORD32     dwVlanID = 0);
 
+    /* 主动向目的IP发RS请求, 用于查询路由器信息 */
+    WORD32 SendRouterSolication(CDevQueue *pQueue,
+                                WORD64     lwOption,
+                                T_IPAddr  &rtSrcIP,
+                                T_IPAddr  &rtDstIP,
+                                T_MacAddr &rtSrcMac,
+                                T_MacAddr &rtDstMac);
+
 protected :
     T_MBuf * EncodeNeighborSolicitation(BYTE     *pSrcMacAddr,
                                         BYTE     *pDstMacAddr,
@@ -64,6 +83,15 @@ protected :
                                         T_IPAddr &rtTargetIP,
                                         WORD64    lwOption,
                                         struct rte_mempool *pMBufPool);
+
+    T_MBuf * EncodeRouterSolicitation(BYTE     *pSrcMacAddr,
+                                      BYTE     *pDstMacAddr,
+                                      WORD32    dwDeviceID,
+                                      WORD32    dwVlanID,
+                                      T_IPAddr &rtSrcIP,
+                                      T_IPAddr &rtDstIP,
+                                      WORD64    lwOption,
+                                      struct rte_mempool *pMBufPool);
 
     /* 匹配二层多播地址 */
     BOOL IsMultiCastAddr(BYTE *pDstMac);
@@ -91,6 +119,18 @@ protected :
 
     WORD32 UpdateNeighbor(WORD32 dwDevID, T_IPAddr &rtIP, BYTE *pMacAddr);
 
+    WORD32 ProcNDP(WORD32 dwDevID, T_IPv6Addr &rtIP, BYTE *pMacAddr);
+
+    /* 被动发起NS请求(当收到NDP邻居发送的NS请求后, 需要被动发起对该邻居的NS请求) */
+    WORD32 PassiveNS(CDevQueue *pQueue,
+                     BYTE      *pSrcMacAddr,
+                     BYTE      *pDstMacAddr,
+                     WORD32     dwDeviceID,
+                     WORD32     dwVlanID,
+                     T_IPAddr  &rtSrcIP,
+                     T_IPAddr  &rtDstIP,
+                     struct rte_mempool *pMBufPool);
+
     WORD32 ProcEchoRequest(CAppInterface  *pApp,
                            T_OffloadInfo  &rtInfo,
                            T_EthHead      *ptEthHead,
@@ -112,6 +152,7 @@ protected :
 protected :
     CSpinLock     m_cLock;      /* 针对单个线程(持有CArpStack的线程) */
     CArpTable    *m_pArpTable;
+    CNdpTable    *m_pNdpTable;
 };
 
 
