@@ -140,7 +140,6 @@ WORD32 CIcmpV6Stack::SendRouterSolication(CDevQueue *pQueue,
     TRACE_STACK("CIcmpV6Stack::SendRouterSolication()");
 
     WORD32              dwDeviceID = pQueue->GetDeviceID();
-    CEthDevice         *pDevice    = (CEthDevice *)(pQueue->GetDevice());
     struct rte_mempool *pMemPool   = pQueue->GetTxMemPool();
 
     T_MBuf *pNS = EncodeRouterSolicitation(rtSrcMac.aucMacAddr,
