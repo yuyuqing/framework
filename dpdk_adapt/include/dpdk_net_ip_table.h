@@ -125,6 +125,23 @@ typedef struct tagT_IPAddr
         return SUCCESS;
     }
 
+    WORD32 SetMultiCastIPv6(const T_IPv6Addr &rtIPv6)
+    {
+        this->eType              = E_IPV6_TYPE;
+        this->tIPv6.alwIPAddr[0] = 0;
+        this->tIPv6.alwIPAddr[1] = 0;
+
+        this->tIPv6.aucIPAddr[0]  = 0xFF;
+        this->tIPv6.aucIPAddr[1]  = 0x02;
+        this->tIPv6.aucIPAddr[11] = 0x01;
+        this->tIPv6.aucIPAddr[12] = 0xFF;
+        this->tIPv6.aucIPAddr[13] = rtIPv6.aucIPAddr[13];
+        this->tIPv6.aucIPAddr[14] = rtIPv6.aucIPAddr[14];
+        this->tIPv6.aucIPAddr[15] = rtIPv6.aucIPAddr[15];
+
+        return SUCCESS;
+    }
+
     WORD32 SetIPv6(CHAR *pIPv6Addr)
     {
         this->eType              = E_IPV6_TYPE;

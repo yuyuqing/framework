@@ -340,31 +340,43 @@ WORD32 CEthDevice::InitIPConfig(T_DpdkEthDevJsonCfg &rtCfg)
             {
                 m_dwPrimaryIP = m_atIPAddr[m_ucIPNum].tIPv4.dwIPAddr;
             }
+
+            m_ucIPNum++;
         }
         else
         {
-            m_atIPAddr[m_ucIPNum].SetIPv6(rtIPCfg.aucIpv6Addr);
-        }
+            T_IPAddr &rtUnicastAddr = m_atIPAddr[m_ucIPNum];
 
-        m_ucIPNum++;
+            m_atIPAddr[m_ucIPNum].SetIPv6(rtIPCfg.aucIpv6Addr);
+            m_ucIPNum++;
+
+            m_atIPAddr[m_ucIPNum].SetMultiCastIPv6(rtUnicastAddr.tIPv6);
+            m_ucIPNum++;
+        }
     }
 
     for (WORD32 dwIndex = 0; dwIndex < dwVlanNum; dwIndex++)
     {
         T_DpdkEthVlanJsonCfg &rtVlanCfg = rtCfg.atVlan[dwIndex];
 
-        m_adwVlanID[m_ucIPNum] = rtVlanCfg.dwVlanID;
-
         if (E_IPV4_TYPE == rtVlanCfg.tIP.dwIPType)
         {
+            m_adwVlanID[m_ucIPNum] = rtVlanCfg.dwVlanID;
             m_atIPAddr[m_ucIPNum].SetIPv4(rtVlanCfg.tIP.aucIpv4Addr);
+            m_ucIPNum++;
         }
         else
         {
-            m_atIPAddr[m_ucIPNum].SetIPv6(rtVlanCfg.tIP.aucIpv6Addr);
-        }
+            T_IPAddr &rtUnicastAddr = m_atIPAddr[m_ucIPNum];
 
-        m_ucIPNum++;
+            m_adwVlanID[m_ucIPNum] = rtVlanCfg.dwVlanID;
+            m_atIPAddr[m_ucIPNum].SetIPv6(rtVlanCfg.tIP.aucIpv6Addr);
+            m_ucIPNum++;
+
+            m_adwVlanID[m_ucIPNum] = rtVlanCfg.dwVlanID;
+            m_atIPAddr[m_ucIPNum].SetMultiCastIPv6(rtUnicastAddr.tIPv6);
+            m_ucIPNum++;
+        }
     }
 
     return SUCCESS;
@@ -413,11 +425,11 @@ WORD32 CEthDevice::InitLinkLocalIP(T_MacAddr &rtAddr, CIPTable &rIPTalbe)
     tLinkMultiAddr.aucIPAddr[14] = m_tLinkLocalIP.aucIPAddr[14];
     tLinkMultiAddr.aucIPAddr[15] = m_tLinkLocalIP.aucIPAddr[15];
 
-    m_atIPAddr[m_ucIPNum++].SetIPv6(tNodeMultiAddr);
     m_atIPAddr[m_ucIPNum++].SetIPv6(tLinkMultiAddr);
+    m_atIPAddr[m_ucIPNum++].SetIPv6(tNodeMultiAddr);
 
-    rIPTalbe.RegistIP(&tNodeMultiAddr, m_dwDeviceID, FALSE, INVALID_DWORD);
     rIPTalbe.RegistIP(&tLinkMultiAddr, m_dwDeviceID, FALSE, INVALID_DWORD);
+    rIPTalbe.RegistIP(&tNodeMultiAddr, m_dwDeviceID, FALSE, INVALID_DWORD);
 
     return SUCCESS;
 }

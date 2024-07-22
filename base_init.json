@@ -267,8 +267,8 @@
                         "addr_type"      : 1,                     //0:IPv4, 1:IPv6(暂不支持)
                         "ipv4_addr"      : "0.0.0.0",             //网卡IP地址(当addr_type为1时, 本字段设置为0.0.0.0)
                         "ipv4_gate_way"  : "0.0.0.0",             //网关IP地址(当addr_type为1时, 本字段设置为0.0.0.0)
-                        "ipv6_addr"      : "2001:A00A:B11B:0000:0000:0000:AC15:0A08",
-                        "ipv6_gate_way"  : "2001:A00A:B11B:0000:0000:0000:AC15:0A01"
+                        "ipv6_addr"      : "FD00::65",
+                        "ipv6_gate_way"  : "FD00::01"
                     }
                 ],
                 "vlan_cfg"        :
