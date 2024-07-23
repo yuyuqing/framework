@@ -27,6 +27,22 @@ WORD32 CBaseTraffic::Initialize()
 }
 
 
+VOID CBaseTraffic::Dump()
+{
+    TRACE_STACK("CBaseTraffic::Dump()");
+
+    LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+               "m_dwDeviceID : %d, m_dwPortID : %d, m_dwQueueID : %d, "
+               "m_dwTrafficID : %d, m_dwFAPICellID : %d, m_dwBindCellID : %d\n",
+               m_dwDeviceID,
+               m_dwPortID,
+               m_dwQueueID,
+               m_dwTrafficID,
+               m_dwFAPICellID,
+               m_dwBindCellID);
+}
+
+
 VOID CFactoryTraffic::Dump()
 {
     TRACE_STACK("CFactoryTraffic::Dump()");

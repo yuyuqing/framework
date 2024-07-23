@@ -6,6 +6,10 @@
 #include "base_log.h"
 #include "base_sort.h"
 
+#ifdef PICOCOM_FAPI
+#include "rte_pmd_pc802.h"
+#endif
+
 
 DEFINE_DEVICE(CBBDevice);
 
@@ -172,7 +176,7 @@ WORD32 CBBDevice::Initialize()
 #ifdef PICOCOM_FAPI
     dwResult = pcxxCtrlOpen(&m_tCallBackInfo,
                             (WORD16)m_dwDeviceID,
-                            MAC_NMM_LEGACY_CELL_INDEX);
+                            LEGACY_CELL_INDEX);
     assert(0 == dwResult);
 #endif
 
@@ -183,6 +187,38 @@ WORD32 CBBDevice::Initialize()
     }
 
     return SUCCESS;
+}
+
+
+VOID CBBDevice::Dump()
+{
+    TRACE_STACK("CBBDevice::Dump()");
+
+    LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+               "m_dwDeviceID : %d, m_wPortID : %d, m_ucQueueNum : %d, "
+               "m_ucDevType : %d, m_dwTrafficNum : %d\n",
+               m_dwDeviceID,
+               m_wPortID,
+               m_ucQueueNum,
+               m_ucDevType,
+               m_dwTrafficNum);
+    for (WORD32 dwIndex = 0; dwIndex < m_dwTrafficNum; dwIndex++)
+    {
+        T_TrafficInfo &rtTraffic = m_atTrafficInfo[dwIndex];
+
+        LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+                   "Type : %s, DeviceID : %d, PortID : %d, QueueID : %d, "
+                   "TrafficID : %d, FAPICellID : %d, BindCellID : %d, "
+                   "pTraffic : %lu\n",
+                   rtTraffic.aucName,
+                   rtTraffic.dwDeviceID,
+                   rtTraffic.dwPortID,
+                   rtTraffic.dwQueueID,
+                   rtTraffic.dwTrafficID,
+                   rtTraffic.dwFAPICellID,
+                   rtTraffic.dwBindCellID,
+                   (WORD64)(rtTraffic.pTraffic));
+    }
 }
 
 

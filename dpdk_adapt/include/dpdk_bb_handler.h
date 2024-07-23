@@ -44,6 +44,8 @@ public :
     /* 根据高层小区ID查找对应的FAPI控制业务通道 */
     CBaseTraffic * GetCtrlTraffic(WORD16 wCellID);
 
+    VOID Dump();
+
 protected :
     WORD32              m_dwCellNum;
     T_CellTrafficMap    m_atCellMap[MAX_CELL_PER_GNB];
@@ -71,7 +73,7 @@ inline CBaseTraffic * CBBHandler::GetDataTraffic(WORD16 wCellID)
 {
     for (WORD32 dwIndex = 0; dwIndex < MAX_CELL_PER_GNB; dwIndex++)
     {
-        if (wCellID   == m_atCellMap[dwIndex].wCellID)
+        if (wCellID == m_atCellMap[dwIndex].wCellID)
         {
             return m_atCellMap[dwIndex].pDataTraffic;
         }
@@ -86,7 +88,7 @@ inline CBaseTraffic * CBBHandler::GetCtrlTraffic(WORD16 wCellID)
 {
     for (WORD32 dwIndex = 0; dwIndex < MAX_CELL_PER_GNB; dwIndex++)
     {
-        if (wCellID   == m_atCellMap[dwIndex].wCellID)
+        if (wCellID == m_atCellMap[dwIndex].wCellID)
         {
             return m_atCellMap[dwIndex].pCtrlTraffic;
         }

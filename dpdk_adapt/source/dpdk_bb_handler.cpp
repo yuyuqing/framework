@@ -3,6 +3,10 @@
 #include "dpdk_bb_handler.h"
 #include "base_log.h"
 
+#ifdef PICOCOM_FAPI
+#include "pcxx_ipc.h"
+#endif
+
 
 CBBHandler *g_pBBHandler = NULL;
 
@@ -131,6 +135,27 @@ WORD32 CBBHandler::Polling()
     }
 
     return SUCCESS;
+}
+
+
+VOID CBBHandler::Dump()
+{
+    TRACE_STACK("CBBHandler::Dump()");
+
+    for (WORD32 dwIndex = 0; dwIndex < m_dwCellNum; dwIndex++)
+    {
+        T_CellTrafficMap &rtCell = m_atCellMap[dwIndex];
+
+        LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+                   "wCellID : %d, wDeviceID : %d, wQueueID : %d, "
+                   "wFapiCellID : %d, pDataTraffic : %lu, pCtrlTraffic : %lu\n",
+                   rtCell.wCellID,
+                   rtCell.wDeviceID,
+                   rtCell.wQueueID,
+                   rtCell.wFapiCellID,
+                   rtCell.pDataTraffic,
+                   rtCell.pCtrlTraffic);
+    }
 }
 
 

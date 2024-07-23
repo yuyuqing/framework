@@ -6,6 +6,10 @@
 
 #include "dpdk_bb_traffic.h"
 
+#ifdef PICOCOM_FAPI
+#include "pcxx_ipc.h"
+#endif
+
 
 class CDataTraffic : CBaseTraffic
 {

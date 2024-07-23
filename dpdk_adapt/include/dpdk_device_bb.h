@@ -7,6 +7,10 @@
 #include "dpdk_device.h"
 #include "dpdk_bb_traffic.h"
 
+#ifdef PICOCOM_FAPI
+#include "pcxx_ipc.h"
+#endif
+
 
 extern CBaseTraffic * GetBBTraffic(E_TrafficType eType, WORD32 dwBindCellID);
 
@@ -38,6 +42,8 @@ public :
     T_TrafficInfo * FindTrafficInfo(WORD32 dwTrafficID);
     CBaseTraffic  * FindTraffic(WORD32 dwTrafficID);
     CBaseTraffic  * FindTraffic(E_TrafficType eType, WORD32 dwBindCellID);
+
+    virtual VOID Dump();
 
 protected :
     WORD32 InitTraffic(T_DpdkBBDevJsonCfg &rtCfg);

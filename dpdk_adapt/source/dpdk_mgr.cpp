@@ -155,6 +155,7 @@ VOID CDpdkMgr::Dump()
     }
 
     m_cNetHandler.Dump();
+    m_cBBHandler.Dump();
 }
 
 

@@ -34,6 +34,8 @@ public :
     WORD32 GetFAPICellID();
     WORD32 GetBindCellID();
 
+    virtual VOID Dump();
+
 protected :
     E_TrafficType    m_eType;
 
