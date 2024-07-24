@@ -87,19 +87,19 @@ CBBDevice::CBBDevice (const T_DeviceParam &rtParam)
 {
 #if RTE_VERSION >= RTE_VERSION_NUM(21, 11, 1, 0)
     m_tEthConf.rxmode.mq_mode        = RTE_ETH_MQ_RX_NONE;
-    m_tEthConf.rxmode.mtu            = RTE_ETHER_MAX_LEN;
+    m_tEthConf.rxmode.mtu            = 1500;
     m_tEthConf.txmode.mq_mode        = RTE_ETH_MQ_TX_NONE;
-    m_tEthConf.txmode.offloads       = RTE_ETH_TX_OFFLOAD_MULTI_SEGS;
-    m_tEthConf.rx_adv_conf.vmdq_dcb_conf.nb_queue_pools = RTE_ETH_16_POOLS;
+    m_tEthConf.txmode.offloads       = 0;
+    //m_tEthConf.rx_adv_conf.vmdq_dcb_conf.nb_queue_pools = RTE_ETH_16_POOLS;
 #else
     m_tEthConf.rxmode.mq_mode        = ETH_MQ_RX_NONE;
-    m_tEthConf.rxmode.max_rx_pkt_len = RTE_ETHER_MAX_LEN;
+    m_tEthConf.rxmode.max_rx_pkt_len = 1500;
     m_tEthConf.txmode.mq_mode        = ETH_MQ_TX_NONE;
-    m_tEthConf.txmode.offloads       = DEV_TX_OFFLOAD_MULTI_SEGS;
-    m_tEthConf.rx_adv_conf.vmdq_dcb_conf.nb_queue_pools = ETH_16_POOLS;
+    m_tEthConf.txmode.offloads       = 0;
+    //m_tEthConf.rx_adv_conf.vmdq_dcb_conf.nb_queue_pools = ETH_16_POOLS;
 #endif
 
-    m_tEthConf.rx_adv_conf.vmdq_dcb_conf.enable_default_pool = 1;
+    //m_tEthConf.rx_adv_conf.vmdq_dcb_conf.enable_default_pool = 1;
     m_tEthConf.rx_adv_conf.vmdq_dcb_conf.default_pool        = 0;
     m_tEthConf.rx_adv_conf.vmdq_dcb_conf.nb_pool_maps        = 0;
 
