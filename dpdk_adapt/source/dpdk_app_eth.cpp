@@ -28,7 +28,7 @@ CEthApp::~CEthApp()
 
 WORD32 CEthApp::Init()
 {
-    TRACE_STACK("CEthApp::Exit()");
+    TRACE_STACK("CEthApp::Init()");
 
     if ((FALSE == m_bAssocFlag) || (1 != m_dwAssocNum) || (NULL == g_pDpdkMgr))
     {

@@ -28,6 +28,8 @@ public :
     /* 获取指定类型的所有设备实例 */
     WORD32 GetDevices(E_DeviceType eType, CBaseDevice **pDevices);
 
+    CBBHandler & GetBBHandler();
+
     VOID Dump();
 
 protected :
@@ -111,6 +113,12 @@ inline WORD32 CDpdkMgr::GetDevices(E_DeviceType eType, CBaseDevice **pDevices)
     }
 
     return dwDevNum;
+}
+
+
+inline CBBHandler & CDpdkMgr::GetBBHandler()
+{
+    return m_cBBHandler;
 }
 
 

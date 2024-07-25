@@ -7,7 +7,7 @@
 #include "dpdk_bb_traffic.h"
 
 
-class CEthTraffic : CBaseTraffic
+class CEthTraffic : public CBaseTraffic
 {
 public :
     CEthTraffic (const T_TrafficParam &rtParam);

@@ -11,7 +11,7 @@
 #endif
 
 
-class CCtrlTraffic : CBaseTraffic
+class CCtrlTraffic : public CBaseTraffic
 {
 public :
     static WORD32 RecvPacket(const CHAR *pBuf, WORD32 dwPayloadSize, WORD16 wDevID, WORD16 wFAPICellID);

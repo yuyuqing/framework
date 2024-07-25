@@ -7,7 +7,7 @@
 #include "dpdk_bb_traffic.h"
 
 
-class COamTraffic : CBaseTraffic
+class COamTraffic : public CBaseTraffic
 {
 public :
     COamTraffic (const T_TrafficParam &rtParam);

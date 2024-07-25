@@ -11,7 +11,7 @@
 #endif
 
 
-class CDataTraffic : CBaseTraffic
+class CDataTraffic : public CBaseTraffic
 {
 public :
     static WORD32 SendPacket(const CHAR *pBuf, WORD32 dwPayloadSize, WORD16 wDevID, WORD16 wFAPICellID);

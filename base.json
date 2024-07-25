@@ -185,10 +185,28 @@
             "apps"         :
             [
                 {
-                    "name"         : "CEthApp",
+                    "name"         : "CBBApp",
                     "app_id"       : 2,
                     "event_begin"  : 3072,
-                    "assoc_cell"   : [0]        //取值范围0~0xF, 低2bit为队列编号, 高2bit为端口编号
+                    "assoc_cell"   : [1]        //绑定高层小区ID
+                },
+                {
+                    "name"         : "CBBApp",
+                    "app_id"       : 3,
+                    "event_begin"  : 3072,
+                    "assoc_cell"   : [2]        //绑定高层小区ID
+                },
+                {
+                    "name"         : "CBBApp",
+                    "app_id"       : 4,
+                    "event_begin"  : 3072,
+                    "assoc_cell"   : [3]        //绑定高层小区ID
+                },
+                {
+                    "name"         : "CBBApp",
+                    "app_id"       : 5,
+                    "event_begin"  : 3072,
+                    "assoc_cell"   : [4]        //绑定高层小区ID
                 }
             ]
         }
@@ -225,7 +243,7 @@
                 "tx_desc_num"     : 128                           //发队列描述数量
             },
             {
-                "type"            : "CEthDevice",                 //DPDK设备类型名
+                "type"            : "CBBDevice",                  //DPDK设备类型名
                 "pci_addr"        : "0000:13:00.0",               //DPDK设备地址
                 "dev_id"          : 1,                            //DPDK设备ID(内部唯一标识)
                 "queue_num"       : 1,                            //网卡队列数量(收发包队列数量保持一致)
@@ -281,63 +299,43 @@
                         "bind_cell"   : 0                         //0 : 不与任何高层小区绑定
                     }
                 ]
-            }
-        ],
-        "ethdev"           :
-        [
+            },
             {
                 "dev_id"          : 1,                            //DPDK设备ID(内部内部唯一标识)
-                "link_type"       : 2,                            //当类型为网卡设备时, 指示上联网络类型(0:Access, 1:Trunk, 2:Hybrid)
-                                                                  //当link_type取值为0时, 只需要配置IP地址, 不需要配置VLAN
-                                                                  //当link_type取值为1时, 不需要配置IP地址(配置0.0.0.0), 只需要配置VLAN
-                                                                  //当link_type取值为2时, 既需要配置IP地址, 也需要配置VLAN
-                "ip_cfg"          :                               //暂不支持多IP配置(多个IP配置时, 需要考虑路由)
+                "queue_id"        : 0,                            //DPDK设备队列ID(目前针对BKQ/AR基带设备, 每个设备只配置1个队列, 因此本字段固定为0)
+                "fapi_traffic"    :
                 [
                     {
-                        "addr_type"      : 0,                     //0:IPv4, 1:IPv6(暂不支持)
-                        "ipv4_addr"      : "172.21.10.8",         //网卡IP地址(当addr_type为1时, 本字段设置为0.0.0.0)
-                        "ipv4_gate_way"  : "172.21.10.1",         //网关IP地址(当addr_type为1时, 本字段设置为0.0.0.0)
-                        "ipv6_addr"      : "0000:0000:0000:0000:0000:0000:0000:0000",
-                        "ipv6_gate_way"  : "0000:0000:0000:0000:0000:0000:0000:0000"
+                        "type"        : "CDataTraffic",           //FAPI数据业务类型
+                        "traffic_id"  : 1,                        //业务通道ID(对应FAPI接口的queue_id)
+                        "fapi_cell"   : 0,                        //FAPI接口上小区0的数据通道
+                        "bind_cell"   : 3                         //绑定高层小区ID(高层APP通过本字段找到对应的FAPI-Traffic实例)
                     },
                     {
-                        "addr_type"      : 1,                     //0:IPv4, 1:IPv6(暂不支持)
-                        "ipv4_addr"      : "0.0.0.0",             //网卡IP地址(当addr_type为1时, 本字段设置为0.0.0.0)
-                        "ipv4_gate_way"  : "0.0.0.0",             //网关IP地址(当addr_type为1时, 本字段设置为0.0.0.0)
-                        "ipv6_addr"      : "FD00::65",
-                        "ipv6_gate_way"  : "FD00::01"
-                    }
-                ],
-                "vlan_cfg"        :
-                [
-                    {
-                        "vlan_id"            : 20,                //vlan id, 用于标识一个VLAN(1~4095为普通VLAN, >4095为QinQ)
-                        "priority"           : 7,                 //vlan优先级(0~7), 7为最高优先级
-                        "ip_cfg"             :                    //暂不支持多IP配置(多个IP配置时, 需要考虑路由)
-                        {
-                            "addr_type"      : 0,                 //0:IPv4, 1:IPv6(暂不支持)
-                            "ipv4_addr"      : "172.21.20.8",     //网卡IP地址(当addr_type为1时, 本字段设置为0.0.0.0)
-                            "ipv4_gate_way"  : "172.21.20.1",     //网关IP地址(当addr_type为1时, 本字段设置为0.0.0.0)
-                            "ipv6_addr"      : "0000:0000:0000:0000:0000:0000:0000:0000",
-                            "ipv6_gate_way"  : "0000:0000:0000:0000:0000:0000:0000:0000"
-                        }
+                        "type"        : "CCtrlTraffic",           //FAPI控制业务类型
+                        "traffic_id"  : 2,                        //业务通道ID(对应FAPI接口的queue_id)
+                        "fapi_cell"   : 0,                        //FAPI接口上小区0的控制通道
+                        "bind_cell"   : 3                         //绑定高层小区ID(高层APP通过本字段找到对应的FAPI-Traffic实例)
                     },
                     {
-                        "vlan_id"            : 30,                //vlan id, 用于标识一个VLAN(1~4095为普通VLAN, >4095为QinQ)
-                        "priority"           : 7,                 //vlan优先级(0~7), 7为最高优先级
-                        "ip_cfg"             :                    //暂不支持多IP配置(多个IP配置时, 需要考虑路由)
-                        {
-                            "addr_type"      : 0,                 //0:IPv4, 1:IPv6(暂不支持)
-                            "ipv4_addr"      : "172.21.30.8",     //网卡IP地址(当addr_type为1时, 本字段设置为0.0.0.0)
-                            "ipv4_gate_way"  : "172.21.30.1",     //网关IP地址(当addr_type为1时, 本字段设置为0.0.0.0)
-                            "ipv6_addr"      : "0000:0000:0000:0000:0000:0000:0000:0000",
-                            "ipv6_gate_way"  : "0000:0000:0000:0000:0000:0000:0000:0000"
-                        }
+                        "type"        : "CDataTraffic",           //FAPI数据业务类型
+                        "traffic_id"  : 4,                        //业务通道ID(对应FAPI接口的queue_id)
+                        "fapi_cell"   : 1,                        //FAPI接口上小区1的数据通道
+                        "bind_cell"   : 4                         //绑定高层小区ID(高层APP通过本字段找到对应的FAPI-Traffic实例)
+                    },
+                    {
+                        "type"        : "CCtrlTraffic",           //FAPI控制业务类型
+                        "traffic_id"  : 5,                        //业务通道ID(对应FAPI接口的queue_id)
+                        "fapi_cell"   : 1,                        //FAPI接口上小区0的控制通道
+                        "bind_cell"   : 4                         //绑定高层小区ID(高层APP通过本字段找到对应的FAPI-Traffic实例)
                     }
                 ]
             }
         ],
-        "route"                   :
+        "ethdev"           :
+        [
+        ],
+        "route"            :
         [
         ]
     }
