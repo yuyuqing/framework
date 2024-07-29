@@ -38,6 +38,9 @@ public :
     /* 根据DeviceID + FapiCellID查找对应的高层小区ID */
     WORD16 GetCellID(WORD16 wDeviceID, WORD16 wFapiCellID);
 
+    /* 根据高层小区ID查询物理小区DeviceID + FapiCellID */
+    WORD32 GetFapiCell(WORD16 wCellID, WORD16 &rwDeviceID, WORD16 &rwFapiCellID);
+
     /* 根据高层小区ID查找对应的FAPI数据业务通道 */
     CBaseTraffic * GetDataTraffic(WORD16 wCellID);
 
@@ -65,6 +68,26 @@ inline WORD16 CBBHandler::GetCellID(WORD16 wDeviceID, WORD16 wFapiCellID)
     }
 
     return INVALID_WORD;
+}
+
+
+/* 根据高层小区ID查询物理小区DeviceID + FapiCellID */
+inline WORD32 CBBHandler::GetFapiCell(WORD16  wCellID,
+                                      WORD16 &rwDeviceID,
+                                      WORD16 &rwFapiCellID)
+{
+    for (WORD32 dwIndex = 0; dwIndex < MAX_CELL_PER_GNB; dwIndex++)
+    {
+        if (wCellID == m_atCellMap[dwIndex].wCellID)
+        {
+            rwDeviceID   = m_atCellMap[dwIndex].wDeviceID;
+            rwFapiCellID = m_atCellMap[dwIndex].wFapiCellID;
+
+            return SUCCESS;
+        }
+    }
+
+    return FAIL;
 }
 
 

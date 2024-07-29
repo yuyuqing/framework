@@ -2,10 +2,6 @@
 
 #include "dpdk_net_ipv6.h"
 #include "dpdk_net_icmpv6.h"
-#include "dpdk_net_ipsec.h"
-#include "dpdk_net_udp.h"
-#include "dpdk_net_sctp.h"
-#include "dpdk_net_tcp.h"
 #include "dpdk_app_eth.h"
 #include "dpdk_device_eth.h"
 
@@ -28,30 +24,6 @@ CIPv6Stack::~CIPv6Stack()
         m_pMemInterface->Free((BYTE *)m_pIcmpStack);
     }
 
-    if (NULL != m_pIpSecStack)
-    {
-        delete m_pIpSecStack;
-        m_pMemInterface->Free((BYTE *)m_pIpSecStack);
-    }
-
-    if (NULL != m_pUdpStack)
-    {
-        delete m_pUdpStack;
-        m_pMemInterface->Free((BYTE *)m_pUdpStack);
-    }
-
-    if (NULL != m_pSctpStack)
-    {
-        delete m_pSctpStack;
-        m_pMemInterface->Free((BYTE *)m_pSctpStack);
-    }
-
-    if (NULL != m_pTcpStack)
-    {
-        delete m_pTcpStack;
-        m_pMemInterface->Free((BYTE *)m_pTcpStack);
-    }
-
     m_pIcmpStack  = NULL;
     m_pIpSecStack = NULL;
     m_pUdpStack   = NULL;
@@ -60,36 +32,27 @@ CIPv6Stack::~CIPv6Stack()
 }
 
 
-WORD32 CIPv6Stack::Initialize(CCentralMemPool *pMemInterface)
+WORD32 CIPv6Stack::Initialize(CCentralMemPool *pMemInterface,
+                              CNetStack       *pIpSecStack,
+                              CNetStack       *pUdpStack,
+                              CNetStack       *pSctpStack,
+                              CNetStack       *pTcpStack)
 {
     CNetStack::Initialize(pMemInterface);
 
-    BYTE *pIcmpMem  = m_pMemInterface->Malloc(sizeof(CIcmpV6Stack));
-    BYTE *pIpSecMem = m_pMemInterface->Malloc(sizeof(CIpSecStack));
-    BYTE *pUdpMem   = m_pMemInterface->Malloc(sizeof(CUdpStack));
-    BYTE *pSctpMem  = m_pMemInterface->Malloc(sizeof(CSctpStack));
-    BYTE *pTcpMem   = m_pMemInterface->Malloc(sizeof(CTcpStack));
-
-    if ( (NULL == pIcmpMem)
-      || (NULL == pIpSecMem)
-      || (NULL == pUdpMem)
-      || (NULL == pSctpMem)
-      || (NULL == pTcpMem))
+    BYTE *pIcmpMem = m_pMemInterface->Malloc(sizeof(CIcmpV6Stack));
+    if ((NULL == pIcmpMem))
     {
         assert(0);
     }
 
     m_pIcmpStack  = new (pIcmpMem) CIcmpV6Stack();
-    m_pIpSecStack = new (pIpSecMem) CIpSecStack();
-    m_pUdpStack   = new (pUdpMem)  CUdpStack();
-    m_pSctpStack  = new (pSctpMem) CSctpStack();
-    m_pTcpStack   = new (pTcpMem)  CTcpStack();
+    m_pIpSecStack = pIpSecStack;
+    m_pUdpStack   = pUdpStack;
+    m_pSctpStack  = pSctpStack;
+    m_pTcpStack   = pTcpStack;
 
     m_pIcmpStack->Initialize(pMemInterface);
-    m_pIpSecStack->Initialize(pMemInterface);
-    m_pUdpStack->Initialize(pMemInterface);
-    m_pSctpStack->Initialize(pMemInterface);
-    m_pTcpStack->Initialize(pMemInterface);
 
     return SUCCESS;
 }

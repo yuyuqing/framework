@@ -13,7 +13,11 @@ public :
     CIPv6Stack ();
     virtual ~CIPv6Stack();
 
-    virtual WORD32 Initialize(CCentralMemPool *pMemInterface);
+    virtual WORD32 Initialize(CCentralMemPool *pMemInterface,
+                              CNetStack       *pIpSecStack,
+                              CNetStack       *pUdpStack,
+                              CNetStack       *pSctpStack,
+                              CNetStack       *pTcpStack);
 
     /* 接收报文处理; pHead : IPv6头 */
     virtual WORD32 RecvPacket(CAppInterface *pApp,

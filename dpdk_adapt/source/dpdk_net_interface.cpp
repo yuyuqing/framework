@@ -4,6 +4,10 @@
 #include "dpdk_net_arp.h"
 #include "dpdk_net_ipv4.h"
 #include "dpdk_net_ipv6.h"
+#include "dpdk_net_ipsec.h"
+#include "dpdk_net_udp.h"
+#include "dpdk_net_sctp.h"
+#include "dpdk_net_tcp.h"
 
 #include "base_log.h"
 
@@ -568,6 +572,30 @@ CNetIntfHandler::~CNetIntfHandler()
         m_pMemInterface->Free((BYTE *)m_pIPv6Stack);
     }
 
+    if (NULL != m_pIpSecStack)
+    {
+        delete m_pIpSecStack;
+        m_pMemInterface->Free((BYTE *)m_pIpSecStack);
+    }
+
+    if (NULL != m_pUdpStack)
+    {
+        delete m_pUdpStack;
+        m_pMemInterface->Free((BYTE *)m_pUdpStack);
+    }
+
+    if (NULL != m_pSctpStack)
+    {
+        delete m_pSctpStack;
+        m_pMemInterface->Free((BYTE *)m_pSctpStack);
+    }
+
+    if (NULL != m_pTcpStack)
+    {
+        delete m_pTcpStack;
+        m_pMemInterface->Free((BYTE *)m_pTcpStack);
+    }
+
     m_pArpStack  = NULL;
     m_pIPv4Stack = NULL;
     m_pIPv6Stack = NULL;
@@ -586,24 +614,44 @@ WORD32 CNetIntfHandler::Initialize(CCentralMemPool *pMemInterface)
     m_cVlanTable.Initialize();
     m_cNdpTable.Initialize();
 
-    BYTE *pArpMem  = m_pMemInterface->Malloc(sizeof(CArpStack));
-    BYTE *pIPv4Mem = m_pMemInterface->Malloc(sizeof(CIPv4Stack));
-    BYTE *pIPv6Mem = m_pMemInterface->Malloc(sizeof(CIPv6Stack));
+    BYTE *pArpMem   = m_pMemInterface->Malloc(sizeof(CArpStack));
+    BYTE *pIPv4Mem  = m_pMemInterface->Malloc(sizeof(CIPv4Stack));
+    BYTE *pIPv6Mem  = m_pMemInterface->Malloc(sizeof(CIPv6Stack));
+    BYTE *pIpSecMem = m_pMemInterface->Malloc(sizeof(CIpSecStack));
+    BYTE *pUdpMem   = m_pMemInterface->Malloc(sizeof(CUdpStack));
+    BYTE *pSctpMem  = m_pMemInterface->Malloc(sizeof(CSctpStack));
+    BYTE *pTcpMem   = m_pMemInterface->Malloc(sizeof(CTcpStack));
 
     if ( (NULL == pArpMem)
       || (NULL == pIPv4Mem)
-      || (NULL == pIPv6Mem))
+      || (NULL == pIPv6Mem)
+      || (NULL == pIpSecMem)
+      || (NULL == pUdpMem)
+      || (NULL == pSctpMem)
+      || (NULL == pTcpMem))
     {
         assert(0);
     }
 
-    m_pArpStack  = new (pArpMem) CArpStack();
-    m_pIPv4Stack = new (pIPv4Mem) CIPv4Stack();
-    m_pIPv6Stack = new (pIPv6Mem) CIPv6Stack();
+    m_pArpStack   = new (pArpMem) CArpStack();
+    m_pIPv4Stack  = new (pIPv4Mem) CIPv4Stack();
+    m_pIPv6Stack  = new (pIPv6Mem) CIPv6Stack();
+    m_pIpSecStack = new (pIpSecMem) CIpSecStack();
+    m_pUdpStack   = new (pUdpMem)  CUdpStack();
+    m_pSctpStack  = new (pSctpMem) CSctpStack();
+    m_pTcpStack   = new (pTcpMem)  CTcpStack();
 
     m_pArpStack->Initialize(pMemInterface);
-    m_pIPv4Stack->Initialize(pMemInterface);
-    m_pIPv6Stack->Initialize(pMemInterface);
+    m_pIpSecStack->Initialize(pMemInterface);
+    m_pUdpStack->Initialize(pMemInterface);
+    m_pSctpStack->Initialize(pMemInterface);
+    m_pTcpStack->Initialize(pMemInterface);
+
+    CIPv4Stack *pIpv4Stack = (CIPv4Stack *)m_pIPv4Stack;
+    CIPv6Stack *pIpv6Stack = (CIPv6Stack *)m_pIPv6Stack;
+
+    pIpv4Stack->Initialize(pMemInterface, m_pIpSecStack, m_pUdpStack, m_pSctpStack, m_pTcpStack);
+    pIpv6Stack->Initialize(pMemInterface, m_pIpSecStack, m_pUdpStack, m_pSctpStack, m_pTcpStack);
 
     return SUCCESS;
 }

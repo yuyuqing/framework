@@ -124,6 +124,11 @@ protected :
     CNetStack           *m_pArpStack;
     CNetStack           *m_pIPv4Stack;
     CNetStack           *m_pIPv6Stack;
+
+    CNetStack           *m_pIpSecStack;
+    CNetStack           *m_pUdpStack;
+    CNetStack           *m_pSctpStack;
+    CNetStack           *m_pTcpStack;
 };
 
 
