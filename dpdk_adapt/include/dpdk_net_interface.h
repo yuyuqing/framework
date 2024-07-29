@@ -107,7 +107,12 @@ public :
     CArpTable  & GetArpTable();
     CNdpTable  & GetNdpTable();
 
+    CNetStack * GetIPv4Stack();
     CNetStack * GetIPv6Stack();
+    CNetStack * GetIpSecStack();
+    CNetStack * GetUdpStack();
+    CNetStack * GetSctpStack();
+    CNetStack * GetTcpStack();
 
     WORD16 FetchAddIPIdentity();
 
@@ -156,9 +161,39 @@ inline CNdpTable & CNetIntfHandler::GetNdpTable()
 }
 
 
+inline CNetStack * CNetIntfHandler::GetIPv4Stack()
+{
+    return m_pIPv4Stack;
+}
+
+
 inline CNetStack * CNetIntfHandler::GetIPv6Stack()
 {
     return m_pIPv6Stack;
+}
+
+
+inline CNetStack * CNetIntfHandler::GetIpSecStack()
+{
+    return m_pIpSecStack;
+}
+
+
+inline CNetStack * CNetIntfHandler::GetUdpStack()
+{
+    return m_pUdpStack;
+}
+
+
+inline CNetStack * CNetIntfHandler::GetSctpStack()
+{
+    return m_pSctpStack;
+}
+
+
+inline CNetStack * CNetIntfHandler::GetTcpStack()
+{
+    return m_pTcpStack;
 }
 
 
