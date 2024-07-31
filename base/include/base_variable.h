@@ -37,6 +37,7 @@ extern __thread WORD32      m_dwSelfRingID;
 extern __thread WORD32      m_dwSelfTimerInnerID;
 extern __thread WORD32      m_dwSelfThreadType;
 extern __thread WORD32      m_dwSelfThreadID;
+extern __thread WORD16      m_wSelfStackInc;
 
 
 extern WORD32 g_dwMainThreadIdx;

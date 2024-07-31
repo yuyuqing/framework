@@ -47,8 +47,8 @@ CLogContext::CLogContext (CHAR     *pcFileName,
                   ('X'),
                   lwTotalCount);
 
-    memset((m_aucData + m_wLen), ' ', pLogInfo->m_wStackInc);
-    m_wLen += pLogInfo->m_wStackInc;
+    memset((m_aucData + m_wLen), ' ', m_wSelfStackInc);
+    m_wLen += m_wSelfStackInc;
 
     memcpy((m_aucData + m_wLen), CLogInfo::s_aucCstructPre, CONST_LOG_PRE_LEN);
     m_wLen += CONST_LOG_PRE_LEN;
@@ -56,7 +56,7 @@ CLogContext::CLogContext (CHAR     *pcFileName,
     memcpy((m_aucData + m_wLen), ptr, strlen(ptr));
     m_wLen += strlen(ptr);
 
-    pLogInfo->m_wStackInc += CONST_LOG_PRE_LEN;
+    m_wSelfStackInc += CONST_LOG_PRE_LEN;
 
     /* 添加文件名/代码行信息 */
     if (NULL != pcFileName)
@@ -113,7 +113,7 @@ CLogContext::~CLogContext()
 
     CMultiMessageRing::CSTRing *pRing = (CMultiMessageRing::CSTRing *)(m_pSelfThreadZone->pLogRing);
 
-    pLogInfo->m_wStackInc -= CONST_LOG_PRE_LEN;
+    m_wSelfStackInc -= CONST_LOG_PRE_LEN;
 
     DO_LOG_COMMON(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_TRACE, TRUE, pRing);
 
@@ -132,7 +132,7 @@ CLogContext::~CLogContext()
                   ('X'),
                   lwTotalCount);
 
-    memcpy((m_aucData + pLogInfo->m_wStackInc), 
+    memcpy((m_aucData + m_wSelfStackInc), 
            CLogInfo::s_aucDstructPre, 
            CONST_LOG_PRE_LEN);
 

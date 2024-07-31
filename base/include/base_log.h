@@ -162,8 +162,6 @@ private :
     CBaseBitMap32         m_cModuleBitMap;     /* 模块bit掩码, 用于控制模块级别的日志输出 */
     CModuleLogInfo        m_aModule[E_LOG_MODULE_NUM];
 
-    WORD16                m_wStackInc;         /* 用于提供给CLogContext控制输出格式 */
-
     BYTE                  m_ucSyncFlag;        /* 用于控制是否开启系统时钟同步 */
     WORD16                m_wLogMeasure;       /* 用于控制日志维测输出周期, 单位 : 分钟 */
     std::atomic<WORD16>   m_wPeriodMinute;     /* 5/10/15/30/60/120/240/480分钟, 日志文件切换间隔 */

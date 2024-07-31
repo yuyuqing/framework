@@ -29,7 +29,6 @@ CLogInfo::CLogInfo ()
     m_wThresholdWait = LOG_WAIT_THRESHOLD;
     m_wThresholdLock = LOG_LOCK_THRESHOLD;
     m_wThresholdLoop = LOG_LOOP_THRESHOLD;
-    m_wStackInc      = 0;
     m_ucSyncFlag     = 0;
     m_wLogMeasure    = s_awPeriodMinute[E_LOG_PERIOD_05_MINUTE];
     m_wPeriodMinute  = s_awPeriodMinute[E_LOG_PERIOD_05_MINUTE];
@@ -50,7 +49,6 @@ CLogInfo::~CLogInfo()
     m_wThresholdWait = LOG_WAIT_THRESHOLD;
     m_wThresholdLock = LOG_LOCK_THRESHOLD;
     m_wThresholdLoop = LOG_LOOP_THRESHOLD;
-    m_wStackInc      = 0;
     m_ucSyncFlag     = 0;
     m_wLogMeasure    = s_awPeriodMinute[E_LOG_PERIOD_05_MINUTE];
     m_wPeriodMinute  = s_awPeriodMinute[E_LOG_PERIOD_05_MINUTE];
@@ -420,8 +418,8 @@ VOID CLogInfo::Trace(CLogMemPool *pMemPool,
                   ((CHAR)((dwExtModuleID == 0xFFFF) ? 'X' : (dwExtModuleID  + '0'))),
                   lwTotalCount);
 
-    wStachInc = (0 == m_wStackInc) ?
-                    0 : (m_wStackInc - CONST_LOG_PRE_LEN);
+    wStachInc = (0 == m_wSelfStackInc) ?
+                    0 : (m_wSelfStackInc - CONST_LOG_PRE_LEN);
     if (wStachInc > 0)
     {
         memset((pLogBuffer + dwLen), 

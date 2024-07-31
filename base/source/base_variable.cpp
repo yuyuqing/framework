@@ -10,6 +10,7 @@ __thread WORD32 m_dwSelfRingID       = 0;
 __thread WORD32 m_dwSelfTimerInnerID = 0;
 __thread WORD32 m_dwSelfThreadType   = 0;
 __thread WORD32 m_dwSelfThreadID     = 0;
+__thread WORD16 m_wSelfStackInc      = 0;
 
 
 WORD32 g_dwMainThreadIdx = INVALID_DWORD;
