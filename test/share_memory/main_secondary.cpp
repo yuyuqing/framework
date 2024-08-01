@@ -16,6 +16,7 @@
 
 #include "base_init_component.h"
 #include "base_thread_pool.h"
+#include "base_shm_mgr.h"
 
 
 VOID PrintDataZone(CDataZone &rDataZone)
@@ -40,6 +41,17 @@ VOID PrintThreadCntrl(WORD64 lwThreadCntrlAddr)
 
 int main(int argc, char **argv)
 {
+    pthread_t  tThreadID;
+    cpu_set_t  tCpuSet;
+
+    memset(&tThreadID, 0x00, sizeof(tThreadID));
+    CPU_ZERO(&tCpuSet);
+
+    /* ¹Ì¶¨°ó¶¨ºË1 */
+    CPU_SET(1, &tCpuSet);
+    tThreadID = pthread_self();
+    pthread_setaffinity_np(tThreadID, sizeof(cpu_set_t), &tCpuSet);
+
     CMemMgr *pMemMgr = CMemMgr::CreateMemMgr((WORD32)E_PROC_DU,
                                              (BYTE)E_MEM_HUGEPAGE_TYPE,
                                              1,
