@@ -14,37 +14,6 @@
 DEFINE_DEVICE(CBBDevice);
 
 
-CBaseTraffic * GetBBTraffic(E_TrafficType eType, WORD32 dwBindCellID)
-{
-    if (NULL == g_pDpdkMgr)
-    {
-        return NULL;
-    }
-
-    WORD32       dwBBNum = 0;
-    CBaseDevice *apDevice[MAX_DEV_PORT_NUM] = {NULL, };
-
-    dwBBNum = g_pDpdkMgr->GetDevices(E_BB_DEVICE, apDevice);
-    if (0 == dwBBNum)
-    {
-        return NULL;
-    }
-
-    for (WORD32 dwIndex = 0; dwIndex < dwBBNum; dwIndex++)
-    {
-        CBBDevice *pBBDev = (CBBDevice *)(apDevice[dwIndex]);
-        if (NULL == pBBDev)
-        {
-            continue ;
-        }
-
-        return pBBDev->FindTraffic(eType, dwBindCellID);
-    }
-
-    return NULL;
-}
-
-
 SWORD32 CBBDevice::LsiEventCallBack(WORD16          wPortID,
                                     E_EthEventType  eType,
                                     VOID           *pParam,

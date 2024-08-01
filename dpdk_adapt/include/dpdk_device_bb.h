@@ -12,9 +12,6 @@
 #endif
 
 
-extern CBaseTraffic * GetBBTraffic(E_TrafficType eType, WORD32 dwBindCellID);
-
-
 class CBBDevice : public CBaseDevice
 {
 public :
@@ -40,8 +37,10 @@ public :
     virtual WORD32 Initialize();
 
     T_TrafficInfo * FindTrafficInfo(WORD32 dwTrafficID);
-    CBaseTraffic  * FindTraffic(WORD32 dwTrafficID);
-    CBaseTraffic  * FindTraffic(E_TrafficType eType, WORD32 dwBindCellID);
+
+    CBaseTraffic * FindTraffic(WORD32 dwTrafficID);
+    CBaseTraffic * FindTraffic(E_TrafficType eType, WORD32 dwBindCellID);
+    CBaseTraffic * FindOamTraffic();
 
     virtual VOID Dump();
 
@@ -96,6 +95,20 @@ inline CBaseTraffic * CBBDevice::FindTraffic(E_TrafficType eType, WORD32 dwBindC
     {
         if ( (dwBindCellID == m_atTrafficInfo[dwIndex].dwBindCellID)
           && (eType == m_atTrafficInfo[dwIndex].pTraffic->GetType()))
+        {
+            return m_atTrafficInfo[dwIndex].pTraffic;
+        }
+    }
+
+    return NULL;
+}
+
+
+inline CBaseTraffic * CBBDevice::FindOamTraffic()
+{
+    for (WORD32 dwIndex = 0; dwIndex < m_dwTrafficNum; dwIndex++)
+    {
+        if (E_OAM_TRAFFIC == m_atTrafficInfo[dwIndex].pTraffic->GetType())
         {
             return m_atTrafficInfo[dwIndex].pTraffic;
         }

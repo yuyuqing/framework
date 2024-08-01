@@ -12,6 +12,8 @@ class CEthTraffic : public CBaseTraffic
 public :
     CEthTraffic (const T_TrafficParam &rtParam);
     virtual ~CEthTraffic();
+
+    virtual WORD32 Initialize();
 };
 
 

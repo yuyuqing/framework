@@ -263,7 +263,7 @@
                 "fapi_traffic"    :
                 [
                     {
-                        "type"        : "CEthTraffic",            //FAPI以太网业务类型(目前针对BKQ/AR基带设备存在以太网类型的业务通道, 暂不清楚该业务通道的作用)
+                        "type"        : "CEthTraffic",            //FAPI以太网业务类型(eCpri管理面, 用于配置管理EH/RU)
                         "traffic_id"  : 0,                        //业务通道ID(对应FAPI接口的queue_id)
                         "fapi_cell"   : 255,                      //无效值
                         "bind_cell"   : 0                         //0 : 不与任何高层小区绑定
@@ -293,7 +293,7 @@
                         "bind_cell"   : 2                         //绑定高层小区ID(高层APP通过本字段找到对应的FAPI-Traffic实例)
                     },
                     {
-                        "type"        : "COamTraffic",            //FAPI接口OAM业务类型(目前针对BKQ/AR基带设备存在以太网类型的业务通道, 暂不清楚该业务通道的作用)
+                        "type"        : "COamTraffic",            //FAPI接口OAM业务类型(PCI设备级管理通道, 用于配置管理PCI设备)
                         "traffic_id"  : 6,                        //业务通道ID(对应FAPI接口的queue_id)
                         "fapi_cell"   : 255,                      //无效值
                         "bind_cell"   : 0                         //0 : 不与任何高层小区绑定
@@ -328,6 +328,12 @@
                         "traffic_id"  : 5,                        //业务通道ID(对应FAPI接口的queue_id)
                         "fapi_cell"   : 1,                        //FAPI接口上小区0的控制通道
                         "bind_cell"   : 4                         //绑定高层小区ID(高层APP通过本字段找到对应的FAPI-Traffic实例)
+                    },
+                    {
+                        "type"        : "COamTraffic",            //FAPI接口OAM业务类型(PCI设备级管理通道, 用于配置管理PCI设备)
+                        "traffic_id"  : 6,                        //业务通道ID(对应FAPI接口的queue_id)
+                        "fapi_cell"   : 255,                      //无效值
+                        "bind_cell"   : 0                         //0 : 不与任何高层小区绑定
                     }
                 ]
             }

@@ -15,6 +15,7 @@ CBBApp::CBBApp ()
     m_wFapiCellID  = INVALID_WORD;
     m_pCtrlTraffic = NULL;
     m_pDataTraffic = NULL;
+    m_pBBDevice    = NULL;
 }
 
 
@@ -25,6 +26,7 @@ CBBApp::~CBBApp()
     m_wFapiCellID  = INVALID_WORD;
     m_pCtrlTraffic = NULL;
     m_pDataTraffic = NULL;
+    m_pBBDevice    = NULL;
 }
 
 
@@ -50,16 +52,24 @@ WORD32 CBBApp::Init()
 
     m_wDeviceID   = (WORD16)(m_pCtrlTraffic->GetDeviceID());
     m_wFapiCellID = (WORD16)(m_pCtrlTraffic->GetFAPICellID());
+    m_pBBDevice   = g_pDpdkMgr->FindDevice(m_wDeviceID);
+
+    if (NULL == m_pBBDevice)
+    {
+        assert(0);
+    }
 
     LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
                "m_dwAppID : %d, m_wCellID : %d, m_wDeviceID : %d, "
-               "m_wFapiCellID : %d, CtrlTraffic : %lu, DataTraffic : %lu\n",
+               "m_wFapiCellID : %d, CtrlTraffic : %lu, DataTraffic : %lu, "
+               "BBDevice : %lu\n",
                m_dwAppID,
                m_wCellID,
                m_wDeviceID,
                m_wFapiCellID,
                (WORD64)(m_pCtrlTraffic),
-               (WORD64)(m_pDataTraffic));
+               (WORD64)(m_pDataTraffic),
+               (WORD64)(m_pBBDevice));
 
     return SUCCESS;
 }
@@ -80,6 +90,7 @@ WORD32 CBBApp::Exit(WORD32 dwMsgID, VOID *pIn, WORD16 wMsgLen)
     m_wCellID      = INVALID_WORD;
     m_pCtrlTraffic = NULL;
     m_pDataTraffic = NULL;
+    m_pBBDevice    = NULL;
 
     return SUCCESS;
 }

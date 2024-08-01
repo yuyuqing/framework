@@ -33,6 +33,8 @@ protected :
 
     CCtrlTraffic  *m_pCtrlTraffic;
     CDataTraffic  *m_pDataTraffic;
+
+    CBaseDevice   *m_pBBDevice;
 };
 
 

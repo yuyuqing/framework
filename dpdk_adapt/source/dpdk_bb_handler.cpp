@@ -13,8 +13,9 @@ CBBHandler *g_pBBHandler = NULL;
 
 CBBHandler::CBBHandler ()
 {
-    g_pBBHandler = this;
-    m_dwCellNum  = 0;
+    g_pBBHandler  = this;
+    m_dwCellNum   = 0;
+    m_pEthTraffic = NULL;
 
     for (WORD32 dwIndex = 0; dwIndex < MAX_CELL_PER_GNB; dwIndex++)
     {
@@ -30,8 +31,9 @@ CBBHandler::CBBHandler ()
 
 CBBHandler::~CBBHandler()
 {
-    g_pBBHandler = NULL;
-    m_dwCellNum  = 0;
+    g_pBBHandler  = NULL;
+    m_dwCellNum   = 0;
+    m_pEthTraffic = NULL;
 
     for (WORD32 dwIndex = 0; dwIndex < MAX_CELL_PER_GNB; dwIndex++)
     {
@@ -48,6 +50,7 @@ CBBHandler::~CBBHandler()
 WORD32 CBBHandler::Initialize()
 {
     TRACE_STACK("CBBHandler::Initialize()");
+
     return SUCCESS;
 }
 

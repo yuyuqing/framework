@@ -26,6 +26,10 @@ public :
 
     virtual WORD32 Initialize();
 
+    VOID SetEthTraffic(CBaseTraffic *pEthTraffic);
+
+    CBaseTraffic * GetEthTraffic();
+
     WORD32 RegistCellTraffic(WORD16        wCellID,
                              WORD16        wDeviceID,
                              WORD16        wQueueID,
@@ -52,7 +56,22 @@ public :
 protected :
     WORD32              m_dwCellNum;
     T_CellTrafficMap    m_atCellMap[MAX_CELL_PER_GNB];
+
+    /* 系统只有1个EthTraffic, 用于eCpri管理面, 负责配置EU/RU */
+    CBaseTraffic       *m_pEthTraffic;
 };
+
+
+inline VOID CBBHandler::SetEthTraffic(CBaseTraffic *pEthTraffic)
+{
+    m_pEthTraffic = pEthTraffic;
+}
+
+
+inline CBaseTraffic * CBBHandler::GetEthTraffic()
+{
+    return m_pEthTraffic;
+}
 
 
 /* 根据DeviceID + FapiCellID查找对应的高层小区ID */
