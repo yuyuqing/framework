@@ -3,6 +3,7 @@
 #include "base_mem_mgr.h"
 #include "base_thread_log.h"
 #include "base_thread_pool.h"
+#include "base_shm_mgr.h"
 
 
 DEFINE_APP(COamApp);
@@ -723,10 +724,15 @@ VOID COamApp::DumpMeasure(const VOID *pIn, WORD32 dwLen)
 
     RegisterTimer((7 * TIMER_TIMEOUT_INTERVAL),
                   (CCBObject *)this,
-                  (PCBFUNC)(&COamApp::TimeOutLogMeas),
+                  (PCBFUNC)(&COamApp::TimeOutShmMgrDump),
                   0);
 
     RegisterTimer((8 * TIMER_TIMEOUT_INTERVAL),
+                  (CCBObject *)this,
+                  (PCBFUNC)(&COamApp::TimeOutLogMeas),
+                  0);
+
+    RegisterTimer((9 * TIMER_TIMEOUT_INTERVAL),
                   (CCBObject *)this,
                   (PCBFUNC)(&COamApp::TimeOutLogFlush),
                   0);
@@ -962,6 +968,17 @@ VOID COamApp::TimeOutMemMgrDump(const VOID *pIn, WORD32 dwLen)
     TRACE_STACK("COamApp::TimeOutMemMgrDump()");
 
     CMemMgr::GetInstance()->Dump();
+}
+
+
+VOID COamApp::TimeOutShmMgrDump(const VOID *pIn, WORD32 dwLen)
+{
+    TRACE_STACK("COamApp::TimeOutShmMgrDump()");
+
+    if (NULL != g_pShmMgr)
+    {
+        g_pShmMgr->Dump();
+    }
 }
 
 

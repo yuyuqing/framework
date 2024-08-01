@@ -127,6 +127,7 @@ public :
     VOID TimeOutDumpMsgMemPoolMeas(const VOID *pIn, WORD32 dwLen);
     VOID TimeOutDumpMemPoolsMeas(const VOID *pIn, WORD32 dwLen);
     VOID TimeOutMemMgrDump(const VOID *pIn, WORD32 dwLen);
+    VOID TimeOutShmMgrDump(const VOID *pIn, WORD32 dwLen);
     VOID TimeOutLogMeas(const VOID *pIn, WORD32 dwLen);
     VOID TimeOutLogFlush(const VOID *pIn, WORD32 dwLen);
 
