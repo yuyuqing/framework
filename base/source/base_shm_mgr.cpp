@@ -248,14 +248,14 @@ VOID CShmMgr::Printf()
 
 VOID CShmMgr::Dump()
 {
-    TRACE_STACK("CShmMgr::Dump()");
-
     Snapshot();
 
     T_ChannelSnapshot *ptChannel = NULL;
 
     for (WORD32 dwIndex = 0; dwIndex < m_dwChannelNum; dwIndex++)
     {
+        TRACE_STACK("CShmMgr::Dump()");
+
         LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
                    "Channel : %d\n",
                    dwIndex);
