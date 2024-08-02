@@ -150,6 +150,102 @@ WORD32 CShmMgr::Initialize(BOOL             bMaster,
 }
 
 
+VOID CShmMgr::Printf()
+{
+    printf("m_dwChannelNum : %d, m_dwPowerNum : %d\n",
+           m_dwChannelNum,
+           m_dwPowerNum);
+
+    Snapshot();
+
+    T_ChannelSnapshot *ptChannel = NULL;
+
+    for (WORD32 dwIndex = 0; dwIndex < m_dwChannelNum; dwIndex++)
+    {
+        printf("===========================================================\n");
+
+        printf("Channel : %d\n", dwIndex);
+
+        ptChannel = &(m_atChannel[dwIndex]);
+
+        printf("Recv : InitFlag : %d, GLock : %d, ULock : %d, Status : %d, "
+               "ProdM[%u, %u], ConsM[%u, %u], "
+               "ProdQ[%u, %u], ConsQ[%u, %u], "
+               "MallocCount : %lu, FreeCount : %lu, "
+               "EnqueueCount : %lu, DequeueCount : %lu\n",
+               ptChannel->tRecv.bInitFlag,
+               ptChannel->tRecv.iGlobalLock,
+               ptChannel->tRecv.iUserLock,
+               ptChannel->tRecv.bStatus,
+               ptChannel->tRecv.dwProdHeadM,
+               ptChannel->tRecv.dwProdTailM,
+               ptChannel->tRecv.dwConsHeadM,
+               ptChannel->tRecv.dwConsTailM,
+               ptChannel->tRecv.dwProdHeadQ,
+               ptChannel->tRecv.dwProdTailQ,
+               ptChannel->tRecv.dwConsHeadQ,
+               ptChannel->tRecv.dwConsTailQ,
+               ptChannel->tRecv.lwMallocCount,
+               ptChannel->tRecv.lwFreeCount,
+               ptChannel->tRecv.lwEnqueueCount,
+               ptChannel->tRecv.lwDequeueCount);
+
+        printf("Send : InitFlag : %d, GLock : %d, ULock : %d, Status : %d, "
+               "ProdM[%u, %u], ConsM[%u, %u], "
+               "ProdQ[%u, %u], ConsQ[%u, %u], "
+               "MallocCount : %lu, FreeCount : %lu, "
+               "EnqueueCount : %lu, DequeueCount : %lu\n",
+               ptChannel->tSend.bInitFlag,
+               ptChannel->tSend.iGlobalLock,
+               ptChannel->tSend.iUserLock,
+               ptChannel->tSend.bStatus,
+               ptChannel->tSend.dwProdHeadM,
+               ptChannel->tSend.dwProdTailM,
+               ptChannel->tSend.dwConsHeadM,
+               ptChannel->tSend.dwConsTailM,
+               ptChannel->tSend.dwProdHeadQ,
+               ptChannel->tSend.dwProdTailQ,
+               ptChannel->tSend.dwConsHeadQ,
+               ptChannel->tSend.dwConsTailQ,
+               ptChannel->tSend.lwMallocCount,
+               ptChannel->tSend.lwFreeCount,
+               ptChannel->tSend.lwEnqueueCount,
+               ptChannel->tSend.lwDequeueCount);
+
+        for (WORD32 dwIndex1 = 0; dwIndex1 < BIT_NUM_OF_WORD32; dwIndex1++)
+        {
+            printf("%10u  %15lu  %15lu  %15lu  %15lu\n",
+                   (1 << dwIndex1),
+                   ptChannel->tRecv.alwStatM[dwIndex1],
+                   ptChannel->tRecv.alwStatQ[dwIndex1],
+                   ptChannel->tSend.alwStatM[dwIndex1],
+                   ptChannel->tSend.alwStatQ[dwIndex1]);
+        }
+
+        for (WORD32 dwIndex = 0; dwIndex < E_SHM_MALLOC_POINT_NUM; dwIndex++)
+        {
+            if (0 != ptChannel->tRecv.alwMallocPoint[dwIndex])
+            {
+                printf("SHM_RECV : Point = %2d, Malloc = %15lu, Free = %15lu\n",
+                       dwIndex,
+                       ptChannel->tRecv.alwMallocPoint[dwIndex],
+                       ptChannel->tRecv.alwFreePoint[dwIndex]);
+            }
+
+            if (0 != ptChannel->tSend.alwMallocPoint[dwIndex])
+            {
+                printf("SHM_SEND : Point = %2d, Malloc = %15lu, Free = %15lu\n",
+                       dwIndex,
+                       ptChannel->tSend.alwMallocPoint[dwIndex],
+                       ptChannel->tSend.alwFreePoint[dwIndex]);
+            }
+        }
+
+        printf("===========================================================\n");
+    }
+}
+
+
 VOID CShmMgr::Dump()
 {
     TRACE_STACK("CShmMgr::Dump()");

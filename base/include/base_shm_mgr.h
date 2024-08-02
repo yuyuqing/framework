@@ -75,6 +75,7 @@ public :
     VOID Snapshot();
 
     VOID Dump();
+    VOID Printf();
 
 protected :
     CChannelTpl * CreateChannel(BOOL bMaster, WORD32 dwPowerNum, BYTE *pBuf, WORD32 dwKeyS, WORD32 dwKeyR);
