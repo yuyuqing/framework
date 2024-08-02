@@ -276,7 +276,7 @@ inline VOID CPollingThread::StatisticMsgQ(T_AtomicMsgMeasure &rtMeasure,
     }
 
     rtMeasure.lwMsgQTotalTime += dwTimeUsed;
-    rtMeasure.adwStat[base_bsr_uint32(dwTimeUsed)]++;
+    rtMeasure.alwStat[base_bsr_uint32(dwTimeUsed)]++;
 }
 
 

@@ -245,7 +245,7 @@ VOID CAppInterface::GetMeasure(T_AppMeasure &rtMeasure)
 
     for (WORD32 dwIndex = 0; dwIndex < BIT_NUM_OF_WORD32; dwIndex++)
     {
-        rtMeasure.adwStat[dwIndex] = m_tMeasure.adwStat[dwIndex].load(std::memory_order_relaxed);
+        rtMeasure.alwStat[dwIndex] = m_tMeasure.alwStat[dwIndex].load(std::memory_order_relaxed);
     }
 
     rtMeasure.tMsgQStat.lwMsgCount      = m_tMeasure.tMsgQStat.lwMsgCount.load(std::memory_order_relaxed);
@@ -255,7 +255,7 @@ VOID CAppInterface::GetMeasure(T_AppMeasure &rtMeasure)
 
     for (WORD32 dwIndex = 0; dwIndex < BIT_NUM_OF_WORD32; dwIndex++)
     {
-        rtMeasure.tMsgQStat.adwStat[dwIndex] = m_tMeasure.tMsgQStat.adwStat[dwIndex].load(std::memory_order_relaxed);
+        rtMeasure.tMsgQStat.alwStat[dwIndex] = m_tMeasure.tMsgQStat.alwStat[dwIndex].load(std::memory_order_relaxed);
     }
 }
 
@@ -302,7 +302,7 @@ WORD32 CAppInterface::InitMeasure()
 
     for (WORD32 dwIndex = 0; dwIndex < BIT_NUM_OF_WORD32; dwIndex++)
     {
-        m_tMeasure.adwStat[dwIndex] = 0;
+        m_tMeasure.alwStat[dwIndex] = 0;
     }
 
     m_tMeasure.tMsgQStat.lwMsgCount      = 0;
@@ -312,7 +312,7 @@ WORD32 CAppInterface::InitMeasure()
 
     for (WORD32 dwIndex = 0; dwIndex < BIT_NUM_OF_WORD32; dwIndex++)
     {
-        m_tMeasure.tMsgQStat.adwStat[dwIndex] = 0;
+        m_tMeasure.tMsgQStat.alwStat[dwIndex] = 0;
     }
 
     return SUCCESS;

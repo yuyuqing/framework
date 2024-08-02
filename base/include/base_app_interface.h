@@ -237,7 +237,7 @@ inline VOID CAppInterface::StatisticMsgQ(WORD32 dwMsgID,
     }
 
     m_tMeasure.tMsgQStat.lwMsgQTotalTime += dwTimeUsed;
-    m_tMeasure.tMsgQStat.adwStat[base_bsr_uint32(dwTimeUsed)]++;
+    m_tMeasure.tMsgQStat.alwStat[base_bsr_uint32(dwTimeUsed)]++;
 }
 
 
@@ -257,7 +257,7 @@ inline VOID CAppInterface::Statistic(WORD32 dwMsgID,
     }
 
     m_tMeasure.lwTimeUsedTotal += dwTimeUsed;
-    m_tMeasure.adwStat[base_bsr_uint32(dwTimeUsed)]++;
+    m_tMeasure.alwStat[base_bsr_uint32(dwTimeUsed)]++;
 }
 
 

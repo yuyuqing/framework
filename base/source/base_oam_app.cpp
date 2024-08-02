@@ -861,9 +861,9 @@ VOID COamApp::TimeOutDumpAppMeas(const VOID *pIn, WORD32 dwLen)
         for (WORD32 dwIndex1 = 0; dwIndex1 < BIT_NUM_OF_WORD32; dwIndex1++)
         {
             LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_TRACE, TRUE,
-                       "%10d  %15u\n",
+                       "%10d  %15lu\n",
                        (1 << dwIndex1),
-                       rtMeas.adwStat[dwIndex1]);
+                       rtMeas.alwStat[dwIndex1]);
         }
     }
 }
@@ -899,11 +899,11 @@ VOID COamApp::TimeOutDumpMsgQueueMeas(const VOID *pIn, WORD32 dwLen)
         for (WORD32 dwIndex1 = 0; dwIndex1 < BIT_NUM_OF_WORD32; dwIndex1++)
         {
             LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_TRACE, TRUE,
-                       "%10d      HP:%15u     LP:%15u     Multi:%15u\n",
+                       "%10d      HP:%15lu     LP:%15lu     Multi:%15lu\n",
                        (1 << dwIndex1),
-                       rtThreadMeas.tHPMsgQStat.adwStat[dwIndex1],
-                       rtThreadMeas.tLPMsgQStat.adwStat[dwIndex1],
-                       rtThreadMeas.tMultiMsgQStat.adwStat[dwIndex1]);
+                       rtThreadMeas.tHPMsgQStat.alwStat[dwIndex1],
+                       rtThreadMeas.tLPMsgQStat.alwStat[dwIndex1],
+                       rtThreadMeas.tMultiMsgQStat.alwStat[dwIndex1]);
         }
     }
 }

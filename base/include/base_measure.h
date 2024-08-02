@@ -61,7 +61,7 @@ typedef struct tagT_AtomicMsgMeasure
     std::atomic<WORD32>  dwQMaxMsgID;                 /* 消息队列最大延迟耗时的消息ID */
     std::atomic<WORD32>  dwMsgQMaxUsed;               /* 消息队列最大延迟耗时(单位:0.1us) */
     std::atomic<WORD64>  lwMsgQTotalTime;             /* 消息队列总耗时(单位:0.1us) */
-    std::atomic<WORD32>  adwStat[BIT_NUM_OF_WORD32];  /* 消息处理耗时分布(单位 : 0.1us) */
+    std::atomic<WORD64>  alwStat[BIT_NUM_OF_WORD32];  /* 消息处理耗时分布(单位 : 0.1us) */
 }T_AtomicMsgMeasure;
 
 
@@ -71,7 +71,7 @@ typedef struct tagT_MsgMeasure
     WORD32  dwQMaxMsgID;                 /* 消息队列最大延迟耗时的消息ID */
     WORD32  dwMsgQMaxUsed;               /* 消息队列最大延迟耗时(单位 : 0.1us) */
     WORD64  lwMsgQTotalTime;             /* 消息队列总耗时(单位 : 0.1us) */
-    WORD32  adwStat[BIT_NUM_OF_WORD32];  /* 消息处理耗时分布(单位 : 0.1us) */
+    WORD64  alwStat[BIT_NUM_OF_WORD32];  /* 消息处理耗时分布(单位 : 0.1us) */
 }T_MsgMeasure;
 
 
@@ -85,7 +85,7 @@ typedef struct tagT_AtomicAppMeasure
     std::atomic<WORD64>  dwMaxTimeUsed;               /* 处理单条消息最大总用时(单位 : 0.1us) */
 
     std::atomic<WORD64>  lwTimeUsedTotal;             /* 处理消息总用时  (单位 : 0.1us) */
-    std::atomic<WORD32>  adwStat[BIT_NUM_OF_WORD32];  /* 消息处理耗时分布(单位 : 0.1us) */
+    std::atomic<WORD64>  alwStat[BIT_NUM_OF_WORD32];  /* 消息处理耗时分布(单位 : 0.1us) */
 
     T_AtomicMsgMeasure   tMsgQStat;
 }T_AtomicAppMeasure;
@@ -101,7 +101,7 @@ typedef struct tagT_AppMeasure
     WORD64        dwMaxTimeUsed;               /* 处理单条消息最大总用时(单位 : 0.1us) */
 
     WORD64        lwTimeUsedTotal;             /* 处理消息总用时  (单位 : 0.1us) */
-    WORD32        adwStat[BIT_NUM_OF_WORD32];  /* 消息处理耗时分布(单位 : 0.1us) */
+    WORD64        alwStat[BIT_NUM_OF_WORD32];  /* 消息处理耗时分布(单位 : 0.1us) */
 
     T_MsgMeasure  tMsgQStat;
 }T_AppMeasure;

@@ -634,7 +634,7 @@ VOID CBaseThread::GetMeasure(T_ThreadMeasure &rtMeasure)
 
     for (WORD32 dwIndex = 0; dwIndex < BIT_NUM_OF_WORD32; dwIndex++)
     {
-        rtMeasure.tHPMsgQStat.adwStat[dwIndex] = m_tMeasure.tHPMsgQStat.adwStat[dwIndex].load(std::memory_order_relaxed);
+        rtMeasure.tHPMsgQStat.alwStat[dwIndex] = m_tMeasure.tHPMsgQStat.alwStat[dwIndex].load(std::memory_order_relaxed);
     }
 
     rtMeasure.tLPMsgQStat.lwMsgCount      = m_tMeasure.tLPMsgQStat.lwMsgCount.load(std::memory_order_relaxed);
@@ -644,7 +644,7 @@ VOID CBaseThread::GetMeasure(T_ThreadMeasure &rtMeasure)
 
     for (WORD32 dwIndex = 0; dwIndex < BIT_NUM_OF_WORD32; dwIndex++)
     {
-        rtMeasure.tLPMsgQStat.adwStat[dwIndex] = m_tMeasure.tLPMsgQStat.adwStat[dwIndex].load(std::memory_order_relaxed);
+        rtMeasure.tLPMsgQStat.alwStat[dwIndex] = m_tMeasure.tLPMsgQStat.alwStat[dwIndex].load(std::memory_order_relaxed);
     }
 
     rtMeasure.tMultiMsgQStat.lwMsgCount      = m_tMeasure.tMultiMsgQStat.lwMsgCount.load(std::memory_order_relaxed);
@@ -654,7 +654,7 @@ VOID CBaseThread::GetMeasure(T_ThreadMeasure &rtMeasure)
 
     for (WORD32 dwIndex = 0; dwIndex < BIT_NUM_OF_WORD32; dwIndex++)
     {
-        rtMeasure.tMultiMsgQStat.adwStat[dwIndex] = m_tMeasure.tMultiMsgQStat.adwStat[dwIndex].load(std::memory_order_relaxed);
+        rtMeasure.tMultiMsgQStat.alwStat[dwIndex] = m_tMeasure.tMultiMsgQStat.alwStat[dwIndex].load(std::memory_order_relaxed);
     }
 
     m_pMsgMemPool->GetMeasure(rtMeasure.tMsgMemStat);
@@ -792,7 +792,7 @@ WORD32 CBaseThread::InitMeasure()
 
     for (WORD32 dwIndex = 0; dwIndex < BIT_NUM_OF_WORD32; dwIndex++)
     {
-        m_tMeasure.tHPMsgQStat.adwStat[dwIndex] = 0;
+        m_tMeasure.tHPMsgQStat.alwStat[dwIndex] = 0;
     }
 
     m_tMeasure.tLPMsgQStat.lwMsgCount              = 0;
@@ -802,7 +802,7 @@ WORD32 CBaseThread::InitMeasure()
 
     for (WORD32 dwIndex = 0; dwIndex < BIT_NUM_OF_WORD32; dwIndex++)
     {
-        m_tMeasure.tLPMsgQStat.adwStat[dwIndex] = 0;
+        m_tMeasure.tLPMsgQStat.alwStat[dwIndex] = 0;
     }
 
     m_tMeasure.tMultiMsgQStat.lwMsgCount              = 0;
@@ -812,7 +812,7 @@ WORD32 CBaseThread::InitMeasure()
 
     for (WORD32 dwIndex = 0; dwIndex < BIT_NUM_OF_WORD32; dwIndex++)
     {
-        m_tMeasure.tMultiMsgQStat.adwStat[dwIndex] = 0;
+        m_tMeasure.tMultiMsgQStat.alwStat[dwIndex] = 0;
     }
 
     m_tMeasure.tMsgMemStat.dwTypeNum = 0;

@@ -318,9 +318,9 @@ VOID CLogThread::Dump()
     for (WORD32 dwIndex1 = 0; dwIndex1 < BIT_NUM_OF_WORD32; dwIndex1++)
     {
         LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_TRACE, TRUE,
-                   "%10d  %12u\n",
+                   "%10d  %15lu\n",
                    (1 << dwIndex1),
-                   m_tFastMeasure.adwStat[dwIndex1]);
+                   m_tFastMeasure.alwStat[dwIndex1]);
     }
 
     g_pLogger->Dump();
@@ -500,7 +500,7 @@ WORD32 CLogThread::Assemble(FILE *pFile, T_LogBinaryMessage *ptMsg)
 
     m_tFastMeasure.lwCount++;
     m_tFastMeasure.lwRingTotalTime += dwTimeUsed;
-    m_tFastMeasure.adwStat[base_bsr_uint32(dwTimeUsed)]++;
+    m_tFastMeasure.alwStat[base_bsr_uint32(dwTimeUsed)]++;
 
     return WriteBack(pFile, m_aucAssemble, dwMsgLen);
 }

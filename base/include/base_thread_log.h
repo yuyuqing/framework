@@ -29,7 +29,7 @@ typedef struct tagT_FastLogMeasure
 {
     WORD64  lwCount;                     /* Fast接口调用总次数(有效打印日志次数) */
     WORD64  lwRingTotalTime;             /* 业务线程调用Fast接口总耗时(单位 : 0.1us) */
-    WORD32  adwStat[BIT_NUM_OF_WORD32];  /* 调用Fast接口耗时分布(单位 : 0.1us) */
+    WORD64  alwStat[BIT_NUM_OF_WORD32];  /* 调用Fast接口耗时分布(单位 : 0.1us) */
 }T_FastLogMeasure;
 
 

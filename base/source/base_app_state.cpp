@@ -210,9 +210,9 @@ WORD32 CAppWorkState::DeInit()
     for (WORD32 dwIndex1 = 0; dwIndex1 < BIT_NUM_OF_WORD32; dwIndex1++)
     {
         LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_TRACE, TRUE,
-                   "%10d  %12u\n",
+                   "%10d  %15lu\n",
                    (1 << dwIndex1),
-                   tMeasure.adwStat[dwIndex1]);
+                   tMeasure.alwStat[dwIndex1]);
     }
 
     LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_TRACE, TRUE,
@@ -226,9 +226,9 @@ WORD32 CAppWorkState::DeInit()
     for (WORD32 dwIndex1 = 0; dwIndex1 < BIT_NUM_OF_WORD32; dwIndex1++)
     {
         LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_TRACE, TRUE,
-                   "%10d  %12u\n",
+                   "%10d  %15lu\n",
                    (1 << dwIndex1),
-                   tMeasure.tMsgQStat.adwStat[dwIndex1]);
+                   tMeasure.tMsgQStat.alwStat[dwIndex1]);
     }
 
     return m_pAppInst->DeInit();
