@@ -69,8 +69,8 @@ typedef struct tagT_ShmSnapshot
     volatile WORD64  lwEnqueueCount;               /* 入消息队列统计 */
     volatile WORD64  lwDequeueCount;               /* 出消息队列统计 */
     
-    volatile WORD32  adwStatM[BIT_NUM_OF_WORD32];  /* 内存分配后持续占用时间统计, 单位 : Cycle */
-    volatile WORD32  adwStatQ[BIT_NUM_OF_WORD32];  /* 消息从入队到出队持续占用时间统计, 单位 : Cycle */
+    volatile WORD64  alwStatM[BIT_NUM_OF_WORD32];  /* 内存分配后持续占用时间统计, 单位 : Cycle */
+    volatile WORD64  alwStatQ[BIT_NUM_OF_WORD32];  /* 消息从入队到出队持续占用时间统计, 单位 : Cycle */
 
     /* 用于分析内存泄漏, 检查在指定Point申请的内存是否存在未释放 */
     volatile WORD64  alwMallocPoint[E_SHM_MALLOC_POINT_NUM];
@@ -133,8 +133,8 @@ public :
         volatile WORD64  lwEnqueueCount;               /* 入消息队列统计 */
         volatile WORD64  lwDequeueCount;               /* 出消息队列统计 */
 
-        volatile WORD32  adwStatM[BIT_NUM_OF_WORD32];  /* 内存分配后持续占用时间统计, 单位 : Cycle */
-        volatile WORD32  adwStatQ[BIT_NUM_OF_WORD32];  /* 消息从入队到出队持续占用时间统计, 单位 : Cycle */
+        volatile WORD64  alwStatM[BIT_NUM_OF_WORD32];  /* 内存分配后持续占用时间统计, 单位 : Cycle */
+        volatile WORD64  alwStatQ[BIT_NUM_OF_WORD32];  /* 消息从入队到出队持续占用时间统计, 单位 : Cycle */
 
         /* 用于分析内存泄漏, 检查在指定Point申请的内存是否存在未释放 */
         volatile WORD64  alwMallocPoint[E_SHM_MALLOC_POINT_NUM];
@@ -507,7 +507,7 @@ inline WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::Free(BYTE *pAddr)
     lwEnd    = GetCycle();
     dwPeriod = (WORD32) ((lwEnd > lwBegin) ? ((lwEnd - lwBegin) >> 10) : (0));
 
-    m_ptShmHead->adwStatM[base_bsr_uint32(dwPeriod)]++;
+    m_ptShmHead->alwStatM[base_bsr_uint32(dwPeriod)]++;
 
     return SUCCESS;
 }
@@ -586,7 +586,7 @@ inline WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::Dequeue(VOID **pObj)
     lwEnd    = GetCycle();
     dwPeriod = (WORD32) ((lwEnd > lwBegin) ? ((lwEnd - lwBegin) >> 10) : (0));
 
-    m_ptShmHead->adwStatQ[base_bsr_uint32(dwPeriod)]++;
+    m_ptShmHead->alwStatQ[base_bsr_uint32(dwPeriod)]++;
 
     return SUCCESS;
 }
@@ -677,7 +677,7 @@ inline WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::DequeueBurst(
         lwBegin += ptNode->dwTimeOffset;
         dwPeriod = (WORD32) ((lwEnd > lwBegin) ? ((lwEnd - lwBegin) >> 10) : (0));
 
-        m_ptShmHead->adwStatQ[base_bsr_uint32(dwPeriod)]++;
+        m_ptShmHead->alwStatQ[base_bsr_uint32(dwPeriod)]++;
     }
 
     return dwNum;
@@ -712,12 +712,12 @@ inline VOID CShmHandler<POWER_NUM, NODE_SIZE>::Snapshot(T_ShmSnapshot &rtSnapsho
     rtSnapshot.lwEnqueueCount = __atomic_load_n(&(m_ptShmHead->lwEnqueueCount), __ATOMIC_RELAXED);
     rtSnapshot.lwDequeueCount = __atomic_load_n(&(m_ptShmHead->lwDequeueCount), __ATOMIC_RELAXED);
 
-    memcpy((VOID *)(rtSnapshot.adwStatM),
-           (VOID *)(m_ptShmHead->adwStatM),
-           (BIT_NUM_OF_WORD32 * sizeof(WORD32)));
-    memcpy((VOID *)(rtSnapshot.adwStatQ),
-           (VOID *)(m_ptShmHead->adwStatQ),
-           (BIT_NUM_OF_WORD32 * sizeof(WORD32)));
+    memcpy((VOID *)(rtSnapshot.alwStatM),
+           (VOID *)(m_ptShmHead->alwStatM),
+           (BIT_NUM_OF_WORD32 * sizeof(WORD64)));
+    memcpy((VOID *)(rtSnapshot.alwStatQ),
+           (VOID *)(m_ptShmHead->alwStatQ),
+           (BIT_NUM_OF_WORD32 * sizeof(WORD64)));
 
     memcpy((VOID *)(rtSnapshot.alwMallocPoint),
            (VOID *)(m_ptShmHead->alwMallocPoint),
@@ -766,8 +766,8 @@ WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::InitContext(BOOL bMaster, T_ShmHead *p
         ptHead->lwEnqueueCount = 0;
         ptHead->lwDequeueCount = 0;
 
-        memset((VOID *)(ptHead->adwStatM),       0x00, (BIT_NUM_OF_WORD32 * sizeof(WORD32)));
-        memset((VOID *)(ptHead->adwStatQ),       0x00, (BIT_NUM_OF_WORD32 * sizeof(WORD32)));
+        memset((VOID *)(ptHead->alwStatM),       0x00, (BIT_NUM_OF_WORD32 * sizeof(WORD64)));
+        memset((VOID *)(ptHead->alwStatQ),       0x00, (BIT_NUM_OF_WORD32 * sizeof(WORD64)));
         memset((VOID *)(ptHead->alwMallocPoint), 0x00, (E_SHM_MALLOC_POINT_NUM * sizeof(WORD64)));
         memset((VOID *)(ptHead->alwFreePoint),   0x00, (E_SHM_MALLOC_POINT_NUM * sizeof(WORD64)));
         memset((VOID *)(ptHead->aucResved1),     0x00, SHM_HEAD_PAD_LEN);

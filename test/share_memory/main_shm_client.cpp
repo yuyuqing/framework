@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <sched.h>
 #include <pthread.h>
+#include <iostream>
 
 #include "pub_global_def.h"
 
@@ -17,29 +18,21 @@
 #include "base_shm_mgr.h"
 
 
-WORD32 TestRecvClient(VOID *pArg, const VOID *ptMsg, WORD32 dwLen)
+using namespace std;
+
+
+WORD32 TestRecvServer(VOID *pArg, const VOID *ptMsg, WORD32 dwLen)
 {
     CChannelTpl *pChannel = (CChannelTpl *)pArg;
 
     WORD32 dwStrLen = strlen((CHAR *)(ptMsg));
 
-    if (dwLen != (dwStrLen + 1))
+    if (dwLen != (dwStrLen + 2))
     {
         assert(0);
     }
 
     printf("Recv : %s\n", (const CHAR *)ptMsg);
-
-    BYTE *pBuf = pChannel->Malloc((dwLen + 1), E_SHM_MALLOC_POINT_01);
-    if (NULL == pBuf)
-    {
-        return FAIL;
-    }
-
-    memcpy(pBuf, ptMsg, dwLen);
-    pBuf[dwLen] = 0;
-
-    pChannel->SendMessage((VOID *)pBuf);
 
     pChannel->Free((BYTE *)ptMsg);
 
@@ -49,7 +42,7 @@ WORD32 TestRecvClient(VOID *pArg, const VOID *ptMsg, WORD32 dwLen)
 
 int main(int argc, char **argv)
 {
-    CMemMgr *pMemMgr = CMemMgr::CreateMemMgr((WORD32)E_PROC_CU,
+    CMemMgr *pMemMgr = CMemMgr::CreateMemMgr((WORD32)E_PROC_DU,
                                              (BYTE)E_MEM_HUGEPAGE_TYPE,
                                              1,
                                              1024 * 1024 * 1024,
@@ -100,21 +93,47 @@ int main(int argc, char **argv)
     assert(NULL != pMem);
 
     g_pShmMgr = CShmMgr::GetInstance(pMem);
-    dwResult  = g_pShmMgr->Initialize(TRUE, 4, 14, pCentralMemPool);
+    dwResult  = g_pShmMgr->Initialize(FALSE, 4, 14, pCentralMemPool);
 
     assert(SUCCESS == dwResult);
 
-    CChannelTpl *pChannel = NULL;
+    CHAR         aucBuf[1024] = {0,};
+    WORD32       dwLen        = 0;
+    CChannelTpl *pChannel     = NULL;
 
     while (TRUE)
     {
+        memset(aucBuf, 0x00, sizeof(aucBuf));
+
+        printf("Client : ");
+        cin >> aucBuf;
+
+        dwLen = strlen(aucBuf);
+
+        for (WORD32 dwIndex = 0; dwIndex < 4; dwIndex++)
+        {
+            pChannel = g_pShmMgr->GetChannel(dwIndex);
+
+            BYTE *pBuf = pChannel->Malloc((dwLen + 1), E_SHM_MALLOC_POINT_01);
+            if (NULL == pBuf)
+            {
+                return FAIL;
+            }
+
+            memcpy(pBuf, aucBuf, dwLen);
+            pBuf[dwLen] = 0;
+
+            pChannel->SendMessage((VOID *)pBuf);
+
+            pChannel->Post();
+        }
+
         for (WORD32 dwIndex = 0; dwIndex < 4; dwIndex++)
         {
             pChannel = g_pShmMgr->GetChannel(dwIndex);
 
             pChannel->Wait();
-            pChannel->RecvMessage((VOID *)pChannel, (PSyncRecvMsg)(&TestRecvClient));
-            pChannel->Post();
+            pChannel->RecvMessage((VOID *)pChannel, (PSyncRecvMsg)(&TestRecvServer));
         }
     }
 
@@ -122,5 +141,6 @@ int main(int argc, char **argv)
 
     return SUCCESS;
 }
+
 
 

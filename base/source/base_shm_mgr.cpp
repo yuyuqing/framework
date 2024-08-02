@@ -109,7 +109,7 @@ WORD32 CShmMgr::Initialize(BOOL             bMaster,
                            WORD32           dwPowerNum,
                            CCentralMemPool *pCentralMemPool)
 {
-    TRACE_STACK("CShmMgr::Initialize()");
+    //TRACE_STACK("CShmMgr::Initialize()");
 
     if ( (dwChannelNum > MAX_CHANNEL_NUM)
       || (dwPowerNum < E_ShmPowerNum_14)
@@ -215,12 +215,12 @@ VOID CShmMgr::Dump()
         for (WORD32 dwIndex1 = 0; dwIndex1 < BIT_NUM_OF_WORD32; dwIndex1++)
         {
             LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
-                       "%10d  %10u  %10u  %10u  %10u\n",
+                       "%10d  %15lu  %15lu  %15lu  %15lu\n",
                        (1 << dwIndex1),
-                       ptChannel->tRecv.adwStatM[dwIndex1],
-                       ptChannel->tRecv.adwStatQ[dwIndex1],
-                       ptChannel->tSend.adwStatM[dwIndex1],
-                       ptChannel->tSend.adwStatQ[dwIndex1]);
+                       ptChannel->tRecv.alwStatM[dwIndex1],
+                       ptChannel->tRecv.alwStatQ[dwIndex1],
+                       ptChannel->tSend.alwStatM[dwIndex1],
+                       ptChannel->tSend.alwStatQ[dwIndex1]);
         }
 
         for (WORD32 dwIndex = 0; dwIndex < E_SHM_MALLOC_POINT_NUM; dwIndex++)
@@ -253,7 +253,7 @@ CChannelTpl * CShmMgr::CreateChannel(BOOL    bMaster,
                                      WORD32  dwKeyS,
                                      WORD32  dwKeyR)
 {
-    TRACE_STACK("CShmMgr::CreateChannel()");
+    //TRACE_STACK("CShmMgr::CreateChannel()");
 
     if (bMaster)
     {
@@ -271,7 +271,7 @@ CChannelTpl * CShmMgr::CreateMaster(WORD32  dwPowerNum,
                                     WORD32  dwKeyS,
                                     WORD32  dwKeyR)
 {
-    TRACE_STACK("CShmMgr::CreateMaster()");
+    //TRACE_STACK("CShmMgr::CreateMaster()");
 
     CChannelTpl *pChannel = NULL;
 
@@ -331,7 +331,7 @@ CChannelTpl * CShmMgr::CreateSlave(WORD32  dwPowerNum,
                                    WORD32  dwKeyS,
                                    WORD32  dwKeyR)
 {
-    TRACE_STACK("CShmMgr::CreateSlave()");
+    //TRACE_STACK("CShmMgr::CreateSlave()");
 
     CChannelTpl *pChannel = NULL;
 
