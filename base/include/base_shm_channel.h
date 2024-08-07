@@ -16,7 +16,10 @@ public :
     CChannelTpl();
     virtual ~CChannelTpl();
 
-    virtual WORD32 Initialize(WORD32 dwKeyS, WORD32 dwKeyR);
+    virtual WORD32 Initialize(WORD32  dwKeyS,
+                              WORD32  dwKeyR,
+                              VOID   *pVirtAddrS,
+                              VOID   *pVirtAddrR);
 
     /* 发送方申请内存 */
     virtual BYTE * Malloc(WORD32 dwSize, WORD32 dwPoint = 0);
@@ -81,7 +84,10 @@ public :
     CShmChannel();
     virtual ~CShmChannel();
 
-    virtual WORD32 Initialize(WORD32 dwKeyS, WORD32 dwKeyR);
+    virtual WORD32 Initialize(WORD32  dwKeyS,
+                              WORD32  dwKeyR,
+                              VOID   *pVirtAddrS,
+                              VOID   *pVirtAddrR);
 
     /* 发送方申请内存 */
     virtual BYTE * Malloc(WORD32 dwSize, WORD32 dwPoint = 0);
@@ -124,8 +130,10 @@ CShmChannel<MASTER, POWER_NUM_S, POWER_NUM_R, NODE_SIZE>::~CShmChannel()
 
 template <BOOL MASTER, WORD32 POWER_NUM_S, WORD32 POWER_NUM_R, WORD32 NODE_SIZE>
 WORD32 CShmChannel<MASTER, POWER_NUM_S, POWER_NUM_R, NODE_SIZE>::Initialize(
-    WORD32 dwKeyS,
-    WORD32 dwKeyR)
+    WORD32  dwKeyS,
+    WORD32  dwKeyR,
+    VOID   *pVirtAddrS,
+    VOID   *pVirtAddrR)
 {
     WORD32 dwResult = 0;
 
@@ -134,13 +142,13 @@ WORD32 CShmChannel<MASTER, POWER_NUM_S, POWER_NUM_R, NODE_SIZE>::Initialize(
         m_cSyncBufRecver.Clean(dwKeyR);
         m_cSyncBufSender.Clean(dwKeyS);
 
-        dwResult = m_cSyncBufRecver.Initialize(dwKeyR, TRUE);
+        dwResult = m_cSyncBufRecver.Initialize(dwKeyR, TRUE, pVirtAddrR);
         if (SUCCESS != dwResult)
         {
             return FAIL;
         }
 
-        dwResult = m_cSyncBufSender.Initialize(dwKeyS, TRUE);
+        dwResult = m_cSyncBufSender.Initialize(dwKeyS, TRUE, pVirtAddrS);
         if (SUCCESS != dwResult)
         {
             return FAIL;
@@ -148,13 +156,13 @@ WORD32 CShmChannel<MASTER, POWER_NUM_S, POWER_NUM_R, NODE_SIZE>::Initialize(
     }
     else
     {
-        dwResult = m_cSyncBufSender.Initialize(dwKeyR, FALSE);
+        dwResult = m_cSyncBufSender.Initialize(dwKeyR, FALSE, pVirtAddrR);
         if (SUCCESS != dwResult)
         {
             return FAIL;
         }
 
-        dwResult = m_cSyncBufRecver.Initialize(dwKeyS, FALSE);
+        dwResult = m_cSyncBufRecver.Initialize(dwKeyS, FALSE, pVirtAddrS);
         if (SUCCESS != dwResult)
         {
             return FAIL;

@@ -69,10 +69,11 @@ INIT_EXPORT(InitShmMgr, 1);
 
 CShmMgr::CShmMgr ()
 {
-    m_bMaster      = FALSE;
-    m_dwChannelNum = 0;
-    m_dwPowerNum   = 0;
-    m_pMemPool     = NULL;
+    m_lwNextVirAddr = 0;
+    m_bMaster       = FALSE;
+    m_dwChannelNum  = 0;
+    m_dwPowerNum    = 0;
+    m_pMemPool      = NULL;
 
     for (WORD32 dwIndex = 0; dwIndex < MAX_CHANNEL_NUM; dwIndex++)
     {
@@ -95,10 +96,11 @@ CShmMgr::~CShmMgr()
         }
     }
 
-    m_bMaster      = FALSE;
-    m_dwChannelNum = 0;
-    m_dwPowerNum   = 0;
-    m_pMemPool     = NULL;
+    m_lwNextVirAddr = 0;
+    m_bMaster       = FALSE;
+    m_dwChannelNum  = 0;
+    m_dwPowerNum    = 0;
+    m_pMemPool      = NULL;
 
     memset(m_atChannel, 0x00, sizeof(m_atChannel));
 }
@@ -119,7 +121,8 @@ WORD32 CShmMgr::Initialize(BOOL             bMaster,
         return FAIL;
     }
 
-    BYTE *pBuf = NULL;
+    BYTE *pBuf      = NULL;
+    VOID *pVirtAddr = NULL;
 
     for (WORD32 dwIndex = 0; dwIndex < dwChannelNum; dwIndex++)
     {
@@ -412,7 +415,12 @@ CChannelTpl * CShmMgr::CreateMaster(WORD32  dwPowerNum,
         return NULL;
     }
 
-    WORD32 dwResult = pChannel->Initialize(dwKeyS, dwKeyR);
+    VOID   *pVirtAddrS = GetNextVirtAddr();
+    VOID   *pVirtAddrR = GetNextVirtAddr();
+    WORD32  dwResult   = pChannel->Initialize(dwKeyS,
+                                              dwKeyR,
+                                              pVirtAddrS,
+                                              pVirtAddrR);
     if (SUCCESS != dwResult)
     {
         return NULL;
@@ -472,13 +480,33 @@ CChannelTpl * CShmMgr::CreateSlave(WORD32  dwPowerNum,
         return NULL;
     }
 
-    WORD32 dwResult = pChannel->Initialize(dwKeyS, dwKeyR);
+    VOID   *pVirtAddrS = GetNextVirtAddr();
+    VOID   *pVirtAddrR = GetNextVirtAddr();
+    WORD32  dwResult   = pChannel->Initialize(dwKeyS,
+                                              dwKeyR,
+                                              pVirtAddrS,
+                                              pVirtAddrR);
     if (SUCCESS != dwResult)
     {
         return NULL;
     }
 
     return pChannel;
+}
+
+
+VOID * CShmMgr::GetNextVirtAddr()
+{
+    if (0 == m_lwNextVirAddr)
+    {
+        m_lwNextVirAddr = s_lwVirBassAddr;
+    }
+    else
+    {
+        m_lwNextVirAddr = m_lwNextVirAddr + s_lwGranularity;
+    }
+
+    return (VOID *)(m_lwNextVirAddr);
 }
 
 

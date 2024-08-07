@@ -140,7 +140,8 @@ public :
         volatile WORD64  alwMallocPoint[E_SHM_MALLOC_POINT_NUM];
         volatile WORD64  alwFreePoint[E_SHM_MALLOC_POINT_NUM];
 
-        volatile CHAR    aucResved1[SHM_HEAD_PAD_LEN]; /* 保留字段, 防踩踏 */
+        volatile WORD64  lwShmAddr;                    /* 共享内存虚拟地址 */
+        volatile WORD64  alwResved1[15];               /* 保留字段, 用于地址对齐 */
 
         volatile WORD32  adwNodesM[s_dwSizeM];         /* 存放内存池队列的节点信息(地址偏移) */
 
@@ -148,6 +149,8 @@ public :
 
         volatile WORD32  adwNodesQ[s_dwSizeQ];         /* 存放消息队列的节点信息(地址偏移) */
     }T_ShmHead;
+    static_assert((0 == (offsetof(T_ShmHead, adwNodesM) % CACHE_SIZE)), "unexpected layout");
+    static_assert((0 == (offsetof(T_ShmHead, adwNodesQ) % CACHE_SIZE)), "unexpected layout");
 
 
     typedef struct tagT_ShmNodeHead
@@ -170,7 +173,9 @@ public :
     virtual ~CShmHandler();
 
     /* Master作为消息队列接收方, Slave作为消息队列发送方 */
-    WORD32 Initialize(WORD32 dwKey, BOOL bMaster);
+    WORD32 Initialize(WORD32  dwKey,
+                      BOOL    bMaster,
+                      VOID   *pVirtAddr);
 
     WORD32 Clean(WORD32 dwKey);
 
@@ -202,7 +207,7 @@ protected :
     WORD32 InitContext(BOOL bMaster, T_ShmHead *ptHead);
     WORD32 InitMemPool(T_ShmHead* ptHead);
 
-    WORD32 Attach(WORD32 dwKey, BOOL bMaster, WORD64 lwSize);
+    WORD32 Attach(WORD32 dwKey, BOOL bMaster, WORD64 lwSize, VOID *pVirtAddr);
     WORD32 Detach(VOID *ptAddr, SWORD32 iShmID);
 
     BOOL IsValid(BYTE *pAddr);
@@ -269,7 +274,9 @@ CShmHandler<POWER_NUM, NODE_SIZE>::~CShmHandler()
 
 
 template <WORD32 POWER_NUM, WORD32 NODE_SIZE>
-WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::Initialize(WORD32 dwKey, BOOL bMaster)
+WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::Initialize(WORD32  dwKey,
+                                                     BOOL    bMaster,
+                                                     VOID   *pVirtAddr)
 {
     if (IsInitialized())
     {
@@ -286,7 +293,7 @@ WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::Initialize(WORD32 dwKey, BOOL bMaster)
         return FAIL;
     }
 
-    WORD32 dwResult = Attach(dwKey, bMaster, lwSize);
+    WORD32 dwResult = Attach(dwKey, bMaster, lwSize, pVirtAddr);
     if (SUCCESS != dwResult)
     {
         return FAIL;
@@ -765,12 +772,13 @@ WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::InitContext(BOOL bMaster, T_ShmHead *p
         ptHead->lwFreeCount    = 0;
         ptHead->lwEnqueueCount = 0;
         ptHead->lwDequeueCount = 0;
+        ptHead->lwShmAddr      = (WORD64)(ptHead);
 
         memset((VOID *)(ptHead->alwStatM),       0x00, (BIT_NUM_OF_WORD32 * sizeof(WORD64)));
         memset((VOID *)(ptHead->alwStatQ),       0x00, (BIT_NUM_OF_WORD32 * sizeof(WORD64)));
         memset((VOID *)(ptHead->alwMallocPoint), 0x00, (E_SHM_MALLOC_POINT_NUM * sizeof(WORD64)));
         memset((VOID *)(ptHead->alwFreePoint),   0x00, (E_SHM_MALLOC_POINT_NUM * sizeof(WORD64)));
-        memset((VOID *)(ptHead->aucResved1),     0x00, SHM_HEAD_PAD_LEN);
+        memset((VOID *)(ptHead->alwResved1),     0x00, SHM_HEAD_PAD_LEN);
         memset((VOID *)(ptHead->adwNodesM),      0x00, (s_dwSizeM * sizeof(WORD32)));
         memset((VOID *)(ptHead->aucResved2),     0x00, SHM_HEAD_PAD_LEN);
         memset((VOID *)(ptHead->adwNodesQ),      0x00, (s_dwSizeQ * sizeof(WORD32)));
@@ -863,13 +871,18 @@ WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::InitMemPool(T_ShmHead *ptHead)
 
 
 template <WORD32 POWER_NUM, WORD32 NODE_SIZE>
-WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::Attach(WORD32 dwKey, BOOL bMaster, WORD64 lwSize)
+WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::Attach(WORD32  dwKey,
+                                                 BOOL    bMaster,
+                                                 WORD64  lwSize,
+                                                 VOID   *pVirtAddr)
 {
-    key_t    tShmKey     = static_cast<key_t>(dwKey);
-    SWORD32  iShmgetFlag = 0666;
-    SWORD32  iShmID      = -1;
-    WORD32   dwResult    = 0;
-    VOID    *pAddr       = NULL;
+    key_t      tShmKey     = static_cast<key_t>(dwKey);
+    SWORD32    iShmgetFlag = 0666;
+    SWORD32    iShmID      = -1;
+    WORD32     dwResult    = 0;
+    VOID      *pAddr       = NULL;
+    T_ShmHead *ptShmHead   = NULL;
+    VOID      *pShmAddr    = (bMaster) ? pVirtAddr : NULL;
 
     struct shmid_ds tShmDS;
 
@@ -887,7 +900,7 @@ WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::Attach(WORD32 dwKey, BOOL bMaster, WOR
         }
     }
 
-    pAddr = shmat(iShmID, NULL, 0);
+    pAddr = shmat(iShmID, pShmAddr, 0);
     if (((VOID *)-1) == pAddr)
     {
         return FAIL;
@@ -911,6 +924,24 @@ WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::Attach(WORD32 dwKey, BOOL bMaster, WOR
         Detach(pAddr, iShmID);
         return FAIL;
     }
+
+    ptShmHead = (T_ShmHead *)pAddr;
+    pShmAddr  = (VOID *)(ptShmHead->lwShmAddr);
+
+    assert(pShmAddr == pVirtAddr);
+
+    if (FALSE == bMaster)
+    {
+        shmdt(pAddr);
+
+        pAddr = shmat(iShmID, pShmAddr, 0);
+        if (((VOID *)-1) == pAddr)
+        {
+            return FAIL;
+        }
+    }
+
+    assert(pAddr == pVirtAddr);
 
     m_ptShmHead  = (T_ShmHead *)pAddr;
     m_dwKey      = dwKey;

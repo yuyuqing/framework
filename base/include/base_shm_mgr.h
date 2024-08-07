@@ -56,8 +56,10 @@ class CShmMgr : public CSingleton<CShmMgr>, public CBaseData
 public :
     enum { MAX_CHANNEL_NUM = 16 };
 
-    const static WORD32 s_dwMasterKey = 0x05F5E505;
-    const static WORD32 s_dwSlaveKey  = 0x05F5B665;
+    const static WORD64  s_lwVirBassAddr = 0x4400000000UL;
+    const static WORD64  s_lwGranularity = 0x100000000UL;
+    const static WORD32  s_dwMasterKey   = 0x05F5E505;
+    const static WORD32  s_dwSlaveKey    = 0x05F5B665;
 
 public : 
     CShmMgr();
@@ -82,7 +84,11 @@ protected :
     CChannelTpl * CreateMaster(WORD32 dwPowerNum, BYTE *pBuf, WORD32 dwKeyS, WORD32 dwKeyR);
     CChannelTpl * CreateSlave(WORD32 dwPowerNum, BYTE *pBuf, WORD32 dwKeyS, WORD32 dwKeyR);
 
+private :
+    VOID * GetNextVirtAddr();
+
 protected :
+    WORD64               m_lwNextVirAddr;
     BOOL                 m_bMaster;
     WORD32               m_dwChannelNum;
     WORD32               m_dwPowerNum;

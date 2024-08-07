@@ -13,7 +13,10 @@ CChannelTpl::~CChannelTpl()
 }
 
 
-WORD32 CChannelTpl::Initialize(WORD32 dwKeyS, WORD32 dwKeyR)
+WORD32 CChannelTpl::Initialize(WORD32  dwKeyS,
+                               WORD32  dwKeyR,
+                               VOID   *pVirtAddrS,
+                               VOID   *pVirtAddrR)
 {
     return SUCCESS;
 }
