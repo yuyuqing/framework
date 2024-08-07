@@ -149,8 +149,8 @@ public :
 
         volatile WORD32  adwNodesQ[s_dwSizeQ];         /* 存放消息队列的节点信息(地址偏移) */
     }T_ShmHead;
-    static_assert((0 == (offsetof(T_ShmHead, adwNodesM) % CACHE_SIZE)), "unexpected layout");
-    static_assert((0 == (offsetof(T_ShmHead, adwNodesQ) % CACHE_SIZE)), "unexpected layout");
+    static_assert((0 == (offsetof(T_ShmHead, adwNodesM) % SHM_HEAD_PAD_LEN)), "unexpected layout");
+    static_assert((0 == (offsetof(T_ShmHead, adwNodesQ) % SHM_HEAD_PAD_LEN)), "unexpected layout");
 
 
     typedef struct tagT_ShmNodeHead
@@ -778,7 +778,7 @@ WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::InitContext(BOOL bMaster, T_ShmHead *p
         memset((VOID *)(ptHead->alwStatQ),       0x00, (BIT_NUM_OF_WORD32 * sizeof(WORD64)));
         memset((VOID *)(ptHead->alwMallocPoint), 0x00, (E_SHM_MALLOC_POINT_NUM * sizeof(WORD64)));
         memset((VOID *)(ptHead->alwFreePoint),   0x00, (E_SHM_MALLOC_POINT_NUM * sizeof(WORD64)));
-        memset((VOID *)(ptHead->alwResved1),     0x00, SHM_HEAD_PAD_LEN);
+        memset((VOID *)(ptHead->alwResved1),     0x00, (SHM_HEAD_PAD_LEN - sizeof(WORD64)));
         memset((VOID *)(ptHead->adwNodesM),      0x00, (s_dwSizeM * sizeof(WORD32)));
         memset((VOID *)(ptHead->aucResved2),     0x00, SHM_HEAD_PAD_LEN);
         memset((VOID *)(ptHead->adwNodesQ),      0x00, (s_dwSizeQ * sizeof(WORD32)));
