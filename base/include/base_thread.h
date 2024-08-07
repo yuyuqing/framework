@@ -151,7 +151,7 @@ public :
     enum { DEFAULT_POLICY          = SCHED_OTHER };
     enum { DEFAULT_STACK_SIZE      = 16 * 1024 };
     enum { DEFAULT_PRIORITY        = 20 };
-    enum { THREAD_TICK_GRANULARITY = 10000 };    /* 10ms¡£∂» */
+    enum { THREAD_TICK_GRANULARITY = 500000 };    /* 500ms¡£∂» */
 
 public :
     CBaseThread (const T_ThreadParam &rtParam);

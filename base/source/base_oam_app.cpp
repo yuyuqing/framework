@@ -323,7 +323,7 @@ VOID COamApp::TimeOutStartUpAllApps(const VOID *pIn, WORD32 dwLen)
         }
 
         LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE, 
-                   "Notify App init; AppID : %d, ThreadID : %d, Name : %s\n",
+                   "Notify App init; AppID : %3d, ThreadID : %3d, Name : %s\n",
                    ptAppInfo->dwAppID,
                    ptAppInfo->dwThreadID,
                    ptAppInfo->aucName);
