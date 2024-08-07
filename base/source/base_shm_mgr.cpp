@@ -121,8 +121,7 @@ WORD32 CShmMgr::Initialize(BOOL             bMaster,
         return FAIL;
     }
 
-    BYTE *pBuf      = NULL;
-    VOID *pVirtAddr = NULL;
+    BYTE *pBuf = NULL;
 
     for (WORD32 dwIndex = 0; dwIndex < dwChannelNum; dwIndex++)
     {
