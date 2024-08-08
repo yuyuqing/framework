@@ -83,6 +83,7 @@ CLogThread::CLogThread (const T_ThreadParam &rtParam)
     m_dwFileNum    = 0;
     m_lwEnqueCount = 0;
     m_bMeasSwitch  = FALSE;
+    m_dwSemPeriod  = THREAD_TICK_GRANULARITY;
     m_dwFileSize   = 0;
 
     memset(&m_tFastMeasure, 0x00, sizeof(m_tFastMeasure));
@@ -109,6 +110,7 @@ CLogThread::~CLogThread()
     m_dwFileNum    = 0;
     m_lwEnqueCount = 0;
     m_bMeasSwitch  = FALSE;
+    m_dwSemPeriod  = THREAD_TICK_GRANULARITY;
     m_dwFileSize   = 0;
 
     memset(&m_tFastMeasure, 0x00, sizeof(m_tFastMeasure));
@@ -123,6 +125,7 @@ WORD32 CLogThread::Initialize()
     T_LogJsonCfg &rJsonCfg = CBaseConfigFile::GetInstance()->GetLogJsonCfg();
 
     m_bMeasSwitch        = rJsonCfg.bMeasSwitch;
+    m_dwSemPeriod        = rJsonCfg.dwSemPeriod * 1000;
     m_tBindInfo.dwAppNum = rJsonCfg.dwAppNum;
 
     for (WORD32 dwIndex = 0; dwIndex < m_tBindInfo.dwAppNum; dwIndex++)
@@ -354,7 +357,7 @@ VOID CLogThread::DoRun()
 {
     TRACE_STACK("CLogThread::DoRun()");
 
-    WORD64 lwTick           = THREAD_TICK_GRANULARITY;
+    WORD64 lwTick           = (0 == m_dwSemPeriod) ? THREAD_TICK_GRANULARITY : m_dwSemPeriod;
     WORD32 dwProcHNum       = 0;
     WORD32 dwProcLNum       = 0;
     WORD32 dwProcDNum       = 0;

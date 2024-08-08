@@ -106,6 +106,7 @@ protected :
     std::atomic<WORD64>            m_lwEnqueCount;
 
     BOOL                           m_bMeasSwitch;  /* 日志维测开关 */
+    WORD32                         m_dwSemPeriod;  /* 日志线程信号量超时等待周期(单位:微秒) */
     WORD32                         m_dwFileSize;   /* 维测日志文件 */
 
     T_FastLogMeasure               m_tFastMeasure; /* Fast日志接口维测信息 */
