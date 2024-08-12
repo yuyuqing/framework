@@ -32,7 +32,7 @@ inline WORD32 AtomicCompareSet(volatile WORD32 *pdwDst,
           "a" (dwExp),
           "m" (*pdwDst)
         : "memory");                /* no-clobber list */
-    
+
     return ucRes;
 #endif
 }
@@ -94,7 +94,7 @@ class CSimpleRing : public CBaseRingInterface
 public :
     static const WORD32 s_dwSize = (1 << POWER_NUM);
     static const WORD32 s_dwMask = (s_dwSize - 1);
-    
+
 public :
     CSimpleRing ();
     virtual ~CSimpleRing();
@@ -172,7 +172,7 @@ inline WORD32 CSimpleRing<POWER_NUM>::Count()
     WORD32 dwProdTail = m_tProd.dwTail;
     WORD32 dwConsTail = m_tCons.dwTail;
     WORD32 dwCount    = (dwProdTail - dwConsTail) & (s_dwMask);
-    
+
     return (dwCount > s_dwMask) ? s_dwMask : dwCount;
 }
 
@@ -205,7 +205,7 @@ inline WORD32 CSimpleRing<POWER_NUM>::Enqueue(VOID *pObj)
     m_pQueue[dwIndex] = pObj;
 
     UpdateTail(m_tProd, dwProdHead, dwProdNext, 1);
-        
+
     return dwNum;
 }
 
@@ -232,9 +232,9 @@ inline WORD32 CSimpleRing<POWER_NUM>::Dequeue(VOID **pObj)
     *pObj = m_pQueue[dwIndex];
 
     __builtin_prefetch(((CHAR *)pObj), 1, 2);
-    
+
     UpdateTail(m_tCons, dwConsHead, dwConsNext, 0);
-    
+
     return dwNum;
 }
 
@@ -271,9 +271,9 @@ inline WORD32 CSimpleRing<POWER_NUM>::Dequeue(VOID **pObj, WORD16 wThreshold)
     *pObj = m_pQueue[dwIndex];
 
     __builtin_prefetch(((CHAR *)pObj), 1, 2);
-    
+
     UpdateTail(m_tCons, dwConsHead, dwConsNext, 0);
-    
+
     return dwNum;
 }
 
@@ -408,7 +408,7 @@ class CBaseRingTpl : public CBaseRingInterface
 public :
     static const WORD32 s_dwSize = (1 << POWER_NUM);
     static const WORD32 s_dwMask = (s_dwSize - 1);
-    
+
 public :
     CBaseRingTpl ();
     virtual ~CBaseRingTpl();
@@ -479,7 +479,7 @@ protected :
 
     WORD32           m_dwProdID;
     WORD32           m_dwConsID;
-    
+
     WORD32           m_dwCapacity;
 
     /* ¶ÓÁÐÖ¸Õë */

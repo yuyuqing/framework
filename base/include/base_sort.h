@@ -35,7 +35,7 @@ inline BOOL LessV(T &rLeft, T &rRight, VT T::* pValue)
 {
     // VT vL = rLeft.*pValue;
     // VT vR = rRight.*pValue;
-    
+
     return (rLeft.*pValue) < (rRight.*pValue);
 }
 
@@ -128,7 +128,7 @@ VOID InsertSort(T                *pBegin,
     for (SWORD32 dwI = 1; dwI < dwNum; dwI++)
     {
         T tmp = *(pBegin + dwI);
-        
+
         SWORD32 dwJ = (dwI - 1);
         for (; dwJ >= 0; dwJ--)
         {
@@ -141,7 +141,7 @@ VOID InsertSort(T                *pBegin,
                 break ;
             }
         }
-        
+
         *(pBegin + (dwJ+1)) = tmp;
     }
 }
@@ -156,7 +156,7 @@ VOID InsertSort(T      *pBegin,
     for (SWORD32 dwI = 1; dwI < dwNum; dwI++)
     {
         T tmp = *(pBegin + dwI);
-        
+
         SWORD32 dwJ = (dwI - 1);
         for (; dwJ >= 0; dwJ--)
         {
@@ -169,7 +169,7 @@ VOID InsertSort(T      *pBegin,
                 break ;
             }
         }
-        
+
         *(pBegin + (dwJ+1)) = tmp;
     }
 }

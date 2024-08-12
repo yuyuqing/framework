@@ -19,7 +19,7 @@ public :
         }
 
         s_pInstance = new T();
-        
+
         return s_pInstance;
     }
 
@@ -31,7 +31,7 @@ public :
         }
 
         s_pInstance = new (pMem) T();
-        
+
         return s_pInstance;
     }
 
@@ -44,7 +44,7 @@ public :
 
         s_pInstance = NULL;
     }
-    
+
 protected :
     CSingleton () {}
     virtual ~CSingleton() {}

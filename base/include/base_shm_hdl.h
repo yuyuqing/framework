@@ -58,17 +58,17 @@ typedef struct tagT_ShmSnapshot
     volatile WORD32  dwProdTailM;                  /* 内存池生产者游标:尾指针 */
     volatile WORD32  dwConsHeadM;                  /* 内存池消费者游标:头指针 */
     volatile WORD32  dwConsTailM;                  /* 内存池消费者游标:尾指针 */
-    
+
     volatile WORD32  dwProdHeadQ;                  /* 消息队列生产者游标:头指针 */
     volatile WORD32  dwProdTailQ;                  /* 消息队列生产者游标:尾指针 */
     volatile WORD32  dwConsHeadQ;                  /* 消息队列消费者游标:头指针 */
     volatile WORD32  dwConsTailQ;                  /* 消息队列消费者游标:尾指针 */
-    
+
     volatile WORD64  lwMallocCount;                /* 内存分配次数统计 */
     volatile WORD64  lwFreeCount;                  /* 内存释放次数统计 */
     volatile WORD64  lwEnqueueCount;               /* 入消息队列统计 */
     volatile WORD64  lwDequeueCount;               /* 出消息队列统计 */
-    
+
     volatile WORD64  alwStatM[BIT_NUM_OF_WORD32];  /* 内存分配后持续占用时间统计, 单位 : Cycle */
     volatile WORD64  alwStatQ[BIT_NUM_OF_WORD32];  /* 消息从入队到出队持续占用时间统计, 单位 : Cycle */
 
@@ -103,7 +103,7 @@ public :
         volatile WORD64  lwMagic;                      /* 魔法数字 */
         volatile WORD32  dwVersion;                    /* 版本号 */
         volatile WORD32  dwHeadSize;                   /* 头信息size */
-        
+
         volatile WORD32  dwPowerNumM;                  /* 指定内存池队列的指数次幂(N+1) */
         volatile WORD32  dwPowerNumQ;                  /* 指定消息队列的指数次幂(N) */
         volatile WORD32  dwNodeNumM;                   /* 必须是2^(N+1)次幂 */
@@ -1002,20 +1002,20 @@ inline WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::EnqueueM(
     WORD32 dwSuccess     = 0;
 
     dwProdHead = __atomic_load_n(&(rtHead.dwProdHeadM), __ATOMIC_RELAXED);
-    
+
     do
     {
         __atomic_thread_fence(__ATOMIC_ACQUIRE);
-    
+
         dwConsTail    = __atomic_load_n(&(rtHead.dwConsTailM), __ATOMIC_ACQUIRE);
         dwFreeEntries = (s_dwMaskM + dwConsTail - dwProdHead);
         if (unlikely(0 == dwFreeEntries))
         {
             continue ;
         }
-    
+
         dwProdNext = dwProdHead + 1;
-    
+
         /* 若(m_ptShmHead->dwProdHeadM)取值与dwProdHead相等, 则将dwProdNext的值写入(m_ptShmHead->dwProdHeadM) */
         /* 若(m_ptShmHead->dwProdHeadM)取值与dwProdHead不等, 则将(m_ptShmHead->dwProdHeadM)的值写入dwProdHead */
         dwSuccess = __atomic_compare_exchange_n(&(rtHead.dwProdHeadM),
@@ -1036,7 +1036,7 @@ inline WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::EnqueueM(
         _mm_pause();
 #endif
     }
-    
+
     __atomic_store_n(&(rtHead.dwProdTailM), dwProdNext, __ATOMIC_RELEASE);
 
     return 1;
@@ -1080,7 +1080,7 @@ inline WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::DequeueM(
     }while (unlikely(dwSuccess == 0));
 
     rdwPos = rtHead.adwNodesM[(dwConsHead & s_dwMaskM)];
-    
+
     while (__atomic_load_n(&(rtHead.dwConsTailM), __ATOMIC_RELAXED) != dwConsHead)
     {
 #ifdef ARCH_ARM64    
@@ -1089,7 +1089,7 @@ inline WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::DequeueM(
         _mm_pause();
 #endif
     }
-    
+
     __atomic_store_n(&(rtHead.dwConsTailM), dwConsNext, __ATOMIC_RELEASE);
 
     return 1;
@@ -1108,20 +1108,20 @@ inline WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::EnqueueQ(
     WORD32 dwSuccess     = 0;
 
     dwProdHead = __atomic_load_n(&(rtHead.dwProdHeadQ), __ATOMIC_RELAXED);
-    
+
     do
     {
         __atomic_thread_fence(__ATOMIC_ACQUIRE);
-    
+
         dwConsTail    = __atomic_load_n(&(rtHead.dwConsTailQ), __ATOMIC_ACQUIRE);
         dwFreeEntries = (s_dwMaskM + dwConsTail - dwProdHead);
         if (unlikely(0 == dwFreeEntries))
         {
             continue ;
         }
-    
+
         dwProdNext = dwProdHead + 1;
-    
+
         /* 若(m_ptShmHead->dwProdHeadM)取值与dwProdHead相等, 则将dwProdNext的值写入(m_ptShmHead->dwProdHeadM) */
         /* 若(m_ptShmHead->dwProdHeadM)取值与dwProdHead不等, 则将(m_ptShmHead->dwProdHeadM)的值写入dwProdHead */
         dwSuccess = __atomic_compare_exchange_n(&(rtHead.dwProdHeadQ),
@@ -1142,7 +1142,7 @@ inline WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::EnqueueQ(
         _mm_pause();
 #endif
     }
-    
+
     __atomic_store_n(&(rtHead.dwProdTailQ), dwProdNext, __ATOMIC_RELEASE);
 
     return 1;
@@ -1186,7 +1186,7 @@ inline WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::DequeueQ(
     }while (unlikely(dwSuccess == 0));
 
     rdwPos = rtHead.adwNodesQ[(dwConsHead & s_dwMaskQ)];
-    
+
     while (__atomic_load_n(&(rtHead.dwConsTailQ), __ATOMIC_RELAXED) != dwConsHead)
     {
 #ifdef ARCH_ARM64    
@@ -1195,7 +1195,7 @@ inline WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::DequeueQ(
         _mm_pause();
 #endif
     }
-    
+
     __atomic_store_n(&(rtHead.dwConsTailQ), dwConsNext, __ATOMIC_RELEASE);
 
     return 1;
@@ -1216,11 +1216,11 @@ WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::EnqueueBurstQ(
     WORD32 dwSuccess     = 0;
 
     dwProdHead = __atomic_load_n(&(rtHead.dwProdHeadQ), __ATOMIC_RELAXED);
-    
+
     do
     {
         __atomic_thread_fence(__ATOMIC_ACQUIRE);
-    
+
         dwConsTail    = __atomic_load_n(&(rtHead.dwConsTailQ), __ATOMIC_ACQUIRE);
         dwFreeEntries = (s_dwMaskM + dwConsTail - dwProdHead);
         if (unlikely(dwNum > dwFreeEntries))
@@ -1232,9 +1232,9 @@ WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::EnqueueBurstQ(
         {
             return 0;
         }
-    
+
         dwProdNext = dwProdHead + dwNum;
-    
+
         /* 若(m_ptShmHead->dwProdHeadM)取值与dwProdHead相等, 则将dwProdNext的值写入(m_ptShmHead->dwProdHeadM) */
         /* 若(m_ptShmHead->dwProdHeadM)取值与dwProdHead不等, 则将(m_ptShmHead->dwProdHeadM)的值写入dwProdHead */
         dwSuccess = __atomic_compare_exchange_n(&(rtHead.dwProdHeadQ),
@@ -1290,7 +1290,7 @@ WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::EnqueueBurstQ(
         _mm_pause();
 #endif
     }
-    
+
     __atomic_store_n(&(rtHead.dwProdTailQ), dwProdNext, __ATOMIC_RELEASE);
 
     rdwFreeSize = dwFreeEntries - dwNum;
@@ -1387,7 +1387,7 @@ WORD32 CShmHandler<POWER_NUM, NODE_SIZE>::DequeueBurstQ(
         _mm_pause();
 #endif
     }
-    
+
     __atomic_store_n(&(rtHead.dwConsTailQ), dwConsNext, __ATOMIC_RELEASE);
 
     rdwAvailable = dwEntries - dwNum;
