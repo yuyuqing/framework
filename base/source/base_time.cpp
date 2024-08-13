@@ -264,9 +264,9 @@ VOID CGlobalClock::CalcCpuFreq(WORD64 lwLastCycle,
                                WORD32 dwLastCpuFreq)
 {
     CHighClock cCurClock;
-    
+
     WORD64 lwCurCycle    = GetCycle();
-    WORD64 lwCurMicroSec = cCurClock.MicroSecond();;
+    WORD64 lwCurMicroSec = cCurClock.MicroSecond();
 
     WORD64 lwDiffMicroSec = lwCurMicroSec - lwLastMicroSec;
     WORD64 lwDiffCycles   = lwCurCycle - lwLastCycle;

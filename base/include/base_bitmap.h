@@ -18,7 +18,7 @@ public :
     enum { BITMAP_BYTE_NUM     = BM_BYTE_NUM };
     enum { BITMAP_BIT_NUM      = BM_BYTE_NUM * BIT_NUM_PER_BYTE };    
     enum { BITMAP_MATCH_SYMBOL = 0xFFFF };
-    
+
 public :
     CBaseBitMapTpl();
 

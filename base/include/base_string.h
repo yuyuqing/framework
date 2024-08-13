@@ -292,7 +292,7 @@ inline BOOL CString<STR_LEN>::isMatch(const CHAR *paucData)
             return FALSE;
         }
     }
-    
+
     return (0 == memcmp(m_aucData, 
                         paucData, 
                         dwLen));

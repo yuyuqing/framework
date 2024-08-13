@@ -13,7 +13,7 @@ DEFINE_THREAD(CMultiThread);
 
 
 WORD32 ExitThreadCtrl(VOID *pArg)
-{    
+{
     CThreadCntrl::Destroy();
 
     return SUCCESS;

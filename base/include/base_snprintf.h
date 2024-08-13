@@ -16,7 +16,7 @@
 typedef enum tagE_Decimal
 {
     E_DECIMAL_10 = 10,
-    E_DECIMAL_16 = 16,    
+    E_DECIMAL_16 = 16,
 }E_Decimal;
 
 

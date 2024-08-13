@@ -171,7 +171,7 @@ WORD32 IntToStr(CHAR   *pDst,
     WORD32  dwLen = 0;
     CHAR   *pStr  = NULL;
     CHAR    aucInteger[INTEGER_TO_STR_LEN] = {0};
-        
+
     pStr = IntegerToString(dwBase, 
                            lwValue, 
                            &(aucInteger[INTEGER_TO_STR_LEN - 1]),
@@ -318,14 +318,14 @@ WORD32 base_vsnprintf(CHAR       *pDst,
                                                &(aucInteger[INTEGER_TO_STR_LEN - 1]));
                     }                    
                 }
-            
+
                 while ((*pStr) && (pDst < pEnd))
                 {
                     *pDst++ = *pStr++;
                 }
             }
             break ;
-            
+
         case 'c' :
             {
                 const CHAR cVal = (CHAR)(va_arg(tParamList, WORD32));
@@ -335,7 +335,7 @@ WORD32 base_vsnprintf(CHAR       *pDst,
                 }
             }
             break ;
-            
+
         case 's' :
             {
                 const CHAR *pVal = va_arg(tParamList, CHAR *);
@@ -475,7 +475,7 @@ WORD32 base_assemble(CHAR       *pDst,
             *pDst++ = *pStr++;
         }
     }
-    
+
     *pDst  = 0;
     return (WORD32)(pDst - pStart);
 }

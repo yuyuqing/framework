@@ -20,7 +20,7 @@ public :
     virtual ~CBlockMemObject();
 
     WORD32 Initialize(WORD32 dwPoolID, WORD32 dwBlockID, WORD32 dwPowerNum, WORD32 dwTrunkSize);
-    
+
     BYTE * Malloc(WORD32 dwSize, WORD32 dwPoint);
 
     WORD32 Free(BYTE *pAddr);

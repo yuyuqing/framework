@@ -76,7 +76,7 @@ typedef struct tagT_LogicalCoreConfig
     WORD32     dwLogicalID;  /* 逻辑核ID, 系统唯一编号 */
     WORD32     dwSocketID;   /* 物理槽ID */
     WORD32     dwCoreID;     /* 物理槽上的CPU核ID */
-    
+
     cpu_set_t  tCpuSet;      /* CPU亲和性设置 */
 }T_CoreConfig;
 
@@ -96,7 +96,7 @@ public :
     WORD32 GetCoreNum();
 
     VOID Dump();
-    
+
 protected :
     WORD32          m_dwCoreNum;
     T_CoreConfig    m_atCore[MAX_CPU_CORE_NUM];
@@ -109,7 +109,7 @@ inline T_CoreConfig * CCpuCoreInfo::operator[] (WORD32 dwIndex)
     {
         return NULL;
     }
-    
+
     return &(m_atCore[dwIndex]);
 }
 

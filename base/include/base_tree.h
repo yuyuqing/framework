@@ -83,14 +83,14 @@ public :
         VT          tKey;
         BYTE        aucData[sizeof(CTreeData)];
     }T_TreeData;
-    
+
     typedef struct tagT_TreeNode
     {
         BYTE            ucType;      /* 0 : Leaf; 1 : Internal */
         BYTE            ucNumEntry;  /* 本层节点数量 */
 
         VT              atKey[BTREE_MAX_NUM_ENTRY];      /* CRNTI or Other */
-        
+
         tagT_TreeNode  *apChild[BTREE_MAX_NUM_ENTRY];    /* Leaf时无效 */
         T_TreeData     *apData[BTREE_MAX_NUM_ENTRY];     /* Leaf时有效 */
     }T_TreeNode;
@@ -145,7 +145,7 @@ protected :
     WORD32 Delete(T_TreeNode *pNode, const VT &rKey, WORD32 &dwInstID);
 
     T * Search(T_TreeNode *pNode, const VT &rKey);
-    
+
     VOID LevelDump(T_TreeNode *pNode, PTreeDump<T, VT> pFunc);
 
 protected :
@@ -222,7 +222,7 @@ inline T * CBTreeTpl<T, VT, POWER_NUM>::Find(VT &rKey)
     {
         return NULL;
     }
-    
+
     return Search(m_pRoot, rKey);
 }
 
@@ -399,7 +399,7 @@ WORD32 CBTreeTpl<T, VT, POWER_NUM>::Clear(
     }
 
     Free(pNode);
-    
+
     return SUCCESS;
 }
 
@@ -413,7 +413,7 @@ CBTreeTpl<T, VT, POWER_NUM>::Malloc(BYTE ucType)
 
     /* 分配必然不会失败, 如出现失败, 则强制跑死 */
     memset(pNode, 0x00, sizeof(T_TreeNode));
-    
+
     pNode->ucType = ucType;
 
     return pNode;
@@ -533,11 +533,11 @@ WORD32 CBTreeTpl<T, VT, POWER_NUM>::Add(
 {
     SWORD16 swPos     = 0;
     SWORD32 swCompare = 0;
-    
+
     if (BTREE_LEAF_NODE == pNode->ucType)    /* 叶子节点 */
     {
         swPos = pNode->ucNumEntry;
-        
+
         while (swPos > 0)
         {
             swCompare = (*m_pCmpFunc)(rKey, pNode->atKey[swPos - 1]);
@@ -554,11 +554,11 @@ WORD32 CBTreeTpl<T, VT, POWER_NUM>::Add(
                 break ;
             }
         }
-    
+
         pNode->atKey[swPos]  = rKey;
         pNode->apData[swPos] = &rData;
         pNode->ucNumEntry++;
-    
+
         return SUCCESS;
     }
     else    /* 非叶子节点 */
@@ -595,8 +595,8 @@ WORD32 CBTreeTpl<T, VT, POWER_NUM>::Add(
         /* 寻找到待插入子树已经满, 需要增加该子树的深度 */
         if (BTREE_MAX_NUM_ENTRY == pNode->apChild[swPos]->ucNumEntry)
         {
-            SplitChild(*pNode, swPos, *(pNode->apChild[swPos]));      
-                        
+            SplitChild(*pNode, swPos, *(pNode->apChild[swPos]));
+
             swCompare = (*m_pCmpFunc)(rKey, pNode->atKey[swPos]);
             if (swCompare > 0)
             {

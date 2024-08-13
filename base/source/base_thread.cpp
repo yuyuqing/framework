@@ -270,7 +270,7 @@ CBaseThread::~CBaseThread()
         delete m_pLogger;
         m_rCentralMemPool.Free((BYTE *)m_pLogger);
     }
-    
+
     memset(m_aucName,     0x00, sizeof(m_aucName));
     memset(m_aucThrdName, 0x00, sizeof(m_aucThrdName));
     memset(&m_tThreadID,  0x00, sizeof(m_tThreadID));

@@ -19,7 +19,7 @@ public :
     friend class CAppIdleState;
     friend class CAppWorkState;
     friend class CAppExitState;
-    
+
 public :
     CAppInterface(E_AppClass eClass);
     virtual ~CAppInterface();
@@ -175,7 +175,7 @@ inline WORD32 CAppInterface::GetAssocID(WORD32 dwPos)
     {
         return INVALID_DWORD;
     }
-    
+
     return m_adwAssocID[dwPos];
 }
 
