@@ -99,32 +99,50 @@ extern "C" {
  * EV_OAM_START ~ EV_OAM_END
  *****************************************************************************/
 /*****************************************************************************/
-/* DUMGR->RRU消息号段 (640 ~ 655)   起始消息ID : 640 */
+/* 线程池框架OAM消息号段 (512 ~ 543) */
+#define EV_FRAMEWORK_OAM_START                     ((WORD32)(EV_OAM_START + 0x000))
+#define EV_FRAMEWORK_OAM_END                       ((WORD32)(EV_OAM_START + 0x01F))
+
+/* DuOamAgent消息号段    (544 ~ 575) */
+#define EV_DU_OAM_AGENT_START                      ((WORD32)(EV_OAM_START + 0x020))
+#define EV_DU_OAM_AGENT_END                        ((WORD32)(EV_OAM_START + 0x03F))
+
+/* DUMGR->RRU消息号段    (640 ~ 655)   起始消息ID : 640 */
 #define EV_DUMGR_RRU_START                         ((WORD32)(EV_OAM_START + 0x080))
 #define EV_DUMGR_RRU_END                           ((WORD32)(EV_OAM_START + 0x08F))
 
+/* 日志线程处理消息(COamApp处理) */
+#define EV_BASE_LOG_SET_GLOBAL_SWITCH_ID           ((WORD32)(EV_FRAMEWORK_OAM_START + 0))
+#define EV_BASE_LOG_SET_WRITE_PERIOD_ID            ((WORD32)(EV_FRAMEWORK_OAM_START + 1))
+#define EV_BASE_LOG_SET_MODULE_SWITCH_ID           ((WORD32)(EV_FRAMEWORK_OAM_START + 2))
+#define EV_OAM_REGIST_CALLBACK_ID                  ((WORD32)(EV_FRAMEWORK_OAM_START + 3))
+#define EV_OAM_REMOVE_CALLBACK_ID                  ((WORD32)(EV_FRAMEWORK_OAM_START + 4))
+
+/* 定时器线程处理消息 */
+#define EV_TIMER_START_TIMER_ID                    ((WORD32)(EV_FRAMEWORK_OAM_START + 5))
+#define EV_TIMER_STOP_TIMER_ID                     ((WORD32)(EV_FRAMEWORK_OAM_START + 6))
+#define EV_TIMER_RESET_TIMER_ID                    ((WORD32)(EV_FRAMEWORK_OAM_START + 7))
+#define EV_TIMER_SLOT_TTI_ID                       ((WORD32)(EV_FRAMEWORK_OAM_START + 8))
+
+/* DuOamAgent消息号段    (544 ~ 575) */
+#define EV_OAM_START_REQUEST                       ((WORD32)(EV_DU_OAM_AGENT_START + 0))
+#define EV_OAM_CONFIG_REQUEST                      ((WORD32)(EV_DU_OAM_AGENT_START + 1))
+#define EV_OAM_DU_CONFIG_REQUEST                   ((WORD32)(EV_DU_OAM_AGENT_START + 2))
+#define EV_OAM_DU_CONFIG_RESPONSE                  ((WORD32)(EV_DU_OAM_AGENT_START + 3))
+#define EV_OAM_CELL_CONFIG_REQUEST                 ((WORD32)(EV_DU_OAM_AGENT_START + 4))
+#define EV_OAM_CELL_CONFIG_RESPONSE                ((WORD32)(EV_DU_OAM_AGENT_START + 5))
+
+
+/* DUMGR->RRU消息号段    (640 ~ 655)   起始消息ID : 640 */
 #define EV_DUMGR_RRU_CELL_CFG_REQ                  ((WORD32)(EV_DUMGR_RRU_START + 0))
 #define EV_DUMGR_RRU_CELL_RECFG_REQ                ((WORD32)(EV_DUMGR_RRU_START + 1))
 #define EV_DUMGR_RRU_CELL_DELETE_REQ               ((WORD32)(EV_DUMGR_RRU_START + 2))
-
 
 /*****************************************************************************/
 /******************************************************************************
  * 定义平台消息号段内部各个子模块消息号段 (512 ~ 1023)
  * EV_OAM_START ~ EV_OAM_END
  *****************************************************************************/
-/* 日志线程处理消息(COamApp处理) */
-#define EV_BASE_LOG_SET_GLOBAL_SWITCH_ID           ((WORD32)(EV_OAM_START + 0))
-#define EV_BASE_LOG_SET_WRITE_PERIOD_ID            ((WORD32)(EV_OAM_START + 1))
-#define EV_BASE_LOG_SET_MODULE_SWITCH_ID           ((WORD32)(EV_OAM_START + 2))
-#define EV_OAM_REGIST_CALLBACK_ID                  ((WORD32)(EV_OAM_START + 3))
-#define EV_OAM_REMOVE_CALLBACK_ID                  ((WORD32)(EV_OAM_START + 4))
-
-/* 定时器线程处理消息 */
-#define EV_TIMER_START_TIMER_ID                    ((WORD32)(EV_OAM_START + 5))
-#define EV_TIMER_STOP_TIMER_ID                     ((WORD32)(EV_OAM_START + 6))
-#define EV_TIMER_RESET_TIMER_ID                    ((WORD32)(EV_OAM_START + 7))
-#define EV_TIMER_SLOT_TTI_ID                       ((WORD32)(EV_OAM_START + 8))
 
 
 /******************************************************************************

@@ -24,6 +24,12 @@ typedef enum tagE_AppClass
     E_APP_EGTP,           /* CEgtpApp */
     E_APP_NRUP,           /* CNrupApp */
     E_APP_SCH_UCI,
+    E_APP_OAM_AGENT,
+    E_APP_DUMGR,
+    E_APP_DUF1AP,
+    E_APP_DUCELL,
+    E_APP_DURRM,
+    E_APP_DUUE,
 
     E_APP_DPDK_BB,
     E_APP_DPDK_ETH,
