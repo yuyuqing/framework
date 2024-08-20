@@ -69,11 +69,12 @@ INIT_EXPORT(InitShmMgr, 1);
 
 CShmMgr::CShmMgr ()
 {
-    m_lwNextVirAddr = 0;
-    m_bMaster       = FALSE;
-    m_dwChannelNum  = 0;
-    m_dwPowerNum    = 0;
-    m_pMemPool      = NULL;
+    m_lwNextVirAddr   = 0;
+    m_bMaster         = FALSE;
+    m_dwCtrlChannelID = 0;
+    m_dwChannelNum    = 0;
+    m_dwPowerNum      = 0;
+    m_pMemPool        = NULL;
 
     for (WORD32 dwIndex = 0; dwIndex < MAX_CHANNEL_NUM; dwIndex++)
     {
@@ -96,11 +97,12 @@ CShmMgr::~CShmMgr()
         }
     }
 
-    m_lwNextVirAddr = 0;
-    m_bMaster       = FALSE;
-    m_dwChannelNum  = 0;
-    m_dwPowerNum    = 0;
-    m_pMemPool      = NULL;
+    m_lwNextVirAddr   = 0;
+    m_bMaster         = FALSE;
+    m_dwCtrlChannelID = 0;
+    m_dwChannelNum    = 0;
+    m_dwPowerNum      = 0;
+    m_pMemPool        = NULL;
 
     memset(m_atChannel, 0x00, sizeof(m_atChannel));
 }
@@ -111,9 +113,7 @@ WORD32 CShmMgr::Initialize(BOOL             bMaster,
                            WORD32           dwPowerNum,
                            CCentralMemPool *pCentralMemPool)
 {
-    //TRACE_STACK("CShmMgr::Initialize()");
-
-    if ( (dwChannelNum > MAX_CHANNEL_NUM)
+    if ( ((dwChannelNum + 1) > MAX_CHANNEL_NUM)
       || (dwPowerNum < E_ShmPowerNum_14)
       || (dwPowerNum > E_ShmPowerNum_18)
       || (NULL == pCentralMemPool))
@@ -121,11 +121,11 @@ WORD32 CShmMgr::Initialize(BOOL             bMaster,
         return FAIL;
     }
 
-    BYTE *pBuf = NULL;
+    BYTE   *pBuf    = NULL;
+    WORD32  dwIndex = 0;
 
-    for (WORD32 dwIndex = 0; dwIndex < dwChannelNum; dwIndex++)
+    for (dwIndex = 0; dwIndex < dwChannelNum; dwIndex++)
     {
-        pBuf = NULL;
         pBuf = pCentralMemPool->Malloc(SHM_CHANNEL_SIZE);
         if (NULL == pBuf)
         {
@@ -143,10 +143,26 @@ WORD32 CShmMgr::Initialize(BOOL             bMaster,
         }
     }
 
-    m_bMaster      = bMaster;
-    m_dwChannelNum = dwChannelNum;
-    m_dwPowerNum   = dwPowerNum;
-    m_pMemPool     = pCentralMemPool;
+    pBuf = pCentralMemPool->Malloc(SHM_CHANNEL_SIZE);
+    if (NULL == pBuf)
+    {
+        return FAIL;
+    }
+
+    m_apChannel[dwIndex] = CreateCtrlChannel(bMaster,
+                                             pBuf,
+                                             s_dwMasterKey + dwIndex,
+                                             s_dwSlaveKey + dwIndex);
+    if (NULL == m_apChannel[dwIndex])
+    {
+        return FAIL;
+    }
+
+    m_bMaster         = bMaster;
+    m_dwCtrlChannelID = dwIndex;
+    m_dwChannelNum    = dwChannelNum + 1;
+    m_dwPowerNum      = dwPowerNum;
+    m_pMemPool        = pCentralMemPool;
 
     return SUCCESS;
 }
@@ -351,8 +367,6 @@ CChannelTpl * CShmMgr::CreateChannel(BOOL    bMaster,
                                      WORD32  dwKeyS,
                                      WORD32  dwKeyR)
 {
-    //TRACE_STACK("CShmMgr::CreateChannel()");
-
     if (bMaster)
     {
         return CreateMaster(dwPowerNum, pBuf, dwKeyS, dwKeyR);
@@ -369,8 +383,6 @@ CChannelTpl * CShmMgr::CreateMaster(WORD32  dwPowerNum,
                                     WORD32  dwKeyS,
                                     WORD32  dwKeyR)
 {
-    //TRACE_STACK("CShmMgr::CreateMaster()");
-
     CChannelTpl *pChannel = NULL;
 
     switch (dwPowerNum)
@@ -434,8 +446,6 @@ CChannelTpl * CShmMgr::CreateSlave(WORD32  dwPowerNum,
                                    WORD32  dwKeyS,
                                    WORD32  dwKeyR)
 {
-    //TRACE_STACK("CShmMgr::CreateSlave()");
-
     CChannelTpl *pChannel = NULL;
 
     switch (dwPowerNum)
@@ -474,6 +484,72 @@ CChannelTpl * CShmMgr::CreateSlave(WORD32  dwPowerNum,
         break ;
     }
 
+    if (NULL == pChannel)
+    {
+        return NULL;
+    }
+
+    VOID   *pVirtAddrS = GetNextVirtAddr();
+    VOID   *pVirtAddrR = GetNextVirtAddr();
+    WORD32  dwResult   = pChannel->Initialize(dwKeyS,
+                                              dwKeyR,
+                                              pVirtAddrS,
+                                              pVirtAddrR);
+    if (SUCCESS != dwResult)
+    {
+        return NULL;
+    }
+
+    return pChannel;
+}
+
+
+CChannelTpl * CShmMgr::CreateCtrlChannel(BOOL    bMaster,
+                                         BYTE   *pBuf,
+                                         WORD32  dwKeyS,
+                                         WORD32  dwKeyR)
+{
+    if (bMaster)
+    {
+        return CreateCtrlMaster(pBuf, dwKeyS, dwKeyR);
+    }
+    else
+    {
+        return CreateCtrlSlave(pBuf, dwKeyS, dwKeyR);
+    }
+}
+
+
+CChannelTpl * CShmMgr::CreateCtrlMaster(BYTE   *pBuf,
+                                        WORD32  dwKeyS,
+                                        WORD32  dwKeyR)
+{
+    CChannelTpl *pChannel = new (pBuf) CShmCHannelMCtrl();
+    if (NULL == pChannel)
+    {
+        return NULL;
+    }
+
+    VOID   *pVirtAddrS = GetNextVirtAddr();
+    VOID   *pVirtAddrR = GetNextVirtAddr();
+    WORD32  dwResult   = pChannel->Initialize(dwKeyS,
+                                              dwKeyR,
+                                              pVirtAddrS,
+                                              pVirtAddrR);
+    if (SUCCESS != dwResult)
+    {
+        return NULL;
+    }
+
+    return pChannel;
+}
+
+
+CChannelTpl * CShmMgr::CreateCtrlSlave(BYTE   *pBuf,
+                                       WORD32  dwKeyS,
+                                       WORD32  dwKeyR)
+{
+    CChannelTpl *pChannel = new (pBuf) CShmCHannelSCtrl();
     if (NULL == pChannel)
     {
         return NULL;

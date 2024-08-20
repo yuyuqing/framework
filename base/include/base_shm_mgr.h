@@ -12,11 +12,13 @@ typedef enum tagE_ShmNodeSize
 {
     E_ShmNodeSize_002K = 2048,
     E_ShmNodeSize_004K = 4096,
+    E_ShmNodeSize_128K = 131072,
 }E_ShmNodeSize;
 
 
 typedef enum tagE_ShmPowerNum
 {
+    E_ShmPowerNum_10 = 10,
     E_ShmPowerNum_14 = 14,
     E_ShmPowerNum_15 = 15,
     E_ShmPowerNum_16 = 16,
@@ -39,9 +41,15 @@ typedef CShmChannel<FALSE, E_ShmPowerNum_18, E_ShmPowerNum_16, E_ShmNodeSize_002
 typedef CShmChannel<FALSE, E_ShmPowerNum_17, E_ShmPowerNum_15, E_ShmNodeSize_002K>    CShmChannelS17;
 typedef CShmChannel<FALSE, E_ShmPowerNum_16, E_ShmPowerNum_14, E_ShmNodeSize_002K>    CShmChannelS16;
 
+/* 用于控制面SCTP消息的共享内存 */
+typedef CShmChannel<TRUE,  E_ShmPowerNum_10, E_ShmPowerNum_10, E_ShmNodeSize_128K>    CShmCHannelMCtrl;
+typedef CShmChannel<FALSE, E_ShmPowerNum_10, E_ShmPowerNum_10, E_ShmNodeSize_128K>    CShmCHannelSCtrl;
 
-#define SHM_CHANNEL_SIZE    MAX(MAX(sizeof(CShmChannelM20), sizeof(CShmChannelS20)), \
-                                MAX(sizeof(CShmChannelM19), sizeof(CShmChannelS19)))
+
+#define SHM_CHANNEL_SIZE    MAX(MAX(MAX(sizeof(CShmChannelM20), sizeof(CShmChannelS20)),       \
+                                    MAX(sizeof(CShmChannelM19), sizeof(CShmChannelS19))),      \
+                                MAX(MAX(sizeof(CShmChannelM18), sizeof(CShmChannelS18)),       \
+                                    MAX(sizeof(CShmCHannelMCtrl), sizeof(CShmCHannelSCtrl))))
 
 
 typedef struct tagT_ChannelSnapshot
@@ -73,6 +81,7 @@ public :
     WORD32 GetChannelNum();
 
     CChannelTpl * GetChannel(WORD32 dwIndex);
+    CChannelTpl * GetCtrlChannel();
 
     VOID Snapshot();
 
@@ -84,12 +93,17 @@ protected :
     CChannelTpl * CreateMaster(WORD32 dwPowerNum, BYTE *pBuf, WORD32 dwKeyS, WORD32 dwKeyR);
     CChannelTpl * CreateSlave(WORD32 dwPowerNum, BYTE *pBuf, WORD32 dwKeyS, WORD32 dwKeyR);
 
+    CChannelTpl * CreateCtrlChannel(BOOL bMaster, BYTE *pBuf, WORD32 dwKeyS, WORD32 dwKeyR);
+    CChannelTpl * CreateCtrlMaster(BYTE *pBuf, WORD32 dwKeyS, WORD32 dwKeyR);
+    CChannelTpl * CreateCtrlSlave(BYTE *pBuf, WORD32 dwKeyS, WORD32 dwKeyR);
+
 private :
     VOID * GetNextVirtAddr();
 
 protected :
     WORD64               m_lwNextVirAddr;
     BOOL                 m_bMaster;
+    WORD32               m_dwCtrlChannelID;
     WORD32               m_dwChannelNum;
     WORD32               m_dwPowerNum;
 
@@ -114,6 +128,17 @@ inline CChannelTpl * CShmMgr::GetChannel(WORD32 dwIndex)
     }
 
     return m_apChannel[dwIndex];
+}
+
+
+inline CChannelTpl * CShmMgr::GetCtrlChannel()
+{
+    if (m_dwCtrlChannelID >= MAX_CHANNEL_NUM)
+    {
+        return NULL;
+    }
+
+    return m_apChannel[m_dwCtrlChannelID];
 }
 
 

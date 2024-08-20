@@ -20,6 +20,7 @@
 #define PENTA_CACHE_SIZE      ((WORD32)(320))
 #define OCTUPLE_CACHE_SIZE    ((WORD32)(512))
 #define QUARTER_PAGE_SIZE     ((WORD32)(1024))
+#define HALF_PAGE_SIZE        ((WORD32)(2048))
 
 
 template <typename T>
