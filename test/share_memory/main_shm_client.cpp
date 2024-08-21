@@ -110,7 +110,7 @@ int main(int argc, char **argv)
 
         dwLen = strlen(aucBuf);
 
-        for (WORD32 dwIndex = 0; dwIndex < 4; dwIndex++)
+        for (WORD32 dwIndex = 0; dwIndex <= 4; dwIndex++)
         {
             pChannel = g_pShmMgr->GetChannel(dwIndex);
 
@@ -128,7 +128,7 @@ int main(int argc, char **argv)
             pChannel->Post();
         }
 
-        for (WORD32 dwIndex = 0; dwIndex < 4; dwIndex++)
+        for (WORD32 dwIndex = 0; dwIndex <= 4; dwIndex++)
         {
             pChannel = g_pShmMgr->GetChannel(dwIndex);
 

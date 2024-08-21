@@ -108,7 +108,7 @@ int main(int argc, char **argv)
 
     while (TRUE)
     {
-        for (WORD32 dwIndex = 0; dwIndex < 4; dwIndex++)
+        for (WORD32 dwIndex = 0; dwIndex <= 4; dwIndex++)
         {
             pChannel = g_pShmMgr->GetChannel(dwIndex);
 
