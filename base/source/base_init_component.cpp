@@ -225,10 +225,7 @@ WORD32 CInitList::InitGlobalData(WORD32 dwProcID)
     }
 
     /* 初始化Block/Trunk MemPools内存池 */
-    if ((E_PROC_DU == dwProcID) || (E_PROC_FT == dwProcID))
-    {
-        m_pMemPools = CMemPools::GetInstance(pCentralMemPool);
-    }
+    m_pMemPools = CMemPools::GetInstance(pCentralMemPool);
 
     /* 注册线程专属数据区(主线程) */
     CDataZone *pDataZone = m_pMemMgr->GetDataZone();

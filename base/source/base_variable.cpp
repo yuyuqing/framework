@@ -27,6 +27,7 @@ const BYTE s_aucFileName[E_PROC_NUM][LOG_FILE_NAME_LEN] =
     "dhcp",       /* E_PROC_DHCP */
     "tr069",      /* E_PROC_TR069 */
     "monitor",    /* E_PROC_MONITOR */
+    "lte",        /* E_PROC_LTE */
     "main",       /* E_PROC_FT */
 };
 

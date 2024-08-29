@@ -35,6 +35,7 @@ typedef enum tagE_PROC
     E_PROC_DHCP,
     E_PROC_TR069,
     E_PROC_MONITOR,
+    E_PROC_LTE,
     E_PROC_FT,
     E_PROC_NUM,
 }E_PROC;

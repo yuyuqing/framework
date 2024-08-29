@@ -233,6 +233,12 @@ VOID CAppCntrl::Dump()
 
     for (WORD32 dwIndex = 0; dwIndex < m_dwAppNum; dwIndex++)
     {
+        /* 注册表App对应线程信息 */
+        LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_TRACE, TRUE, 
+                   "dwAppID : %3d, dwThreadID : %3d\n",
+                   dwIndex,
+                   m_adwAppThrdTbl[dwIndex]);
+
         LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_TRACE, TRUE, 
                    "dwAppID : %3d, dwThreadID : %3d, dwStartEventID : %5d, "
                    "dwMemSize : %9d, aucName : %s\n",
