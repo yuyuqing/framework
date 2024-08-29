@@ -481,7 +481,7 @@ WORD16 CNetStack::EncodeIpv6Packet(BYTE     *pPkt,
 /* 计算ICMP校验和 */
 WORD16 CNetStack::CalcIcmpCheckSum(WORD16 *pwAddr, WORD32 dwCount)
 {
-    register long lwSum = 0;
+    long lwSum = 0;
 
     while (dwCount > 1) 
     {
