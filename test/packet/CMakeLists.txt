@@ -21,3 +21,10 @@ set(main_packet_srcs
 add_executable(main_packet ${main_packet_srcs})
 redefine_file_macro(main_packet)
 target_link_libraries(main_packet -lglib-2.0 -Wl,--whole-archive ${lib_obj} -Wl,--no-whole-archive -lrt -pthread)
+
+
+set(main_trans_srcs
+    ${CMAKE_CURRENT_SOURCE_DIR}/main_trans.cpp)
+add_executable(main_trans ${main_trans_srcs})
+redefine_file_macro(main_trans)
+target_link_libraries(main_trans -lglib-2.0 -Wl,--whole-archive ${lib_obj} -Wl,--no-whole-archive -lrt -pthread)
