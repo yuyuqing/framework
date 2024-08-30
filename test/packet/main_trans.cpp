@@ -99,8 +99,38 @@ public :
 };
 
 
-typedef CTransTpl<CTestStep1>              CTestTrans1;
-typedef CTransTpl<CTestStep1, CTestStep2>  CTestTrans2;
+class CTestStep3 : public CBaseTransStepTpl<3, 13, 5>
+{
+public :
+    CTestStep3 (CBaseTrans *pTrans, WORD32 dwStepID)
+        : CBaseTransStepTpl<3, 13, 5> (pTrans, dwStepID)
+    {
+    }
+
+    virtual ~CTestStep3()
+    {
+    }
+
+    WORD32 ProcMsg(VOID *pIn, WORD16 wMsgLen)
+    {
+        return SUCCESS;
+    }
+
+    WORD32 ProcFail()
+    {
+        return SUCCESS;
+    }
+
+    WORD32 WaitTimeOut()
+    {
+        return SUCCESS;
+    }
+};
+
+
+typedef CTransTpl<CTestStep1>                          CTestTrans1;
+typedef CTransTpl<CTestStep1, CTestStep2>              CTestTrans2;
+typedef CTransTpl<CTestStep1, CTestStep2, CTestStep3>  CTestTrans3;
 
 
 int main(int argc, char **argv)
@@ -108,6 +138,7 @@ int main(int argc, char **argv)
     CTestTransApp  cApp;
     CTestTrans1    cTrans1(&cApp, 1);
     CTestTrans2    cTrans2(&cApp, 2);
+    CTestTrans3    cTrans3(&cApp, 3);
 
     return SUCCESS;
 }
