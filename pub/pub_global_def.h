@@ -15,6 +15,9 @@ extern "C" {
 #define MAX_LOG_LEVEL_NUM                           ((BYTE)(8))
 #define MAX_CELL_PER_GNB                            ((WORD32)(4))
 
+#define MAX_UE_NUM_PER_GNB                          ((WORD32)(1600))
+#define MAX_UE_NUM_PER_CELL                         ((WORD32)(1600))
+
 #define LOG_MODULE_LEN                              ((BYTE)(32))
 #define LOG_FILE_NAME_LEN                           ((WORD32)(80))
 
@@ -23,6 +26,9 @@ extern "C" {
 
 #define BITMAP_BYTE_NUM_02                          ((BYTE)(2))
 #define BITMAP_BYTE_NUM_32                          ((BYTE)(32))
+
+#define MAX_DEV_NUM                                 ((BYTE)(2))
+#define MAX_FAPI_CELL_NUM                           ((BYTE)(2))
 
 
 typedef enum tagE_PROC

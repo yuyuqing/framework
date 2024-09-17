@@ -8,6 +8,7 @@
 
 
 #define BIT_NUM_PER_BYTE    ((WORD32)(8))
+#define BIT_NUM_PER_DWORD   ((WORD32)(32))
 #define BYTE_NUM_PER_MB     ((WORD64)(1024 * 1024))
 
 
@@ -36,6 +37,9 @@ public :
     /* dwBitIndex 取值小于 BITMAP_BIT_NUM */
     BOOL operator & (WORD32 dwBitIndex);
 
+    /* 对所有字节设置为指定Value */
+    VOID SetAllValue(BYTE ucValue);
+
     /* dwBitIndex 取值小于 BITMAP_BIT_NUM */
     VOID SetBitMap(WORD32 dwBitIndex);    
 
@@ -43,6 +47,10 @@ public :
     VOID RemoveBitMap(WORD32 dwBitIndex);
 
     VOID ClearBitMap();
+
+    WORD32 FindConsecutiveBit1(WORD32 dwReqBitLen, WORD32 dwTotalBitLen);
+
+    VOID SetConsecutiveBit0(WORD32 dwStartPos, WORD32 dwReqResBitLen);
 
 protected :
     BYTE   m_aucBitMap[BITMAP_BYTE_NUM];
@@ -153,6 +161,14 @@ inline BOOL CBaseBitMapTpl<BM_BYTE_NUM>::operator & (WORD32 dwBitIndex)
 }
 
 
+/* 对所有字节设置为指定Value */
+template <BYTE BM_BYTE_NUM>
+inline VOID CBaseBitMapTpl<BM_BYTE_NUM>::SetAllValue(BYTE ucValue)
+{
+    memset(m_aucBitMap, ucValue, sizeof(m_aucBitMap));
+}
+
+
 template <BYTE BM_BYTE_NUM>
 inline VOID CBaseBitMapTpl<BM_BYTE_NUM>::SetBitMap(WORD32 dwBitIndex)
 {
@@ -187,6 +203,62 @@ template <BYTE BM_BYTE_NUM>
 inline VOID CBaseBitMapTpl<BM_BYTE_NUM>::ClearBitMap()
 {
     memset(m_aucBitMap, 0x00, BITMAP_BYTE_NUM);
+}
+
+
+template <BYTE BM_BYTE_NUM>
+inline WORD32 CBaseBitMapTpl<BM_BYTE_NUM>::FindConsecutiveBit1(
+    WORD32 dwReqBitLen,
+    WORD32 dwTotalBitLen)
+{
+    BOOL   bFlag        = FALSE;
+    WORD32 dwStartPos   = 0;
+    WORD32 dwFillBitNum = 0;
+    WORD32 dwPos        = 0;
+    BYTE   ucValue      = 0;
+
+    for (WORD32 dwIndex = 0; dwIndex < dwTotalBitLen; dwIndex++)
+    {
+        dwPos   = dwIndex / BIT_NUM_PER_BYTE;
+        ucValue = (BYTE)(1 << (dwIndex % BIT_NUM_PER_BYTE));
+
+        if (0 != (m_aucBitMap[dwPos] & ucValue))
+        {
+            dwFillBitNum++;
+
+            if (dwFillBitNum >= dwReqBitLen)
+            {
+                bFlag = TRUE;
+                break ;
+            }
+        }
+        else
+        {
+            dwStartPos   = dwIndex + 1;
+            dwFillBitNum = 0;
+        }
+    }
+
+    return bFlag ? dwStartPos : INVALID_DWORD;
+}
+
+
+template <BYTE BM_BYTE_NUM>
+inline VOID CBaseBitMapTpl<BM_BYTE_NUM>::SetConsecutiveBit0(
+    WORD32 dwStartPos, WORD32 dwReqResBitLen)
+{
+    WORD32  dwBitIdx = 0;
+    WORD32  dwPos    = 0;
+    BYTE    ucValue  = 0;
+
+    for (WORD32 dwIndex = 0; dwIndex < dwReqResBitLen; dwIndex++)
+    {
+        dwBitIdx = dwIndex + dwStartPos;
+        dwPos    = dwBitIdx / BIT_NUM_PER_BYTE;
+        ucValue  = (BYTE)(1 << (dwBitIdx % BIT_NUM_PER_BYTE));
+
+        m_aucBitMap[dwPos] &= (~ucValue);
+    }
 }
 
 

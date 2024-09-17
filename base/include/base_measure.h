@@ -419,6 +419,10 @@ typedef struct tagT_ClMsgWaitAtomicMeasure
 
 typedef struct tagT_PhyRecvCellMeasItem
 {
+    /* SCH调度结果无效统计 */
+    WORD64  lwSchInvalidPdcchNum;
+    WORD64  lwSchInvalidPdschNum;
+
     /* PDCCH统计 */
     WORD64  lwDlActvUeNum;
     WORD64  lwUlPdcchNum;
@@ -452,6 +456,10 @@ typedef struct tagT_PhyRecvCellMeasItem
 
 typedef struct tagT_PhyRecvCellAtomicMeasItem
 {
+    /* SCH调度结果无效统计 */
+    std::atomic<WORD64>  lwSchInvalidPdcchNum;
+    std::atomic<WORD64>  lwSchInvalidPdschNum;
+
     /* PDCCH统计 */
     std::atomic<WORD64>  lwDlActvUeNum;
     std::atomic<WORD64>  lwUlPdcchNum;
@@ -485,90 +493,32 @@ typedef struct tagT_PhyRecvCellAtomicMeasItem
 
 typedef struct tagT_PhyRecvCellMeasure
 {
+    WORD64                 lwSlotIndNum;
+    WORD64                 lwTotalTimeUsed;                      /* 从收到第一条TTI开始计时(单位:0.1us) */
+    WORD64                 alwJitter[BIT_NUM_OF_WORD32];         /* Slot抖动统计(单位:0.1us) */
     T_PhyRecvCellMeasItem  atMeas[SLOT_NUM_PER_HALF_SFN];        /* 组API相关维测 */
 }T_PhyRecvCellMeasure;
 
 
 typedef struct tagT_PhyRecvCellAtomicMeasure
 {
+    std::atomic<WORD64>          lwSlotIndNum;
+    std::atomic<WORD64>          lwTotalTimeUsed;                /* 从收到第一条TTI开始计时(单位:0.1us) */
+    std::atomic<WORD64>          alwJitter[BIT_NUM_OF_WORD32];   /* Slot抖动统计(单位:0.1us) */
     T_PhyRecvCellAtomicMeasItem  atMeas[SLOT_NUM_PER_HALF_SFN];  /* 组API相关维测 */
 }T_PhyRecvCellAtomicMeasure;
 
 
 typedef struct tagT_PhyRecvMeasure
 {
-    WORD64                lwSlotIndNum;
     T_PhyRecvCellMeasure  atCell[MAX_CELL_PER_GNB];
 }T_PhyRecvMeasure;
 
 
 typedef struct tagT_PhyRecvAtomicMeasure
 {
-    std::atomic<WORD64>         lwSlotIndNum;
     T_PhyRecvCellAtomicMeasure  atCell[MAX_CELL_PER_GNB];
 }T_PhyRecvAtomicMeasure;
-
-
-typedef struct tagT_ClAppCellMeasItem
-{
-    WORD64  lwBchNum;
-    WORD64  lwDlSchNum;
-    WORD64  lwDlDciNum;
-    WORD64  lwCsiRsNum;
-
-    WORD64  lwTxPduNum;
-
-    WORD64  lwUlDciPduNum;
-
-    WORD64  lwPucchNum;
-    WORD64  lwPuschNum;
-    WORD64  lwSrsNum;
-}T_ClAppCellMeasItem;
-
-
-typedef struct tagT_ClAppCellAtomicMeasItem
-{
-    std::atomic<WORD64>  lwBchNum;
-    std::atomic<WORD64>  lwDlSchNum;
-    std::atomic<WORD64>  lwDlDciNum;
-    std::atomic<WORD64>  lwCsiRsNum;
-
-    std::atomic<WORD64>  lwTxPduNum;
-
-    std::atomic<WORD64>  lwUlDciPduNum;
-
-    std::atomic<WORD64>  lwPucchNum;
-    std::atomic<WORD64>  lwPuschNum;
-    std::atomic<WORD64>  lwSrsNum;
-}T_ClAppCellAtomicMeasItem;
-
-
-typedef struct tagT_ClAppCellMeasure
-{
-    T_ClAppCellMeasItem  atMeas[SLOT_NUM_PER_HALF_SFN];
-}T_ClAppCellMeasure;
-
-
-typedef struct tagT_ClAppCellAtomicMeasure
-{
-    T_ClAppCellAtomicMeasItem  atMeas[SLOT_NUM_PER_HALF_SFN];
-}T_ClAppCellAtomicMeasure;
-
-
-typedef struct tagT_ClAppMeasure
-{
-    WORD64              lwSlotIndNum;
-    WORD64              lwDiscontinueNum;
-    T_ClAppCellMeasure  atCell[MAX_CELL_PER_GNB];
-}T_ClAppMeasure;
-
-
-typedef struct tagT_ClAppAtomicMeasure
-{
-    std::atomic<WORD64>       lwSlotIndNum;
-    std::atomic<WORD64>       lwDiscontinueNum;
-    T_ClAppCellAtomicMeasure  atCell[MAX_CELL_PER_GNB];
-}T_ClAppAtomicMeasure;
 
 
 typedef struct tagT_UlRecvCellMeasItem
@@ -620,6 +570,7 @@ typedef struct tagT_UlRecvAtomicMeasure
 typedef struct tagT_SchAppCellMeasItem
 {
     WORD64  lwSlotIndNum;
+    WORD64  lwInvalidNum;
     WORD64  lwUciIndNum;
     WORD64  lwCrcIndNum;
     WORD64  lwSrsIndNum;
@@ -633,6 +584,7 @@ typedef struct tagT_SchAppCellMeasItem
 typedef struct tagT_SchAppCellAtomicMeasItem
 {
     std::atomic<WORD64>  lwSlotIndNum;
+    std::atomic<WORD64>  lwInvalidNum;
     std::atomic<WORD64>  lwUciIndNum;
     std::atomic<WORD64>  lwCrcIndNum;
     std::atomic<WORD64>  lwSrsIndNum;
@@ -665,6 +617,86 @@ typedef struct tagT_SchAppAtomicMeasure
 {
     T_SchAppCellAtomicMeasure  atCell[MAX_CELL_PER_GNB];
 }T_SchAppAtomicMeasure;
+
+
+typedef struct tagT_ClAppMeasItem
+{
+    WORD32  dwDlCfgMsgLen;
+    WORD32  dwTxReqMsgLen;
+    WORD32  dwUlDciMsgLen;
+    WORD32  dwUlCfgMsgLen;
+
+    WORD64  lwBchNum;
+    WORD64  lwDlSchNum;
+    WORD64  lwDlDciNum;
+    WORD64  lwCsiRsNum;
+
+    WORD64  lwTxPduNum;
+
+    WORD64  lwUlDciPduNum;
+
+    WORD64  lwPucchNum;
+    WORD64  lwPuschNum;
+    WORD64  lwSrsNum;
+    WORD64  lwRachNum;
+}T_ClAppMeasItem;
+
+
+typedef struct tagT_ClAppAtomicMeasItem
+{
+    std::atomic<WORD32>  dwDlCfgMsgLen;
+    std::atomic<WORD32>  dwTxReqMsgLen;
+    std::atomic<WORD32>  dwUlDciMsgLen;
+    std::atomic<WORD32>  dwUlCfgMsgLen;
+
+    std::atomic<WORD64>  lwBchNum;
+    std::atomic<WORD64>  lwDlSchNum;
+    std::atomic<WORD64>  lwDlDciNum;
+    std::atomic<WORD64>  lwCsiRsNum;
+
+    std::atomic<WORD64>  lwTxPduNum;
+
+    std::atomic<WORD64>  lwUlDciPduNum;
+
+    std::atomic<WORD64>  lwPucchNum;
+    std::atomic<WORD64>  lwPuschNum;
+    std::atomic<WORD64>  lwSrsNum;
+    std::atomic<WORD64>  lwRachNum;
+}T_ClAppAtomicMeasItem;
+
+
+typedef struct tagT_ClAppDlFapiCellMeasure
+{
+    WORD64           lwSlotIndNum;
+    WORD64           lwDiscontinueNum;
+    WORD64           lwTotalTimeUsed;               /* 从收到第一条TTI开始计时(单位:0.1us) */
+    WORD64           alwJitter[BIT_NUM_OF_WORD32];  /* Slot抖动统计(单位:0.1us) */
+
+    T_ClAppMeasItem  atMeas[SLOT_NUM_PER_HALF_SFN];
+}T_ClAppDlFapiCellMeasure;
+
+
+typedef struct tagT_ClAppDlFapiCellAtomicMeasure
+{
+    std::atomic<WORD64>    lwSlotIndNum;
+    std::atomic<WORD64>    lwDiscontinueNum;
+    std::atomic<WORD64>    lwTotalTimeUsed;               /* 从收到第一条TTI开始计时(单位:0.1us) */
+    std::atomic<WORD64>    alwJitter[BIT_NUM_OF_WORD32];  /* Slot抖动统计(单位:0.1us) */
+
+    T_ClAppAtomicMeasItem  atMeas[SLOT_NUM_PER_HALF_SFN];
+}T_ClAppDlFapiCellAtomicMeasure;
+
+
+typedef struct tagT_ClAppDlFapiMeasure
+{
+    T_ClAppDlFapiCellMeasure  atCell[MAX_CELL_PER_GNB];
+}T_ClAppDlFapiMeasure;
+
+
+typedef struct tagT_ClAppDlFapiAtomicMeasure
+{
+    T_ClAppDlFapiCellAtomicMeasure  atCell[MAX_CELL_PER_GNB];
+}T_ClAppDlFapiAtomicMeasure;
 
 
 #endif

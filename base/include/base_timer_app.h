@@ -135,10 +135,10 @@ public :
 
     WORD32 InnerDelete(WORD32 dwKey);
 
-    T_PhyRecvAtomicMeasure & GetPhyRecvMeasure();
-    T_ClAppAtomicMeasure   & GetClAppMeasure();
-    T_SchAppAtomicMeasure  & GetSchAppMeasure();
-    T_UlRecvAtomicMeasure  & GetUlRecvMeasure();
+    T_PhyRecvCellAtomicMeasure      & GetPhyRecvMeasure(WORD32 dwCellIdx);
+    T_ClAppDlFapiCellAtomicMeasure  & GetClAppMeasure(WORD32 dwCellIdx);
+    T_SchAppAtomicMeasure           & GetSchAppMeasure();
+    T_UlRecvAtomicMeasure           & GetUlRecvMeasure();
 
 protected :
     WORD32 InnerCreate(WORD32          dwKey,
@@ -153,33 +153,33 @@ protected :
                        VOID           *pUserData);
 
 protected :
-    CTimerTree              m_cTree;
-    CB_RegistMemPool        m_pRegistMemPoolFunc;  /* 向NGP内存池注册线程信息 */
+    CTimerTree                  m_cTree;
+    CB_RegistMemPool            m_pRegistMemPoolFunc;  /* 向NGP内存池注册线程信息 */
 
-    WORD64                  m_lwSlotCount;
-    WORD16                  m_wSFN;
-    BYTE                    m_ucSlot;
+    WORD64                      m_lwSlotCount;
+    WORD16                      m_wSFN;
+    BYTE                        m_ucSlot;
 
-    BYTE                    m_ucMeasMinute;  /* 维测定时器时长(单位:分钟) */
+    BYTE                        m_ucMeasMinute;  /* 维测定时器时长(单位:分钟) */
 
-    T_TimerMeasure          m_tMeas;
+    T_TimerMeasure              m_tMeas;
 
-    T_PhyRecvAtomicMeasure  m_tPhyRecvMeasure;
-    T_ClAppAtomicMeasure    m_tClAppMeasure;
-    T_SchAppAtomicMeasure   m_tSchAppMeasure;
-    T_UlRecvAtomicMeasure   m_tUlRecvMeasure;
+    T_PhyRecvAtomicMeasure      m_tPhyRecvMeasure;
+    T_ClAppDlFapiAtomicMeasure  m_tClAppMeasure;
+    T_SchAppAtomicMeasure       m_tSchAppMeasure;
+    T_UlRecvAtomicMeasure       m_tUlRecvMeasure;
 };
 
 
-inline T_PhyRecvAtomicMeasure & CTimerApp::GetPhyRecvMeasure()
+inline T_PhyRecvCellAtomicMeasure & CTimerApp::GetPhyRecvMeasure(WORD32 dwCellIdx)
 {
-    return m_tPhyRecvMeasure;
+    return m_tPhyRecvMeasure.atCell[dwCellIdx];
 }
 
 
-inline T_ClAppAtomicMeasure & CTimerApp::GetClAppMeasure()
+inline T_ClAppDlFapiCellAtomicMeasure & CTimerApp::GetClAppMeasure(WORD32 dwCellIdx)
 {
-    return m_tClAppMeasure;
+    return m_tClAppMeasure.atCell[dwCellIdx];
 }
 
 
