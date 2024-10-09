@@ -190,7 +190,8 @@ int main(int argc, char **argv)
     dwNext  = c33Bit.FindNext(0);
     dwLast  = c33Bit.FindLast(0);
 
-    c33Bit.Set(0, 1);
+    c33Bit.Set(0, bFlag);
+    c33Bit.Set(dwCount, bFlag);
 
     dwFirst = c33Bit.FindFirst();
     dwNext  = c33Bit.FindNext(0);
