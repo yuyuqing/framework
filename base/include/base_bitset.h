@@ -166,6 +166,7 @@ public :
     }
 
     BOOL operator[] (WORD32 dwPos) const;
+    BOOL operator & (WORD32 dwPos) const;
     BOOL operator==(const CBaseBitSetTpl<BIT_NUM> &rBitSet) const;
     BOOL operator!=(const CBaseBitSetTpl<BIT_NUM> &rBitSet) const;
     CBaseBitSetTpl<BIT_NUM> operator~() const;
@@ -534,7 +535,7 @@ inline CBaseBitSetTpl<BIT_NUM> & CBaseBitSetTpl<BIT_NUM>::operator>>=(WORD32 dwS
 template <WORD32 BIT_NUM>
 inline CBaseBitSetTpl<BIT_NUM> & CBaseBitSetTpl<BIT_NUM>::Set(WORD32 dwPos)
 {
-    if (dwPos < BIT_NUM)
+    if (likely(dwPos < BIT_NUM))
     {
         this->GetWord(dwPos) |= CBaseBitSetTpl<BIT_NUM>::MaskBit(dwPos);
     }
@@ -547,7 +548,7 @@ inline CBaseBitSetTpl<BIT_NUM> & CBaseBitSetTpl<BIT_NUM>::Set(WORD32 dwPos)
 template <WORD32 BIT_NUM>
 inline CBaseBitSetTpl<BIT_NUM> & CBaseBitSetTpl<BIT_NUM>::Set(WORD32 dwPos, BOOL bVal)
 {
-    if (dwPos < BIT_NUM)
+    if (likely(dwPos < BIT_NUM))
     {
         if (bVal)
         {
@@ -567,7 +568,7 @@ inline CBaseBitSetTpl<BIT_NUM> & CBaseBitSetTpl<BIT_NUM>::Set(WORD32 dwPos, BOOL
 template <WORD32 BIT_NUM>
 inline CBaseBitSetTpl<BIT_NUM> & CBaseBitSetTpl<BIT_NUM>::ReSet(WORD32 dwPos)
 {
-    if (dwPos < BIT_NUM)
+    if (likely(dwPos < BIT_NUM))
     {
         this->GetWord(dwPos) &= ~CBaseBitSetTpl<BIT_NUM>::MaskBit(dwPos);
     }
@@ -580,7 +581,7 @@ inline CBaseBitSetTpl<BIT_NUM> & CBaseBitSetTpl<BIT_NUM>::ReSet(WORD32 dwPos)
 template <WORD32 BIT_NUM>
 inline CBaseBitSetTpl<BIT_NUM> & CBaseBitSetTpl<BIT_NUM>::Flip(WORD32 dwPos)
 {
-    if (dwPos < BIT_NUM)
+    if (likely(dwPos < BIT_NUM))
     {
         this->GetWord(dwPos) ^= CBaseBitSetTpl<BIT_NUM>::MaskBit(dwPos);
     }
@@ -602,6 +603,23 @@ inline CBaseBitSetTpl<BIT_NUM> & CBaseBitSetTpl<BIT_NUM>::Flip()
 template <WORD32 BIT_NUM>
 inline BOOL CBaseBitSetTpl<BIT_NUM>::operator[] (WORD32 dwPos) const
 {
+    if (unlikely(dwPos>= BIT_NUM))
+    {
+        return FALSE;
+    }
+
+    return (this->GetWord(dwPos) & CBaseBitSetTpl<BIT_NUM>::MaskBit(dwPos)) != 0;
+}
+
+
+template <WORD32 BIT_NUM>
+inline BOOL CBaseBitSetTpl<BIT_NUM>::operator & (WORD32 dwPos) const
+{
+    if (unlikely(dwPos>= BIT_NUM))
+    {
+        return FALSE;
+    }
+
     return (this->GetWord(dwPos) & CBaseBitSetTpl<BIT_NUM>::MaskBit(dwPos)) != 0;
 }
 
