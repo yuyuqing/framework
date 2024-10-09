@@ -9,7 +9,12 @@
 
 #define BIT_NUM_PER_BYTE    ((WORD32)(8))
 #define BIT_NUM_PER_DWORD   ((WORD32)(32))
+#define BIT_NUM_PER_LWORD   ((WORD32)(64))
 #define BYTE_NUM_PER_MB     ((WORD64)(1024 * 1024))
+
+
+extern const BYTE s_aucBitCount[256];
+extern const BYTE s_aucFirstOne[256];
 
 
 template <BYTE BM_BYTE_NUM>
