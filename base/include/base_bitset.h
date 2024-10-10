@@ -148,6 +148,26 @@ public :
     /* 从Prev bit位开始, 从低到高查找连续bit位为0的最后1个bit(返回该bit的Pos), 未找到时返回dwPrev */
     WORD32 FindLast0(WORD32 dwPrev);
 
+    /* 在指定窗口内寻找最大连续bit位为1的区间 */
+    WORD32 FindMaxConsecutive(WORD32  dwStartPos,
+                              WORD32  dwEndPos,
+                              WORD32 &rdwPos,
+                              WORD32 &rdwBitLen);
+
+    /* 在指定窗口内寻找满足需求的连续bit位为1的区间 */
+    WORD32 FindFixConsecutive(WORD32  dwStartPos,
+                              WORD32  dwEndPos,
+                              WORD32  dwReqBitLen,
+                              WORD32 &rdwPos,
+                              WORD32 &rdwBitLen);
+
+    /* 在指定窗口内寻找尽可能满足需求的连续bit位为1的区间 */
+    WORD32 FindBestConsecutive(WORD32  dwStartPos,
+                               WORD32  dwEndPos,
+                               WORD32  dwReqBitLen,
+                               WORD32 &rdwPos,
+                               WORD32 &rdwBitLen);
+
     CBaseBitSetTpl<BIT_NUM> & operator&=(const CBaseBitSetTpl<BIT_NUM> &rBitSet);
     CBaseBitSetTpl<BIT_NUM> & operator|=(const CBaseBitSetTpl<BIT_NUM> &rBitSet);
     CBaseBitSetTpl<BIT_NUM> & operator^=(const CBaseBitSetTpl<BIT_NUM> &rBitSet);
@@ -588,6 +608,209 @@ inline WORD32 CBaseBitSetTpl<BIT_NUM>::FindLast0(WORD32 dwPrev)
     }
 
     return (dwPrev - 1);
+}
+
+
+/* 在指定窗口内寻找最大连续bit位为1的区间 */
+template <WORD32 BIT_NUM>
+inline WORD32 CBaseBitSetTpl<BIT_NUM>::FindMaxConsecutive(WORD32  dwStartPos,
+                                                          WORD32  dwEndPos,
+                                                          WORD32 &rdwPos,
+                                                          WORD32 &rdwBitLen)
+{
+    WORD32 dwFirst  = 0;
+    WORD32 dwLast   = 0;
+    WORD32 dwTmpMax = 0;
+    WORD32 dwTmpPos = 0;
+
+    rdwBitLen = 0;
+
+    if (0 == dwStartPos)
+    {
+        dwFirst = FindFirst();
+    }
+    else
+    {
+        dwFirst = FindNext(dwStartPos - 1);
+    }
+
+    if (INVALID_DWORD == dwFirst)
+    {
+        return FAIL;
+    }
+
+    while (dwFirst <= dwEndPos)
+    {
+        dwLast = FindLast(dwFirst);
+        if (dwLast == dwFirst)
+        {
+            /* 只有1个bit位 */
+            dwTmpPos = dwFirst;
+            dwTmpMax = 1;
+        }
+        else if (dwLast > dwEndPos)
+        {
+            /* 超出指定窗口 */
+            dwTmpPos = dwFirst;
+            dwTmpMax = dwEndPos - dwFirst + 1;
+        }
+        else
+        {
+            /* 在指定窗口内连续bit位为1 */
+            dwTmpPos = dwFirst;
+            dwTmpMax = dwLast - dwFirst + 1;
+        }
+
+        if (dwTmpMax > rdwBitLen)
+        {
+            rdwPos    = dwTmpPos;
+            rdwBitLen = dwTmpMax;
+        }
+
+        dwFirst = FindNext(dwTmpPos + dwTmpMax);
+    }
+
+    return rdwBitLen ? SUCCESS : FAIL;
+}
+
+
+/* 在指定窗口内寻找满足需求的连续bit位为1的区间 */
+template <WORD32 BIT_NUM>
+inline WORD32 CBaseBitSetTpl<BIT_NUM>::FindFixConsecutive(WORD32  dwStartPos,
+                                                          WORD32  dwEndPos,
+                                                          WORD32  dwReqBitLen,
+                                                          WORD32 &rdwPos,
+                                                          WORD32 &rdwBitLen)
+{
+    WORD32 dwFirst  = 0;
+    WORD32 dwLast   = 0;
+    WORD32 dwTmpMax = 0;
+    WORD32 dwTmpPos = 0;
+
+    rdwBitLen = 0;
+
+    if (0 == dwStartPos)
+    {
+        dwFirst = FindFirst();
+    }
+    else
+    {
+        dwFirst = FindNext(dwStartPos - 1);
+    }
+
+    if (INVALID_DWORD == dwFirst)
+    {
+        return FAIL;
+    }
+
+    while (dwFirst <= dwEndPos)
+    {
+        dwLast = FindLast(dwFirst);
+        if (dwLast == dwFirst)
+        {
+            /* 只有1个bit位 */
+            dwTmpPos = dwFirst;
+            dwTmpMax = 1;
+        }
+        else if (dwLast > dwEndPos)
+        {
+            /* 超出指定窗口 */
+            dwTmpPos = dwFirst;
+            dwTmpMax = dwEndPos - dwFirst + 1;
+        }
+        else
+        {
+            /* 在指定窗口内连续bit位为1 */
+            dwTmpPos = dwFirst;
+            dwTmpMax = dwLast - dwFirst + 1;
+        }
+
+        if (dwTmpMax >= dwReqBitLen)
+        {
+            rdwPos    = dwTmpPos;
+            rdwBitLen = dwTmpMax;
+
+            break ;
+        }
+
+        dwFirst = FindNext(dwTmpPos + dwTmpMax);
+    }
+
+    return rdwBitLen ? SUCCESS : FAIL;
+}
+
+
+/* 在指定窗口内寻找尽可能满足需求的连续bit位为1的区间 */
+template <WORD32 BIT_NUM>
+inline WORD32 CBaseBitSetTpl<BIT_NUM>::FindBestConsecutive(WORD32  dwStartPos,
+                                                           WORD32  dwEndPos,
+                                                           WORD32  dwReqBitLen,
+                                                           WORD32 &rdwPos,
+                                                           WORD32 &rdwBitLen)
+{
+    WORD32 dwFirst  = 0;
+    WORD32 dwLast   = 0;
+    WORD32 dwTmpMax = 0;
+    WORD32 dwTmpPos = 0;
+
+    rdwBitLen = 0;
+
+    if (0 == dwStartPos)
+    {
+        dwFirst = FindFirst();
+    }
+    else
+    {
+        dwFirst = FindNext(dwStartPos - 1);
+    }
+
+    if (INVALID_DWORD == dwFirst)
+    {
+        return FAIL;
+    }
+
+    while (dwFirst <= dwEndPos)
+    {
+        dwLast = FindLast(dwFirst);
+        if (dwLast == dwFirst)
+        {
+            /* 只有1个bit位 */
+            dwTmpPos = dwFirst;
+            dwTmpMax = 1;
+        }
+        else if (dwLast > dwEndPos)
+        {
+            /* 超出指定窗口 */
+            dwTmpPos = dwFirst;
+            dwTmpMax = dwEndPos - dwFirst + 1;
+        }
+        else
+        {
+            /* 在指定窗口内连续bit位为1 */
+            dwTmpPos = dwFirst;
+            dwTmpMax = dwLast - dwFirst + 1;
+        }
+
+        if (dwTmpMax >= dwReqBitLen)
+        {
+            rdwPos    = dwTmpPos;
+            rdwBitLen = dwTmpMax;
+
+            break ;
+        }
+        else if (dwTmpMax > rdwBitLen)
+        {
+            rdwPos    = dwTmpPos;
+            rdwBitLen = dwTmpMax;
+        }
+        else
+        {
+        }
+
+        dwFirst = FindNext(dwTmpPos + dwTmpMax);
+    }
+
+    return rdwBitLen ? SUCCESS : FAIL;
 }
 
 

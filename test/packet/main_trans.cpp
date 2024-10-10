@@ -136,11 +136,17 @@ typedef CTransTpl<CTestStep1, CTestStep2, CTestStep3>  CTestTrans3;
 
 int main(int argc, char **argv)
 {
-    BOOL   bFlag   = FALSE;
-    WORD32 dwCount = 0;
-    WORD32 dwFirst = 0;
-    WORD32 dwNext  = 0;
-    WORD32 dwLast  = 0;
+    BOOL   bFlag     = FALSE;
+    WORD32 dwCount   = 0;
+    WORD32 dwFirst   = 0;
+    WORD32 dwNext    = 0;
+    WORD32 dwLast    = 0;
+    WORD32 dwMaxPos  = 0;
+    WORD32 dwMaxLen  = 0;
+    WORD32 dwFixPos  = 0;
+    WORD32 dwFixLen  = 0;
+    WORD32 dwBestPos = 0;
+    WORD32 dwBestLen = 0;
 
     CBaseBitSetTpl<3>   c3Bit0(255);
     CBaseBitSetTpl<3>   c3Bit1(255);
@@ -153,6 +159,14 @@ int main(int argc, char **argv)
     CBaseBitSetTpl<31>  c31Bit1 = ~c31Bit;
     CBaseBitSetTpl<31>  c31Bit2 = c31Bit << 8;
     CBaseBitSetTpl<31>  c31Bit3 = c31Bit >> 12;
+
+    c64Bit.FindMaxConsecutive(0, 63, dwMaxPos, dwMaxLen);
+    c64Bit.FindFixConsecutive(0, 63, 4, dwFixPos, dwFixLen);
+    c64Bit.FindBestConsecutive(0, 63, 4, dwBestPos, dwBestLen);
+
+    c129Bit.FindMaxConsecutive(0, 128, dwMaxPos, dwMaxLen);
+    c129Bit.FindFixConsecutive(5, 128, 4, dwFixPos, dwFixLen);
+    c129Bit.FindBestConsecutive(7, 128, 4, dwBestPos, dwBestLen);
 
     dwFirst = c129Bit.FindFirst0();
     dwNext  = c129Bit.FindNext0(dwFirst);
