@@ -133,11 +133,20 @@ public :
     /* 从低到高查找第一个bit位为1的bit(返回该bit的Pos), 未找到时返回无效值 */
     WORD32 FindFirst();
 
+    /* 从低到高查找第一个bit位为0的bit(返回该bit的Pos), 未找到时返回无效值 */
+    WORD32 FindFirst0();
+
     /* 从Prev bit位开始, 从低到高查找下一个bit位为1的bit(返回该bit的Pos), 未找到时返回无效值 */
     WORD32 FindNext(WORD32 dwPrev);
 
+    /* 从Prev bit位开始, 从低到高查找下一个bit位为0的bit(返回该bit的Pos), 未找到时返回无效值 */
+    WORD32 FindNext0(WORD32 dwPrev);
+
     /* 从Prev bit位开始, 从低到高查找连续bit位为1的最后1个bit(返回该bit的Pos), 未找到时返回dwPrev */
     WORD32 FindLast(WORD32 dwPrev);
+
+    /* 从Prev bit位开始, 从低到高查找连续bit位为0的最后1个bit(返回该bit的Pos), 未找到时返回dwPrev */
+    WORD32 FindLast0(WORD32 dwPrev);
 
     CBaseBitSetTpl<BIT_NUM> & operator&=(const CBaseBitSetTpl<BIT_NUM> &rBitSet);
     CBaseBitSetTpl<BIT_NUM> & operator|=(const CBaseBitSetTpl<BIT_NUM> &rBitSet);
@@ -289,6 +298,38 @@ inline WORD32 CBaseBitSetTpl<BIT_NUM>::FindFirst()
 }
 
 
+/* 从低到高查找第一个bit位为0的bit(返回该bit的Pos), 未找到时返回无效值 */
+template <WORD32 BIT_NUM>
+inline WORD32 CBaseBitSetTpl<BIT_NUM>::FindFirst0()
+{
+    WORD32 dwCurVal = 0;
+    BYTE   ucCurVal = 0;
+
+    for (WORD32 dwIndex = 0; dwIndex < BITSET_DWORD_NUM; dwIndex++)
+    {
+        dwCurVal = ~m_adwBitSet[dwIndex];
+        if (dwCurVal != 0)
+        {
+            for (WORD32 dwIndex1 = 0; dwIndex1 < sizeof(WORD32); dwIndex1++)
+            {
+                ucCurVal = (BYTE)(dwCurVal & 0x000000FF);
+
+                if (ucCurVal)
+                {
+                    return (dwIndex * BIT_NUM_PER_DWORD)
+                         + (dwIndex1 * BIT_NUM_PER_BYTE)
+                         + s_aucFirstOne[ucCurVal];
+                }
+
+                dwCurVal >>= BIT_NUM_PER_BYTE;
+            }
+        }
+    }
+
+    return INVALID_DWORD;
+}
+
+
 /* 从Prev bit位开始, 从低到高查找下一个bit位为1的bit(返回该bit的Pos), 未找到时返回无效值 */
 template <WORD32 BIT_NUM>
 inline WORD32 CBaseBitSetTpl<BIT_NUM>::FindNext(WORD32 dwPrev)
@@ -329,6 +370,68 @@ inline WORD32 CBaseBitSetTpl<BIT_NUM>::FindNext(WORD32 dwPrev)
     for (; dwIndex < BITSET_DWORD_NUM; dwIndex++)
     {
         dwCurVal = m_adwBitSet[dwIndex];
+        if (dwCurVal != 0)
+        {
+            for (dwIndex1 = 0; dwIndex1 < sizeof(WORD32); dwIndex1++)
+            {
+                ucCurVal = (BYTE)(dwCurVal & 0x000000FF);
+
+                if (ucCurVal)
+                {
+                    return (dwIndex * BIT_NUM_PER_DWORD)
+                         + (dwIndex1 * BIT_NUM_PER_BYTE)
+                         + s_aucFirstOne[ucCurVal];
+                }
+
+                dwCurVal >>= BIT_NUM_PER_BYTE;
+            }
+        }
+    }
+
+    return INVALID_DWORD;
+}
+
+
+/* 从Prev bit位开始, 从低到高查找下一个bit位为0的bit(返回该bit的Pos), 未找到时返回无效值 */
+template <WORD32 BIT_NUM>
+inline WORD32 CBaseBitSetTpl<BIT_NUM>::FindNext0(WORD32 dwPrev)
+{
+    dwPrev++;
+    if (dwPrev >= BIT_NUM)
+    {
+        return INVALID_DWORD;
+    }
+
+    WORD32 dwIndex  = CBaseBitSetTpl<BIT_NUM>::WhichWord(dwPrev);
+    WORD32 dwIndex1 = 0;
+    WORD32 dwCurVal = ~m_adwBitSet[dwIndex];
+    BYTE   ucCurVal = 0;
+
+    dwCurVal &= (~static_cast<WORD32>(0)) << CBaseBitSetTpl<BIT_NUM>::WhichBit(dwPrev);
+    if (dwCurVal != 0)
+    {
+        dwIndex1   = CBaseBitSetTpl<BIT_NUM>::WhichByte(dwPrev);
+        dwCurVal >>= dwIndex1 * BIT_NUM_PER_BYTE;
+
+        for (; dwIndex1 < sizeof(WORD32); dwIndex1++)
+        {
+            ucCurVal = (BYTE)(dwCurVal & 0x000000FF);
+
+            if (ucCurVal)
+            {
+                return (dwIndex * BIT_NUM_PER_DWORD)
+                     + (dwIndex1 * BIT_NUM_PER_BYTE)
+                     + s_aucFirstOne[ucCurVal];
+            }
+
+            dwCurVal >>= BIT_NUM_PER_BYTE;
+        }
+    }
+
+    dwIndex++;
+    for (; dwIndex < BITSET_DWORD_NUM; dwIndex++)
+    {
+        dwCurVal = ~m_adwBitSet[dwIndex];
         if (dwCurVal != 0)
         {
             for (dwIndex1 = 0; dwIndex1 < sizeof(WORD32); dwIndex1++)
@@ -396,6 +499,74 @@ inline WORD32 CBaseBitSetTpl<BIT_NUM>::FindLast(WORD32 dwPrev)
     for (; dwIndex < BITSET_DWORD_NUM; dwIndex++)
     {
         dwCurVal = ~(m_adwBitSet[dwIndex]);
+        if (dwCurVal != 0)
+        {
+            for (dwIndex1 = 0; dwIndex1 < sizeof(WORD32); dwIndex1++)
+            {
+                ucCurVal = (BYTE)(dwCurVal & 0x000000FF);
+
+                if (ucCurVal)
+                {
+                    dwEndPos = (dwIndex * BIT_NUM_PER_DWORD)
+                             + (dwIndex1 * BIT_NUM_PER_BYTE)
+                             + s_aucFirstOne[ucCurVal];
+
+                    return dwEndPos ? (dwEndPos - 1) : 0;
+                }
+
+                dwCurVal >>= BIT_NUM_PER_BYTE;
+            }
+        }
+    }
+
+    return (dwPrev - 1);
+}
+
+
+/* 从Prev bit位开始, 从低到高查找连续bit位为0的最后1个bit(返回该bit的Pos), 未找到时返回dwPrev */
+template <WORD32 BIT_NUM>
+inline WORD32 CBaseBitSetTpl<BIT_NUM>::FindLast0(WORD32 dwPrev)
+{
+    dwPrev++;
+    if (dwPrev >= BIT_NUM)
+    {
+        return (dwPrev - 1);
+    }
+
+    WORD32 dwIndex  = CBaseBitSetTpl<BIT_NUM>::WhichWord(dwPrev);
+    WORD32 dwIndex1 = 0;
+    WORD32 dwEndPos = 0;
+    WORD32 dwCurVal = m_adwBitSet[dwIndex];
+    BYTE   ucCurVal = 0;
+
+    dwCurVal &= (~static_cast<WORD32>(0)) << CBaseBitSetTpl<BIT_NUM>::WhichBit(dwPrev);
+
+    if (dwCurVal != 0)
+    {
+        dwIndex1   = CBaseBitSetTpl<BIT_NUM>::WhichByte(dwPrev);
+        dwCurVal >>= dwIndex1 * BIT_NUM_PER_BYTE;
+
+        for (; dwIndex1 < sizeof(WORD32); dwIndex1++)
+        {
+            ucCurVal = (BYTE)(dwCurVal & 0x000000FF);
+
+            if (ucCurVal)
+            {
+                dwEndPos = (dwIndex * BIT_NUM_PER_DWORD)
+                         + (dwIndex1 * BIT_NUM_PER_BYTE)
+                         + s_aucFirstOne[ucCurVal];
+
+                return dwEndPos ? (dwEndPos - 1) : 0;
+            }
+
+            dwCurVal >>= BIT_NUM_PER_BYTE;
+        }
+    }
+
+    dwIndex++;
+    for (; dwIndex < BITSET_DWORD_NUM; dwIndex++)
+    {
+        dwCurVal = m_adwBitSet[dwIndex];
         if (dwCurVal != 0)
         {
             for (dwIndex1 = 0; dwIndex1 < sizeof(WORD32); dwIndex1++)

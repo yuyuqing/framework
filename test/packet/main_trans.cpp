@@ -154,6 +154,20 @@ int main(int argc, char **argv)
     CBaseBitSetTpl<31>  c31Bit2 = c31Bit << 8;
     CBaseBitSetTpl<31>  c31Bit3 = c31Bit >> 12;
 
+    dwFirst = c129Bit.FindFirst0();
+    dwNext  = c129Bit.FindNext0(dwFirst);
+    dwLast  = c129Bit.FindLast0(dwFirst);
+
+    dwNext = c129Bit.FindNext0(dwLast);
+    dwLast = c129Bit.FindLast0(dwNext);
+    dwNext = c129Bit.FindNext0(dwNext);
+    dwLast = c129Bit.FindLast0(dwNext);
+
+    dwNext = c129Bit.FindNext0(dwLast);
+    dwLast = c129Bit.FindLast0(dwNext);
+    dwNext = c129Bit.FindNext0(dwNext);
+    dwLast = c129Bit.FindLast0(dwNext);
+
     c31Bit1 = c31Bit << 8;
     c31Bit1 = c31Bit >> 12;
 
