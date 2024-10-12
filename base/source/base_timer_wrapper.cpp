@@ -99,6 +99,20 @@ WORD32 StartOam()
 }
 
 
+/* 通知OAM延迟退出(延迟dwTick时长, 单位:ms) */
+WORD32 StopOam(WORD32 dwTick)
+{
+    if (NULL == g_pOamApp)
+    {
+        return FAIL;
+    }
+
+    g_pOamApp->NotifyOamStop(dwTick);
+
+    return SUCCESS;
+}
+
+
 VOID SetGlobalSFN(WORD16 wSFN, BYTE ucSlot)
 {
     g_pGlobalClock->SetSFN(wSFN, ucSlot);

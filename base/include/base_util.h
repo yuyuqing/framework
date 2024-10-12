@@ -34,9 +34,16 @@
 #define MAX_CPU_CORE_NUM                        ((WORD32)(64))
 
 
-/* CPUÖ÷Æµ2.5GHz : 1us=2500 Cycles */
+#ifdef ARCH_ARM64
+/* CPUÖ÷Æµ1GHz : 1us=1000 Cycles */
 #define CYCLE_NUM_PER_1US                       ((WORD32)(1000))
 #define CYCLE_NUM_PER_100NS                     ((WORD32)(100))
+#else
+/* CPUÖ÷Æµ2.5GHz : 1us=2500 Cycles */
+#define CYCLE_NUM_PER_1US                       ((WORD32)(2500))
+#define CYCLE_NUM_PER_100NS                     ((WORD32)(250))
+#endif
+
 
 #define TRANSFER_CYCLE_TO_100NS2(Cycle, Freq)   ((WORD32)((Cycle) / (Freq)))
 #define TRANSFER_CYCLE_TO_US(Cycle, Freq)       ((WORD64)((Cycle) / (Freq)))

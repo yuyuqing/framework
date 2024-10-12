@@ -16,7 +16,7 @@ extern "C" {
 #define MAX_CELL_PER_GNB                            ((WORD32)(4))
 
 #define MAX_UE_NUM_PER_GNB                          ((WORD32)(1600))
-#define MAX_UE_NUM_PER_CELL                         ((WORD32)(1600))
+#define MAX_UE_NUM_PER_APP                          ((WORD32)(1600))
 
 #define LOG_MODULE_LEN                              ((BYTE)(32))
 #define LOG_FILE_NAME_LEN                           ((WORD32)(80))

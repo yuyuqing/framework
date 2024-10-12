@@ -38,7 +38,7 @@ class CLogThread : public CSingletonThread<CLogThread, CLogMemPool>
 public :
 
     enum { LOG_FILE_NUM         = 64 };
-    enum { LOG_FILE_SIZE        = 128 * 1024 * 1024 };
+    enum { LOG_FILE_SIZE        = 256 * 1024 * 1024 };
     enum { LOG_TICK_GRANULARITY = 200 }; /* 0.2ms粒度 */
 
     /* 处理普通接口+Fast接口日志 */

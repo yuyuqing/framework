@@ -47,6 +47,25 @@ WORD32 COamCBNode::Initialize(WORD32     dwInstID,
 }
 
 
+VOID COamApp::TimeOutStop(WORD32 dwKey, T_TimerParam *ptParam)
+{
+    TRACE_STACK("COamApp::TimeOutStop()");
+
+    COamApp *pOamApp = (COamApp *)(ptParam->pContext);
+    if (NULL == pOamApp)
+    {
+        assert(0);
+    }
+
+    /* 通知OAM延迟退出 */
+    pOamApp->m_pOwner->SendHPMsgToApp(pOamApp->m_dwAppID,
+                                      pOamApp->m_dwAppID,
+                                      EV_BASE_APP_SHUTDOWN_ID,
+                                      0,
+                                      NULL);
+}
+
+
 COamApp::COamApp ()
     : CAppInterface(E_APP_OAM)
 {
@@ -302,6 +321,17 @@ WORD32 COamApp::NotifyOamStartUP()
                              0, NULL);
 
     usleep(10000);
+
+    return SUCCESS;
+}
+
+
+/* 通知OAM延迟退出(延迟dwTick时长, 单位:ms) */
+WORD32 COamApp::NotifyOamStop(WORD32 dwTick)
+{
+    StartTimer(dwTick,
+               (PTimerCallBack)(&COamApp::TimeOutStop),
+               0, 0, 0, 0, (VOID *)(this), NULL);
 
     return SUCCESS;
 }

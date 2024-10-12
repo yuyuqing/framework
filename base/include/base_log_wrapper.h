@@ -203,6 +203,9 @@ extern VOID FastLogPrintf(WORD32      dwModuleID,
     } while(0)
 
 
+extern VOID TestGdbMemory();
+
+
 #ifdef __cplusplus
 }
 #endif

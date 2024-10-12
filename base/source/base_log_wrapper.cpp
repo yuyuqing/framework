@@ -308,3 +308,72 @@ VOID FastLogPrintf(WORD32      dwModuleID,
 }
 
 
+VOID TestGdbMemory()
+{
+    pthread_t  tThreadID;
+    cpu_set_t  tCpuSet;
+
+    memset(&tThreadID, 0x00, sizeof(tThreadID));
+    CPU_ZERO(&tCpuSet);
+
+    /* ¹Ì¶¨°ó¶¨ºË1 */
+    CPU_SET(1, &tCpuSet);
+    tThreadID = pthread_self();
+    pthread_setaffinity_np(tThreadID, sizeof(cpu_set_t), &tCpuSet);
+
+    CMemMgr *pMemMgr = CMemMgr::CreateMemMgr((WORD32)E_PROC_DU,
+                                             (BYTE)E_MEM_HUGEPAGE_TYPE,
+                                             1,
+                                             1024 * 1024 * 1024,
+                                             "/dev/hugepages",
+                                             FALSE);
+
+    T_MemMetaHead   *pMetaHead       = pMemMgr->GetMetaHead();
+    CDataZone       *pDataZone       = pMemMgr->GetDataZone();
+    CCentralMemPool *pCentralMemPool = pMemMgr->GetCentralMemPool();
+
+    WORD64  lwMetaAddr     = pMetaHead->lwMetaAddr;
+    WORD64  lwHugeAddr     = pMetaHead->lwHugeAddr;
+    WORD64  lwDataZoneAddr = (WORD64)pDataZone;
+    WORD64  lwCtrlMemPool  = (WORD64)pCentralMemPool;
+    WORD64  lwMemPools     = pMetaHead->lwMemPools;
+    WORD64  lwAppCntrlAddr = pMetaHead->lwAppCntrlAddr;
+    WORD64  lwThdCntrlAddr = pMetaHead->lwThreadCntrlAddr;
+
+    printf("lwMagic : %lu, dwVersion : %u, dwHeadSize : %u, "
+           "lwMasterLock : %lu, iGlobalLock : %d, bInitFlag : %d, "
+           "iMLock : %d, dwHugeNum : %d, iPrimaryFileID : %d, "
+           "iSecondaryFileID : %d, lwHugeAddr : %lu, aucHugePath : %s, "
+           "lwMetaAddr : %lu, lwMetaSize : %lu, lwHugeAddr : %lu, "
+           "lwShareMemSize : %lu, lwAppCntrlAddr : %lu, "
+           "lwThreadCntrlAddr : %lu, lwMemPools : %lu\n",
+           pMetaHead->lwMagic,
+           pMetaHead->dwVersion,
+           pMetaHead->dwHeadSize,
+           pMetaHead->lwMasterLock,
+           pMetaHead->iGlobalLock,
+           pMetaHead->bInitFlag,
+           pMetaHead->iMLock,
+           pMetaHead->dwHugeNum,
+           pMetaHead->atHugeInfo[0].iPrimaryFileID,
+           pMetaHead->atHugeInfo[0].iSecondaryFileID,
+           pMetaHead->atHugeInfo[0].lwHugeAddr,
+           pMetaHead->atHugeInfo[0].aucHugePath,
+           pMetaHead->lwMetaAddr,
+           pMetaHead->lwMetaSize,
+           pMetaHead->lwHugeAddr,
+           pMetaHead->lwShareMemSize,
+           pMetaHead->lwAppCntrlAddr,
+           pMetaHead->lwThreadCntrlAddr,
+           pMetaHead->lwMemPools);
+
+    printf("lwMetaAddr     = %lu\n", lwMetaAddr);
+    printf("lwHugeAddr     = %lu\n", lwHugeAddr);
+    printf("lwDataZoneAddr = %lu\n", lwDataZoneAddr);
+    printf("lwCtrlMemPool  = %lu\n", lwCtrlMemPool);
+    printf("lwMemPools     = %lu\n", lwMemPools);
+    printf("lwAppCntrlAddr = %lu\n", lwAppCntrlAddr);
+    printf("lwThdCntrlAddr = %lu\n", lwThdCntrlAddr);
+}
+
+

@@ -525,10 +525,14 @@ typedef struct tagT_UlRecvCellMeasItem
 {
     WORD64  lwUciRcvNum;
     WORD64  lwCrcRcvNum;
+    WORD64  lwCrcSuccNum;
+    WORD64  lwCrcFailNum;
     WORD64  lwSrsRcvNum;
+    WORD64  lwRachRcvNum;
     WORD64  alwUeUciSlot[SLOT_NUM_PER_HALF_SFN];
     WORD64  alwUeCrcSlot[SLOT_NUM_PER_HALF_SFN];
     WORD64  alwUeSrsSlot[SLOT_NUM_PER_HALF_SFN];
+    WORD64  alwUeRachSlot[SLOT_NUM_PER_HALF_SFN];
 }T_UlRecvCellMeasItem;
 
 
@@ -536,10 +540,14 @@ typedef struct tagT_UlRecvCellAtomicMeasItem
 {
     std::atomic<WORD64>  lwUciRcvNum;
     std::atomic<WORD64>  lwCrcRcvNum;
+    std::atomic<WORD64>  lwCrcSuccNum;
+    std::atomic<WORD64>  lwCrcFailNum;
     std::atomic<WORD64>  lwSrsRcvNum;
+    std::atomic<WORD64>  lwRachRcvNum;
     std::atomic<WORD64>  alwUeUciSlot[SLOT_NUM_PER_HALF_SFN];
     std::atomic<WORD64>  alwUeCrcSlot[SLOT_NUM_PER_HALF_SFN];
     std::atomic<WORD64>  alwUeSrsSlot[SLOT_NUM_PER_HALF_SFN];
+    std::atomic<WORD64>  alwUeRachSlot[SLOT_NUM_PER_HALF_SFN];
 }T_UlRecvCellAtomicMeasItem;
 
 

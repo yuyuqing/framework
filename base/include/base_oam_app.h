@@ -74,6 +74,8 @@ public :
     enum { TIMER_TIMEOUT_INTERVAL =    20 };
     enum { DELAY_INIT_APPS_TICK   =     5 };
 
+    static VOID TimeOutStop(WORD32 dwKey, T_TimerParam *ptParam);
+
 public :
     COamApp ();
     virtual ~COamApp();
@@ -87,6 +89,9 @@ public :
 
     /* 通知COamApp上电, 启动5ms定时器(超时后通知其它APP上电), 在main进程中调用 */
     WORD32 NotifyOamStartUP();
+
+    /* 通知OAM延迟退出(延迟dwTick时长, 单位:ms) */
+    WORD32 NotifyOamStop(WORD32 dwTick);
 
     /* 延迟通知其它APP上电(在COamApp上电后启动5ms定时器) */
     VOID TimeOutStartUpAllApps(const VOID *pIn, WORD32 dwLen);

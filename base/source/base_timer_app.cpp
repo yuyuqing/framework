@@ -301,10 +301,10 @@ VOID CTimerApp::ProcSlotInd(const VOID *pIn, WORD32 dwLen)
             FAST_LOG_PRINTF(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_DEBUG, TRUE,
                             "Missed SlotTTI Message; CurSFN : %d, CurSlot : %d, "
                             "m_wSFN : %d, m_ucSlot : %d\n",
-                            wSFN,
-                            ucSlot,
-                            m_wSFN,
-                            m_ucSlot);
+                            (WORD64)(wSFN),
+                            (WORD64)(ucSlot),
+                            (WORD64)(m_wSFN),
+                            (WORD64)(m_ucSlot));
         }
     }
     else
@@ -317,10 +317,10 @@ VOID CTimerApp::ProcSlotInd(const VOID *pIn, WORD32 dwLen)
             FAST_LOG_PRINTF(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_DEBUG, TRUE,
                             "Missed SlotTTI Message; CurSFN : %d, CurSlot : %d, "
                             "m_wSFN : %d, m_ucSlot : %d\n",
-                            wSFN,
-                            ucSlot,
-                            m_wSFN,
-                            m_ucSlot);
+                            (WORD64)(wSFN),
+                            (WORD64)(ucSlot),
+                            (WORD64)(m_wSFN),
+                            (WORD64)(m_ucSlot));
         }
     }
 
@@ -849,15 +849,19 @@ VOID CTimerApp::TimeOutDumpUlRecv(const VOID *pIn, WORD32 dwLen)
             T_UlRecvCellMeasItem       *ptItem       = &(ptCell->atMeas[dwIndex1]);
             T_UlRecvCellAtomicMeasItem *ptItemAtomic = &(ptCellAtomic->atMeas[dwIndex1]);
 
-            ptItem->lwUciRcvNum = ptItemAtomic->lwUciRcvNum.load(std::memory_order_relaxed);
-            ptItem->lwCrcRcvNum = ptItemAtomic->lwCrcRcvNum.load(std::memory_order_relaxed);
-            ptItem->lwSrsRcvNum = ptItemAtomic->lwSrsRcvNum.load(std::memory_order_relaxed);
+            ptItem->lwUciRcvNum  = ptItemAtomic->lwUciRcvNum.load(std::memory_order_relaxed);
+            ptItem->lwCrcRcvNum  = ptItemAtomic->lwCrcRcvNum.load(std::memory_order_relaxed);
+            ptItem->lwCrcSuccNum = ptItemAtomic->lwCrcSuccNum.load(std::memory_order_relaxed);
+            ptItem->lwCrcFailNum = ptItemAtomic->lwCrcFailNum.load(std::memory_order_relaxed);
+            ptItem->lwSrsRcvNum  = ptItemAtomic->lwSrsRcvNum.load(std::memory_order_relaxed);
+            ptItem->lwRachRcvNum = ptItemAtomic->lwRachRcvNum.load(std::memory_order_relaxed);
 
             for (WORD32 dwIndex2 = 0; dwIndex2 < SLOT_NUM_PER_HALF_SFN; dwIndex2++)
             {
-                ptItem->alwUeUciSlot[dwIndex2] = ptItemAtomic->alwUeUciSlot[dwIndex2].load(std::memory_order_relaxed);
-                ptItem->alwUeCrcSlot[dwIndex2] = ptItemAtomic->alwUeCrcSlot[dwIndex2].load(std::memory_order_relaxed);
-                ptItem->alwUeSrsSlot[dwIndex2] = ptItemAtomic->alwUeSrsSlot[dwIndex2].load(std::memory_order_relaxed);
+                ptItem->alwUeUciSlot[dwIndex2]  = ptItemAtomic->alwUeUciSlot[dwIndex2].load(std::memory_order_relaxed);
+                ptItem->alwUeCrcSlot[dwIndex2]  = ptItemAtomic->alwUeCrcSlot[dwIndex2].load(std::memory_order_relaxed);
+                ptItem->alwUeSrsSlot[dwIndex2]  = ptItemAtomic->alwUeSrsSlot[dwIndex2].load(std::memory_order_relaxed);
+                ptItem->alwUeRachSlot[dwIndex2] = ptItemAtomic->alwUeRachSlot[dwIndex2].load(std::memory_order_relaxed);
             }
         }
     }
@@ -871,10 +875,12 @@ VOID CTimerApp::TimeOutDumpUlRecv(const VOID *pIn, WORD32 dwLen)
                    dwIndex);
 
         TRACE_STACK("CurSlot    UciRcvNum      CrcRcvNum        "
-                    "SrsRcvNum         UciSlot7         UciSlot8         "
-                    "UciSlot9         CrcSlot7         CrcSlot8         "
-                    "CrcSlot9         SrsSlot7         SrsSlot8         "
-                    "SrsSlot9    ");
+                    "CrcSuccNum        CrcFailNum        "
+                    "SrsRcvNum         RachRcvNum        "
+                    "UciSlot7         UciSlot8         UciSlot9         "
+                    "CrcSlot7         CrcSlot8         CrcSlot9         "
+                    "SrsSlot7         SrsSlot8         SrsSlot9         "
+                    "RachSlot7        RachSlot8        RachSlot9    ");
 
         for (WORD32 dwIndex1 = 0; dwIndex1 < SLOT_NUM_PER_HALF_SFN; dwIndex1++)
         {
@@ -882,11 +888,15 @@ VOID CTimerApp::TimeOutDumpUlRecv(const VOID *pIn, WORD32 dwLen)
 
             LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
                        "%d  %15lu  %15lu  %15lu  %15lu  %15lu  %15lu  "
+                       "%15lu  %15lu  %15lu  %15lu  %15lu  %15lu  "
                        "%15lu  %15lu  %15lu  %15lu  %15lu  %15lu\n",
                        dwIndex1,
                        ptItem->lwUciRcvNum,
                        ptItem->lwCrcRcvNum,
+                       ptItem->lwCrcSuccNum,
+                       ptItem->lwCrcFailNum,
                        ptItem->lwSrsRcvNum,
+                       ptItem->lwRachRcvNum,
                        ptItem->alwUeUciSlot[7],
                        ptItem->alwUeUciSlot[8],
                        ptItem->alwUeUciSlot[9],
@@ -895,7 +905,10 @@ VOID CTimerApp::TimeOutDumpUlRecv(const VOID *pIn, WORD32 dwLen)
                        ptItem->alwUeCrcSlot[9],
                        ptItem->alwUeSrsSlot[7],
                        ptItem->alwUeSrsSlot[8],
-                       ptItem->alwUeSrsSlot[9]);
+                       ptItem->alwUeSrsSlot[9],
+                       ptItem->alwUeRachSlot[7],
+                       ptItem->alwUeRachSlot[8],
+                       ptItem->alwUeRachSlot[9]);
         }
     }
 }

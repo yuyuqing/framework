@@ -126,6 +126,9 @@ WORD32 SendSlotIndToTimer(WORD16 wSFN, BYTE ucSlot);
 /* 超时后向NGP内存池注册(原因 : 定时器回调业务函数时, 需要从NGP的内存池中申请内存) */
 WORD32 StartOam();
 
+/* 通知OAM延迟退出(延迟dwTick时长, 单位:ms) */
+WORD32 StopOam(WORD32 dwTick);
+
 
 VOID SetGlobalSFN(WORD16 wSFN, BYTE ucSlot);
 VOID GetGlobalSFN(WORD16 &rwSFN, BYTE &rucSlot);
