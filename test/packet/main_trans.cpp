@@ -160,6 +160,11 @@ int main(int argc, char **argv)
     CBaseBitSetTpl<31>  c31Bit2 = c31Bit << 8;
     CBaseBitSetTpl<31>  c31Bit3 = c31Bit >> 12;
 
+    c129Bit.BatchSet(0, 130);
+    c129Bit.BatchReSet(0, 32);
+    c129Bit.BatchReSet(7, 32);
+    c129Bit.BatchReSet(8, 49);
+
     c64Bit.FindMaxConsecutive(0, 63, dwMaxPos, dwMaxLen);
     c64Bit.FindFixConsecutive(0, 63, 4, dwFixPos, dwFixLen);
     c64Bit.FindBestConsecutive(0, 63, 4, dwBestPos, dwBestLen);

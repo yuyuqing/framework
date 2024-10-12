@@ -16,7 +16,7 @@
 #define BTREE_LEAF_NODE         ((BYTE)(0))
 #define BTREE_INTERNAL_NODE     ((BYTE)(1))
 
-#define BTREE_NODE_NUM_ENTRY    ((BYTE)(4))
+#define BTREE_NODE_NUM_ENTRY    ((BYTE)(7))
 #define BTREE_MAX_NUM_ENTRY     ((BYTE)((2 * BTREE_NODE_NUM_ENTRY) - 1))
 
 #define BTREE_NODE_NUM_ALIGN    ((WORD32)(128))

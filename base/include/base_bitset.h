@@ -12,16 +12,12 @@
 #define BITSET_DWORD(N)    \
     ((N) < 1 ? 1 : (((N) + BIT_NUM_PER_DWORD - 1) / BIT_NUM_PER_DWORD))
 
-#define BITSET_LWORD(N)    \
-    ((N) < 1 ? 1 : (((N) + BIT_NUM_PER_LWORD - 1) / BIT_NUM_PER_LWORD))
-
 
 template <WORD32 BIT_NUM>
 class CBaseBitSetTpl
 {
 public :
     enum { BITSET_DWORD_NUM = BITSET_DWORD(BIT_NUM) };
-    enum { BITSET_LWORD_NUM = BITSET_LWORD(BIT_NUM) };
 
     static WORD32 WhichWord(WORD32 dwPos)
     {
@@ -199,6 +195,12 @@ public :
 
     /* 设置bit位为指定值 */
     CBaseBitSetTpl<BIT_NUM> & Set(WORD32 dwPos, BOOL bVal);
+
+    /* 设置连续bit位为1 */
+    CBaseBitSetTpl<BIT_NUM> & BatchSet(WORD32 dwStartPos, WORD32 dwReqBitLen);
+
+    /* 设置连续bit位为0 */
+    CBaseBitSetTpl<BIT_NUM> & BatchReSet(WORD32 dwStartPos, WORD32 dwReqBitLen);
 
     /* 设置bit位为0 */
     CBaseBitSetTpl<BIT_NUM> & ReSet(WORD32 dwPos);
@@ -1176,6 +1178,90 @@ inline CBaseBitSetTpl<BIT_NUM> & CBaseBitSetTpl<BIT_NUM>::Set(WORD32 dwPos, BOOL
             this->GetWord(dwPos) &= ~CBaseBitSetTpl<BIT_NUM>::MaskBit(dwPos);
         }
     }
+
+    return *this;
+}
+
+
+/* 设置连续bit位为1 */
+template <WORD32 BIT_NUM>
+inline CBaseBitSetTpl<BIT_NUM> & CBaseBitSetTpl<BIT_NUM>::BatchSet(
+    WORD32 dwStartPos,
+    WORD32 dwReqBitLen)
+{
+    if (unlikely((dwStartPos >= BIT_NUM) || (0 == dwReqBitLen)))
+    {
+        assert(0);
+    }
+
+    WORD32 dwEndPos   = dwStartPos + dwReqBitLen - 1;
+    WORD32 dwStartIdx = 0;
+    WORD32 dwEndIdx   = 0;
+    WORD32 dwOrMask   = 0xFFFFFFFF;
+    WORD32 dwTmpMask  = 0;
+    WORD32 dwOffsetL  = 0;
+    WORD32 dwOffsetR  = 0;
+
+    dwEndPos   = (dwEndPos >= BIT_NUM) ? (BIT_NUM - 1) : dwEndPos;
+    dwStartIdx = CBaseBitSetTpl<BIT_NUM>::WhichWord(dwStartPos);
+    dwEndIdx   = CBaseBitSetTpl<BIT_NUM>::WhichWord(dwEndPos);
+    dwOffsetL  = CBaseBitSetTpl<BIT_NUM>::WhichBit(dwStartPos);
+    dwOffsetR  = BIT_NUM_PER_DWORD - 1 - CBaseBitSetTpl<BIT_NUM>::WhichBit(dwEndPos);
+
+    for (; dwStartIdx < dwEndIdx; dwStartIdx++)
+    {
+        dwTmpMask = dwOrMask << dwOffsetL;
+        dwOffsetL = 0;
+
+        m_adwBitSet[dwStartIdx] |= dwTmpMask;
+    }
+
+    dwTmpMask = dwOrMask << dwOffsetL;
+    dwTmpMask = dwTmpMask >> dwOffsetR;
+
+    m_adwBitSet[dwStartIdx] |= dwTmpMask;
+
+    return *this;
+}
+
+
+/* 设置连续bit位为0 */
+template <WORD32 BIT_NUM>
+inline CBaseBitSetTpl<BIT_NUM> & CBaseBitSetTpl<BIT_NUM>::BatchReSet(
+    WORD32 dwStartPos,
+    WORD32 dwReqBitLen)
+{
+    if (unlikely((dwStartPos >= BIT_NUM) || (0 == dwReqBitLen)))
+    {
+        assert(0);
+    }
+
+    WORD32 dwEndPos   = dwStartPos + dwReqBitLen - 1;
+    WORD32 dwStartIdx = 0;
+    WORD32 dwEndIdx   = 0;
+    WORD32 dwOrMask   = 0xFFFFFFFF;
+    WORD32 dwTmpMask  = 0;
+    WORD32 dwOffsetL  = 0;
+    WORD32 dwOffsetR  = 0;
+
+    dwEndPos   = (dwEndPos >= BIT_NUM) ? (BIT_NUM - 1) : dwEndPos;
+    dwStartIdx = CBaseBitSetTpl<BIT_NUM>::WhichWord(dwStartPos);
+    dwEndIdx   = CBaseBitSetTpl<BIT_NUM>::WhichWord(dwEndPos);
+    dwOffsetL  = CBaseBitSetTpl<BIT_NUM>::WhichBit(dwStartPos);
+    dwOffsetR  = BIT_NUM_PER_DWORD - 1 - CBaseBitSetTpl<BIT_NUM>::WhichBit(dwEndPos);
+
+    for (; dwStartIdx < dwEndIdx; dwStartIdx++)
+    {
+        dwTmpMask = dwOrMask << dwOffsetL;
+        dwOffsetL = 0;
+
+        m_adwBitSet[dwStartIdx] &= ~dwTmpMask;
+    }
+
+    dwTmpMask = dwOrMask << dwOffsetL;
+    dwTmpMask = dwTmpMask >> dwOffsetR;
+
+    m_adwBitSet[dwStartIdx] &= ~dwTmpMask;
 
     return *this;
 }
