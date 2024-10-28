@@ -139,9 +139,13 @@ WORD32 CBaseEpoll::AddEvent(SWORD32    iEventID,
     }
 
     SWORD32                iResult   = 0;
+    SWORD32                iFlag     = 0;
     WORD32                 dwInstID  = INVALID_DWORD;
     WORD32                 dwEventID = (WORD32)iEventID;
     CGuardLock<CSpinLock>  cGuard(m_cLock);
+
+    iFlag = fcntl(iEventID, F_GETFL, 0);
+    fcntl(iEventID, F_SETFL, iFlag | O_NONBLOCK);
 
     CEpollEvent *pEvent = m_cTree.Create(dwInstID, dwEventID);
     if (NULL == pEvent)

@@ -7,6 +7,7 @@
 #include <sys/epoll.h>
 #include <sys/timerfd.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include "base_call_back.h"
 #include "base_lock.h"

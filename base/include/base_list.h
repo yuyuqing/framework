@@ -9,6 +9,15 @@
 #include "base_data_container.h"
 
 
+/* 当返回值不为SUCCESS时, 则节点不满足插入条件, 直接退出;
+ * 当范围值等于SUCCESS时, 根据rbFlag取值判断是否满足插入条件
+ * a. 当rbFlag为TRUE , 则插入节点后退出
+ * b. 当rbFlag为FALSE, 则继续遍历寻找合适的插入位置
+ */
+template <class T>
+using PInsertAFunc = WORD32 (*)(T &rLeft, T &rRight, BOOL &rbFlag);
+
+
 template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG = FALSE>
 class CBaseList : public CBaseDataContainer<T, NODE_NUM, ALIGN_FLAG>
 {
@@ -32,6 +41,9 @@ public :
 
     /* 将节点添加到首部 */
     WORD32 InsertHead(T *pInst);
+
+    /* 将节点按照排序结果插入到链表中 */
+    WORD32 Insert(T *pInst, PInsertAFunc<T> pFunc);
 
     /* 从链表中移除节点并释放节点 */
     WORD32 Remove(T *pInst);
@@ -205,6 +217,78 @@ inline WORD32 CBaseList<T, NODE_NUM, ALIGN_FLAG>::InsertHead(T *pInst)
 
     m_dwCount++;
 
+    return SUCCESS;
+}
+
+
+/* 将节点按照排序结果插入到链表中 */
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline WORD32 CBaseList<T, NODE_NUM, ALIGN_FLAG>::Insert(T *pInst, PInsertAFunc<T> pFunc)
+{
+    if (FALSE == this->IsValid(pInst))
+    {
+        return FAIL;
+    }
+
+    WORD32        dwResult = INVALID_DWORD;
+    BOOL          bFlag    = FALSE;
+    WORD64        lwAddr   = (WORD64)pInst;
+    T_LinkHeader *pCurHead = (T_LinkHeader *)(lwAddr - this->s_dwDataOffset);
+    T_LinkHeader *pNode    = m_ptHeader;
+    T_LinkHeader *pNext    = NULL;
+    T_LinkHeader *pPrev    = NULL;
+    T            *pData    = NULL;
+
+    while (pNode)
+    {
+        bFlag = FALSE;
+        pData = *pNode;
+        pPrev = pNode->m_pPrev;
+        pNext = pNode->m_pNext;
+
+        dwResult = (*pFunc) (*pInst, *pData, bFlag);
+        if (SUCCESS != dwResult)
+        {
+            /* 插入失败 */
+            return FAIL;
+        }
+
+        /* 满足插入条件, 则插入到pNode之前 */
+        if (TRUE == bFlag)
+        {
+            pCurHead->m_pPrev = pPrev;
+            pCurHead->m_pNext = pNode;
+            pNode->m_pPrev    = pCurHead;
+            if (NULL == pPrev)
+            {
+                m_ptHeader = pCurHead;
+            }
+            else
+            {
+                pPrev->m_pNext = pCurHead;
+            }
+
+            m_dwCount++;
+            return SUCCESS;
+        }
+
+        pNode = pNext;
+    }
+
+    /* 不满足插入条件时, 将节点插入队尾 */
+    if (NULL == m_ptTailer)
+    {
+        m_ptHeader = pCurHead;
+        m_ptTailer = pCurHead;
+    }
+    else
+    {
+        pCurHead->m_pPrev   = m_ptTailer;
+        m_ptTailer->m_pNext = pCurHead;
+        m_ptTailer          = pCurHead;
+    }
+
+    m_dwCount++;
     return SUCCESS;
 }
 
@@ -410,7 +494,7 @@ inline WORD32 CBaseList<T, NODE_NUM, ALIGN_FLAG>::GetCount()
 
 
 template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
-class CShareList
+class CShareList : public CBaseData
 {
 public :
     using CContainer = CBaseDataContainer<T, NODE_NUM, ALIGN_FLAG>;
@@ -438,6 +522,9 @@ public :
 
     /* 将节点添加到首部 */
     WORD32 InsertHead(T *pInst);
+
+    /* 将节点按照排序结果插入到链表中 */
+    WORD32 Insert(T *pInst, PInsertAFunc<T> pFunc);
 
     /* 从链表中移除节点并释放节点 */
     WORD32 Remove(T *pInst);
@@ -594,6 +681,78 @@ inline WORD32 CShareList<T, NODE_NUM, ALIGN_FLAG>::InsertHead(T *pInst)
 
     m_dwCount++;
 
+    return SUCCESS;
+}
+
+
+/* 将节点按照排序结果插入到链表中 */
+template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
+inline WORD32 CShareList<T, NODE_NUM, ALIGN_FLAG>::Insert(T *pInst, PInsertAFunc<T> pFunc)
+{
+    if (FALSE == m_rContainer.IsValid(pInst))
+    {
+        return FAIL;
+    }
+
+    WORD32        dwResult = INVALID_DWORD;
+    BOOL          bFlag    = FALSE;
+    WORD64        lwAddr   = (WORD64)pInst;
+    T_LinkHeader *pCurHead = (T_LinkHeader *)(lwAddr - m_rContainer.s_dwDataOffset);
+    T_LinkHeader *pNode    = m_ptHeader;
+    T_LinkHeader *pNext    = NULL;
+    T_LinkHeader *pPrev    = NULL;
+    T            *pData    = NULL;
+
+    while (pNode)
+    {
+        bFlag = FALSE;
+        pData = *pNode;
+        pPrev = pNode->m_pPrev;
+        pNext = pNode->m_pNext;
+
+        dwResult = (*pFunc) (*pInst, *pData, bFlag);
+        if (SUCCESS != dwResult)
+        {
+            /* 插入失败 */
+            return FAIL;
+        }
+
+        /* 满足插入条件, 则插入到pNode之前 */
+        if (TRUE == bFlag)
+        {
+            pCurHead->m_pPrev = pPrev;
+            pCurHead->m_pNext = pNode;
+            pNode->m_pPrev    = pCurHead;
+            if (NULL == pPrev)
+            {
+                m_ptHeader = pCurHead;
+            }
+            else
+            {
+                pPrev->m_pNext = pCurHead;
+            }
+
+            m_dwCount++;
+            return SUCCESS;
+        }
+
+        pNode = pNext;
+    }
+
+    /* 不满足插入条件时, 将节点插入队尾 */
+    if (NULL == m_ptTailer)
+    {
+        m_ptHeader = pCurHead;
+        m_ptTailer = pCurHead;
+    }
+    else
+    {
+        pCurHead->m_pPrev   = m_ptTailer;
+        m_ptTailer->m_pNext = pCurHead;
+        m_ptTailer          = pCurHead;
+    }
+
+    m_dwCount++;
     return SUCCESS;
 }
 
@@ -795,6 +954,91 @@ template <class T, WORD32 NODE_NUM, BOOL ALIGN_FLAG>
 inline WORD32 CShareList<T, NODE_NUM, ALIGN_FLAG>::GetCount()
 {
     return m_dwCount;
+}
+
+
+template <class T, WORD32 NODE_NUM, WORD32 LIST_NUM, BOOL ALIGN_FLAG>
+class CLinkedList
+{
+public :
+    using CDataList      = CBaseDataContainer<T, NODE_NUM, ALIGN_FLAG>;
+    using CNestList      = CShareList<T, NODE_NUM, ALIGN_FLAG>;
+    using CNestContainer = CBaseDataContainer<CNestList, (LIST_NUM + 1), FALSE>;
+
+public :
+    CLinkedList ();
+    virtual ~CLinkedList();
+
+    virtual WORD32 Initialize();
+
+    CNestList * operator[] (WORD32 dwIndex);
+
+    T * Malloc();
+    VOID Free(T *ptr);
+
+protected :
+    CDataList       m_cDataList;
+    CNestContainer  m_cListContainer;
+    CNestList      *m_apList[LIST_NUM];
+};
+
+
+template <class T, WORD32 NODE_NUM, WORD32 LIST_NUM, BOOL ALIGN_FLAG>
+CLinkedList<T, NODE_NUM, LIST_NUM, ALIGN_FLAG>::CLinkedList()
+{
+}
+
+
+template <class T, WORD32 NODE_NUM, WORD32 LIST_NUM, BOOL ALIGN_FLAG>
+CLinkedList<T, NODE_NUM, LIST_NUM, ALIGN_FLAG>::~CLinkedList()
+{
+}
+
+
+template <class T, WORD32 NODE_NUM, WORD32 LIST_NUM, BOOL ALIGN_FLAG>
+WORD32 CLinkedList<T, NODE_NUM, LIST_NUM, ALIGN_FLAG>::Initialize()
+{
+    m_cDataList.Initialize();
+    m_cListContainer.Initialize();
+
+    CNestList *pList = NULL;
+
+    for (WORD32 dwIndex = 0; dwIndex < LIST_NUM; dwIndex++)
+    {
+        pList = m_cListContainer.Malloc();
+        new (pList) CNestList(m_cDataList);
+
+        m_apList[dwIndex] = pList;
+    }
+
+    return SUCCESS;
+}
+
+
+template <class T, WORD32 NODE_NUM, WORD32 LIST_NUM, BOOL ALIGN_FLAG>
+inline typename CLinkedList<T, NODE_NUM, LIST_NUM, ALIGN_FLAG>::CNestList * 
+CLinkedList<T, NODE_NUM, LIST_NUM, ALIGN_FLAG>::operator[] (WORD32 dwIndex)
+{
+    if (unlikely(dwIndex >= LIST_NUM))
+    {
+        return NULL;
+    }
+
+    return m_apList[dwIndex];
+}
+
+
+template <class T, WORD32 NODE_NUM, WORD32 LIST_NUM, BOOL ALIGN_FLAG>
+inline T * CLinkedList<T, NODE_NUM, LIST_NUM, ALIGN_FLAG>::Malloc()
+{
+    return m_cDataList.Malloc();
+}
+
+
+template <class T, WORD32 NODE_NUM, WORD32 LIST_NUM, BOOL ALIGN_FLAG>
+inline VOID CLinkedList<T, NODE_NUM, LIST_NUM, ALIGN_FLAG>::Free(T *ptr)
+{
+    m_cDataList.Free(ptr);
 }
 
 
