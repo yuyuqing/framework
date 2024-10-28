@@ -34,7 +34,7 @@ typedef CBaseDataContainer<CNdpInst, MAX_NDP_NUM, FALSE>  CNdpContainer;
 
 
 /* 每个设备接口上都持有1个NDP邻区表 */
-class CDevNdpTable : public CShareList<CNdpInst, MAX_NDP_NUM, FALSE>, public CBaseData
+class CDevNdpTable : public CShareList<CNdpInst, MAX_NDP_NUM, FALSE>
 {
 public :
     CDevNdpTable (CNdpContainer &rContainer, WORD32 dwDeviceID);
