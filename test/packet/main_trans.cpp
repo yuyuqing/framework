@@ -13,6 +13,7 @@
 #include "base_oam_app.h"
 #include "base_trans.h"
 #include "base_bitset.h"
+#include "base_numeral_generate.h"
 
 
 class CTestTransApp : public CAppInterface
@@ -147,6 +148,10 @@ int main(int argc, char **argv)
     WORD32 dwFixLen  = 0;
     WORD32 dwBestPos = 0;
     WORD32 dwBestLen = 0;
+    WORD32 dwID0     = 0;
+    WORD32 dwID1     = 0;
+    WORD32 dwID2     = 0;
+    WORD32 dwID3     = 0;
 
     CBaseBitSetTpl<3>   c3Bit0(255);
     CBaseBitSetTpl<3>   c3Bit1(255);
@@ -159,6 +164,17 @@ int main(int argc, char **argv)
     CBaseBitSetTpl<31>  c31Bit1 = ~c31Bit;
     CBaseBitSetTpl<31>  c31Bit2 = c31Bit << 8;
     CBaseBitSetTpl<31>  c31Bit3 = c31Bit >> 12;
+
+    CNumeralGenerator<8> cIDGen;
+    cIDGen.Initialize(17017, 32);
+
+    dwID0 = cIDGen.Generate();
+    dwID1 = cIDGen.Generate();
+    dwID2 = cIDGen.Generate();
+    dwID3 = cIDGen.Generate();
+    cIDGen.Retrieve(dwID0);
+    cIDGen.Retrieve(dwID3);
+    cIDGen.Retrieve(dwID3);
 
     c129Bit.BatchSet(0, 130);
     c129Bit.BatchReSet(0, 32);
