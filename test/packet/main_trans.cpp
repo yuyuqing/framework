@@ -175,6 +175,9 @@ int main(int argc, char **argv)
     cIDGen.Retrieve(dwID0);
     cIDGen.Retrieve(dwID3);
     cIDGen.Retrieve(dwID3);
+    cIDGen.Retrieve(dwID1);
+    cIDGen.Retrieve(dwID2);
+    cIDGen.Retrieve(dwID1);
 
     c129Bit.BatchSet(0, 130);
     c129Bit.BatchReSet(0, 32);
