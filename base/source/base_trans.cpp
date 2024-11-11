@@ -4,14 +4,23 @@
 #include "base_thread_pool.h"
 
 
-CBaseTrans::CBaseTrans (CAppInterface *pApp, WORD64 lwTransID)
+CBaseTrans::CBaseTrans (CAppInterface *pApp,
+                        WORD32         dwUpperID,
+                        WORD32         dwExtendID,
+                        WORD64         lwTransID,
+                        CCBObject     *pObj,
+                        PCBFUNC        pFunc)
 {
-    m_pApp        = pApp;
-    m_lwTransID   = lwTransID;
-    m_dwTimerID   = INVALID_DWORD;
-    m_eTransState = E_TRANS_INVALID;
-    m_dwCurStepID = 0;
-    m_dwStepNum   = 0;
+    m_pApp         = pApp;
+    m_dwUpperID    = dwUpperID;
+    m_dwExtendID   = dwExtendID;
+    m_lwTransID    = lwTransID;
+    m_pObj         = pObj;
+    m_pTimeOutFunc = pFunc;
+    m_dwTimerID    = INVALID_DWORD;
+    m_eTransState  = E_TRANS_INVALID;
+    m_dwCurStepID  = 0;
+    m_dwStepNum    = 0;
 
     for (WORD32 dwIndex = 0; dwIndex < MAX_TRANS_STEP_NUM; dwIndex++)
     {
@@ -22,16 +31,32 @@ CBaseTrans::CBaseTrans (CAppInterface *pApp, WORD64 lwTransID)
 
 CBaseTrans::~CBaseTrans()
 {
+    CBaseTrans *pTrans = (CBaseTrans *)(this);
+
+    if (E_TRANS_COMPLETE == m_eTransState)
+    {
+        pTrans->Finish();
+    }
+    else
+    {
+        pTrans->Abort();
+    }
+
     if (INVALID_DWORD != m_dwTimerID)
     {
         m_pApp->KillTimer(m_dwTimerID);
     }
 
-    m_lwTransID   = INVALID_LWORD;
-    m_dwTimerID   = INVALID_DWORD;
-    m_eTransState = E_TRANS_INVALID;
-    m_dwCurStepID = 0;
-    m_dwStepNum   = 0;
+    m_pApp         = NULL;
+    m_dwUpperID    = INVALID_DWORD;
+    m_dwExtendID   = INVALID_DWORD;
+    m_lwTransID    = INVALID_LWORD;
+    m_pObj         = NULL;
+    m_pTimeOutFunc = NULL;
+    m_dwTimerID    = INVALID_DWORD;
+    m_eTransState  = E_TRANS_INVALID;
+    m_dwCurStepID  = 0;
+    m_dwStepNum    = 0;
 
     for (WORD32 dwIndex = 0; dwIndex < MAX_TRANS_STEP_NUM; dwIndex++)
     {
@@ -49,47 +74,31 @@ WORD32 CBaseTrans::Initialize()
 }
 
 
-WORD64 CBaseTrans::GetTransID()
+WORD32 CBaseTrans::Execute()
 {
-    return m_lwTransID;
-}
+    WORD32          dwResult   = INVALID_DWORD;
+    WORD32          dwTransIDH = 0;
+    WORD32          dwTransIDL = 0;
+    CBaseTransStep *pCurStep   = NULL;
 
-
-WORD32 CBaseTrans::GetStepNum()
-{
-    return m_dwStepNum;
-}
-
-
-WORD32 CBaseTrans::RegisterStep(CBaseTransStep *pStep)
-{
-    if (m_dwStepNum >= MAX_TRANS_STEP_NUM)
+    if (m_dwCurStepID >= m_dwStepNum)
     {
+        m_eTransState = E_TRANS_COMPLETE;
+        return SUCCESS;
+    }
+
+    pCurStep = m_apStep[m_dwCurStepID];
+    if (NULL == pCurStep)
+    {
+        m_eTransState = E_TRANS_FAIL;
         return FAIL;
     }
 
-    m_apStep[m_dwStepNum++] = pStep;
-
-    return SUCCESS;
-}
-
-
-CBaseTransStep * CBaseTrans::GetCurStep()
-{
-    if (m_dwCurStepID >= m_dwStepNum)
+    dwResult = pCurStep->Execute();
+    if (SUCCESS != dwResult)
     {
-        return NULL;
-    }
-
-    return m_apStep[m_dwCurStepID];
-}
-
-
-WORD32 CBaseTrans::Wait(WORD32 dwStepID)
-{
-    if (dwStepID != m_dwCurStepID)
-    {
-        assert(0);
+        m_eTransState = E_TRANS_FAIL;
+        return FAIL;
     }
 
     if (INVALID_DWORD != m_dwTimerID)
@@ -97,21 +106,21 @@ WORD32 CBaseTrans::Wait(WORD32 dwStepID)
         m_pApp->KillTimer(m_dwTimerID);
     }
 
-    CBaseTransStep *pCurStep  = GetCurStep();
-    WORD32          dwTransID = pCurStep->GetTransID();
-    WORD32          dwTick    = pCurStep->GetWaitTick();
+    dwTransIDH = (WORD32)(m_lwTransID >> 32);
+    dwTransIDL = (WORD32)(m_lwTransID & 0x00FFFFFFFFUL);
 
-    m_dwTimerID = m_pApp->RegisterTimer(dwTick,
-                                        (CCBObject *)this,
-                                        (PCBFUNC)(&CBaseTrans::WaitTimeOut),
-                                        dwStepID,
-                                        dwTransID,
-                                        (WORD32)(m_lwTransID >> 32),
-                                        (WORD32)m_lwTransID,
+    m_dwTimerID = m_pApp->RegisterTimer(TRANS_STEP_WAIT_TICK,
+                                        m_pObj,
+                                        m_pTimeOutFunc,
+                                        m_dwUpperID,
+                                        m_dwExtendID,
+                                        dwTransIDH, dwTransIDL,
+                                        (VOID *)this,
                                         (VOID *)pCurStep);
     if (INVALID_DWORD == m_dwTimerID)
     {
-        assert(0);
+        m_eTransState = E_TRANS_FAIL;
+        return FAIL;
     }
 
     m_eTransState = E_TRANS_WAIT;
@@ -120,209 +129,94 @@ WORD32 CBaseTrans::Wait(WORD32 dwStepID)
 }
 
 
-WORD32 CBaseTrans::NextStep(WORD32 dwStepID)
+WORD32 CBaseTrans::WaitTimeOut(WORD64 lwTransID, CBaseTransStep *pStep)
 {
-    if (dwStepID != m_dwCurStepID)
+    CBaseTransStep *pCurStep = GetCurStep();
+
+    if ((lwTransID != m_lwTransID) || (pStep != pCurStep))
     {
-        assert(0);
+        return FAIL;
     }
 
+    m_dwTimerID = INVALID_DWORD;
+
+    return SUCCESS;
+}
+
+
+WORD32 CBaseTrans::RecvMsg(WORD32 dwMsgID, VOID *pIn, WORD32 dwMsgLen)
+{
+    WORD32          dwResult = INVALID_DWORD;
+    CBaseTransStep *pCurStep = NULL;
+
+    if (m_dwCurStepID >= m_dwStepNum)
+    {
+        return FAIL;
+    }
+
+    pCurStep = m_apStep[m_dwCurStepID];
+    if (NULL == pCurStep)
+    {
+        return FAIL;
+    }
+
+    /* 先清除定时器 */
     if (INVALID_DWORD != m_dwTimerID)
     {
         m_pApp->KillTimer(m_dwTimerID);
         m_dwTimerID = INVALID_DWORD;
     }
 
-    if ((m_dwCurStepID + 1) == m_dwStepNum)
+    if ( (dwMsgID != pCurStep->m_dwRecvMsgID)
+      || (E_TRANS_WAIT != m_eTransState))
     {
-        m_eTransState = E_TRANS_COMPLETE;
+        dwResult = FAIL;
     }
     else
     {
-        m_dwCurStepID++;
-        m_eTransState = E_TRANS_INIT;
+        dwResult = pCurStep->ProcMsg(pIn, dwMsgLen);
     }
 
-    return SUCCESS;
-}
-
-
-WORD32 CBaseTrans::Fail(WORD32 dwStepID)
-{
-    if (dwStepID != m_dwCurStepID)
+    if (SUCCESS != dwResult)
     {
-        assert(0);
-    }
-
-    if (E_TRANS_WAIT != m_eTransState)
-    {
-        /* 尚未发起消息流程, 或消息发送失败, 此时不作任何处理 */
+        m_eTransState = E_TRANS_FAIL;
         return FAIL;
     }
 
-    CBaseTransStep *pCurStep = GetCurStep();
-    pCurStep->ProcFail();
+    m_dwCurStepID++;
 
-    m_eTransState = E_TRANS_FAIL;
-
-    return SUCCESS;
-}
-
-
-/* 等待响应消息超时 */
-VOID CBaseTrans::WaitTimeOut(const VOID *pIn, WORD32 dwLen)
-{
-    if ((NULL == pIn) || (sizeof(T_TimerParam) != dwLen))
+    if (m_dwCurStepID == m_dwStepNum)
     {
-        return ;
+        m_eTransState = E_TRANS_COMPLETE;
+        return SUCCESS;
     }
-
-    T_TimerParam *ptParam = (T_TimerParam *)(pIn);
-
-    WORD32          dwStepID  = ptParam->dwID;
-    WORD32          dwTransID = ptParam->dwExtendID;
-    WORD64          lwTransID = ptParam->dwTransID;
-    WORD32          dwResvID  = ptParam->dwResvID;
-    CBaseTransStep *pStep     = (CBaseTransStep *)ptParam->pContext;
-    CBaseTransStep *pCurStep  = GetCurStep();
-
-    lwTransID  = lwTransID << 32;
-    lwTransID += dwResvID;
-
-    if ( (lwTransID != m_lwTransID)
-      || (dwStepID  != m_dwCurStepID)
-      || (pCurStep  != pStep)
-      || (dwTransID != pCurStep->GetTransID()))
+    else
     {
-        assert(0);
+        m_eTransState = E_TRANS_INIT;
+
+        return Execute();
     }
-
-    m_dwTimerID = INVALID_DWORD;
-
-    pCurStep->WaitTimeOut();
-
-    m_eTransState = E_TRANS_FAIL;
-}
-
-
-BOOL CBaseTrans::IsFinish()
-{
-    return (E_TRANS_COMPLETE == m_eTransState);
-}
-
-
-/* 分配内存用于实例化Step; 无需考虑内存回收(伴随Trans销毁自动回收) */
-BYTE * CBaseTrans::Mallc()
-{
-    T_TransStepValue *ptValue = m_cList.Malloc();
-    if (NULL == ptValue)
-    {
-        return NULL;
-    }
-
-    return ptValue->aucStep;
 }
 
 
 CBaseTransStep::CBaseTransStep (CBaseTrans *pTrans,
                                 WORD32      dwStepID,
                                 WORD32      dwSendMsgID,
-                                WORD32      dwRecvMsgID,
-                                WORD32      dwWaitTick)
+                                WORD32      dwRecvMsgID)
     : m_pTrans(pTrans)
 {
-    m_dwTransID   = (WORD32)(pTrans->GetTransID());
     m_dwStepID    = dwStepID;
-    m_eState      = E_TRANS_STEP_INVALID;
     m_dwSendMsgID = dwSendMsgID;
     m_dwRecvMsgID = dwRecvMsgID;
-    m_dwWaitTick  = dwWaitTick;
 }
 
 
 CBaseTransStep::~CBaseTransStep()
 {
     m_pTrans      = NULL;
-    m_dwTransID   = INVALID_DWORD;
     m_dwStepID    = INVALID_DWORD;
-    m_eState      = E_TRANS_STEP_INVALID;
     m_dwSendMsgID = INVALID_DWORD;
     m_dwRecvMsgID = INVALID_DWORD;
-    m_dwWaitTick  = TRANS_STEP_WAIT_TICK;
-}
-
-
-WORD32 CBaseTransStep::SendMsg(E_AppClass  eDstClass,
-                               WORD32      dwDstAssocID,
-                               WORD16      wLen,
-                               const VOID *ptMsg)
-{
-    m_eState                = E_TRANS_STEP_INIT;
-    m_pTrans->m_eTransState = E_TRANS_INIT;
-
-    WORD32 dwResult = SendLowPriorMsg(eDstClass,
-                                      dwDstAssocID,
-                                      0,
-                                      m_dwSendMsgID,
-                                      wLen,
-                                      ptMsg);
-    if (SUCCESS != dwResult)
-    {
-        m_pTrans->Fail(m_dwStepID);
-    }
-    else
-    {
-        m_eState = E_TRANS_STEP_WAIT;
-        m_pTrans->Wait(m_dwStepID);
-    }
-
-    return dwResult;
-}
-
-
-WORD32 CBaseTransStep::RecvMsg(WORD32 dwMsgID, VOID *pIn, WORD16 wMsgLen)
-{
-    WORD32 dwResult = INVALID_DWORD;
-
-    if ((dwMsgID != m_dwRecvMsgID) || (E_TRANS_STEP_WAIT != m_eState))
-    {
-        dwResult = FAIL;
-    }
-    else
-    {
-        m_eState = E_TRANS_STEP_RECVED;
-        dwResult = this->ProcMsg(pIn, wMsgLen);
-    }
-
-    if (SUCCESS != dwResult)
-    {
-        m_pTrans->Fail(m_dwStepID);
-    }
-    else
-    {
-        m_eState = E_TRANS_STEP_COMPLETE;
-        m_pTrans->NextStep(m_dwStepID);
-    }
-
-    return dwResult;
-}
-
-
-WORD32 CBaseTransStep::GetTransID()
-{
-    return m_dwTransID;
-}
-
-
-WORD32 CBaseTransStep::GetStepID()
-{
-    return m_dwStepID;
-}
-
-
-WORD32 CBaseTransStep::GetWaitTick()
-{
-    return m_dwWaitTick;
 }
 
 

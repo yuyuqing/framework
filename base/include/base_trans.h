@@ -15,16 +15,6 @@ typedef struct tagT_TransStepValue
 }T_TransStepValue;
 
 
-typedef enum tagE_TransStepState
-{
-    E_TRANS_STEP_INVALID = 0,
-    E_TRANS_STEP_INIT,
-    E_TRANS_STEP_WAIT,
-    E_TRANS_STEP_RECVED,
-    E_TRANS_STEP_COMPLETE,
-}E_TransStepState;
-
-
 typedef enum tagE_TransState
 {
     E_TRANS_INVALID = 0,
@@ -46,40 +36,61 @@ class CBaseTrans : public CBaseData, public CCBObject
 public :
     friend class CBaseTransStep;
 
+    enum { TRANS_STEP_WAIT_TICK = 10};  /* 10ms */
+
     typedef CBaseDataContainer<T_TransStepValue, MAX_TRANS_STEP_NUM, FALSE> CTransStepList;
 
 public :
-    CBaseTrans (CAppInterface *pApp, WORD64 lwTransID);
+    CBaseTrans (CAppInterface *pApp,
+                WORD32         dwUpperID,
+                WORD32         dwExtendID,
+                WORD64         lwTransID,
+                CCBObject     *pObj,
+                PCBFUNC        pFunc);
     virtual ~CBaseTrans();
 
     virtual WORD32 Initialize();
 
+    virtual WORD32 Execute();
+
+    virtual WORD32 WaitTimeOut(WORD64 lwTransID, CBaseTransStep *pStep);
+
+    virtual WORD32 RecvMsg(WORD32 dwMsgID, VOID *pIn, WORD32 dwMsgLen);
+
+    /* 事务异常结束时, 通过重载Abort函数做善后处理(如 : 重启事务) */
+    virtual WORD32 Abort() = 0;
+
+    /* 事务正常结束时, 通过重载Finish函数做专属处理 */
+    virtual WORD32 Finish() = 0;
+
+    CAppInterface * GetApp();
+    CCBObject * GetObject();
+
+    WORD32 GetUpperID();
     WORD64 GetTransID();
     WORD32 GetStepNum();
-
-    WORD32 RegisterStep(CBaseTransStep *pStep);
-
-    CBaseTransStep * GetCurStep();
-
-    WORD32 Wait(WORD32 dwStepID);
-    WORD32 NextStep(WORD32 dwStepID);
-    WORD32 Fail(WORD32 dwStepID);
-
-    /* 等待响应消息超时 */
-    VOID WaitTimeOut(const VOID *pIn, WORD32 dwLen);
 
     BOOL IsFinish();
 
     /* 分配内存用于实例化Step; 无需考虑内存回收(伴随Trans销毁自动回收) */
     BYTE * Mallc();
 
+    WORD32 RegisterStep(CBaseTransStep *pStep);
+
+protected :
+    CBaseTransStep * GetCurStep();
+
 protected :
     CAppInterface   *m_pApp;
+    WORD32           m_dwUpperID;    /* 用于标识高层业务ID(如 : CellID) */
+    WORD32           m_dwExtendID;   /* 用于标识高层业务ID(如 : UEID) */
     WORD64           m_lwTransID;
+    CCBObject       *m_pObj;
+    PCBFUNC          m_pTimeOutFunc;
+
     WORD32           m_dwTimerID;
     E_TransState     m_eTransState;
     WORD32           m_dwCurStepID;
-
     WORD32           m_dwStepNum;
     CBaseTransStep  *m_apStep[MAX_TRANS_STEP_NUM];
 
@@ -87,52 +98,113 @@ protected :
 };
 
 
+inline CAppInterface * CBaseTrans::GetApp()
+{
+    return m_pApp;
+}
+
+
+inline CCBObject * CBaseTrans::GetObject()
+{
+    return m_pObj;
+}
+
+
+inline WORD32 CBaseTrans::GetUpperID()
+{
+    return m_dwUpperID;
+}
+
+
+inline WORD64 CBaseTrans::GetTransID()
+{
+    return m_lwTransID;
+}
+
+
+inline WORD32 CBaseTrans::GetStepNum()
+{
+    return m_dwStepNum;
+}
+
+
+inline BOOL CBaseTrans::IsFinish()
+{
+    return (E_TRANS_COMPLETE == m_eTransState);
+}
+
+
+/* 分配内存用于实例化Step; 无需考虑内存回收(伴随Trans销毁自动回收) */
+inline BYTE * CBaseTrans::Mallc()
+{
+    T_TransStepValue *ptValue = m_cList.Malloc();
+    if (NULL == ptValue)
+    {
+        return NULL;
+    }
+
+    return ptValue->aucStep;
+}
+
+
+inline WORD32 CBaseTrans::RegisterStep(CBaseTransStep *pStep)
+{
+    if (m_dwStepNum >= MAX_TRANS_STEP_NUM)
+    {
+        return FAIL;
+    }
+
+    m_apStep[m_dwStepNum++] = pStep;
+
+    return SUCCESS;
+}
+
+
+inline CBaseTransStep * CBaseTrans::GetCurStep()
+{
+    if (m_dwCurStepID >= m_dwStepNum)
+    {
+        return NULL;
+    }
+
+    return m_apStep[m_dwCurStepID];
+}
+
+
 class CBaseTransStep : public CBaseData, public CCBObject
 {
 public :
-    enum { TRANS_STEP_WAIT_TICK = 5};  /* 5ms */
+    friend class CBaseTrans;
 
 public :
     CBaseTransStep (CBaseTrans *pTrans,
                     WORD32      dwStepID,
                     WORD32      dwSendMsgID,
-                    WORD32      dwRecvMsgID,
-                    WORD32      dwWaitTick);
+                    WORD32      dwRecvMsgID);
     virtual ~CBaseTransStep();
 
-    WORD32 SendMsg(E_AppClass  eDstClass,
-                   WORD32      dwDstAssocID,
-                   WORD16      wLen,
-                   const VOID *ptMsg);
+    virtual WORD32 Execute() = 0;
 
-    WORD32 RecvMsg(WORD32 dwMsgID, VOID *pIn, WORD16 wMsgLen);
+    virtual WORD32 ProcMsg(VOID *pIn, WORD32 dwMsgLen) = 0;
 
-    WORD32 GetTransID();
     WORD32 GetStepID();
-    WORD32 GetWaitTick();
-
-    /* 由RecvMsg调用 */
-    virtual WORD32 ProcMsg(VOID *pIn, WORD16 wMsgLen) = 0;
-
-    /* 调用ProcMsg失败后, 框架自动调用ProcFail()接口 */
-    virtual WORD32 ProcFail() = 0;
-
-    /* 等待消息超时, 框架自动调用Step实例的WaitTimeOut()接口 */
-    virtual WORD32 WaitTimeOut() = 0;
 
 protected :
     CBaseTrans       *m_pTrans;
 
-    WORD32            m_dwTransID;    /* 事务ID, 当前Trans下所有Step相同 */
     WORD32            m_dwStepID;     /* 当前StepID */
-    E_TransStepState  m_eState;
     WORD32            m_dwSendMsgID;  /* Step发送消息号 */
     WORD32            m_dwRecvMsgID;  /* Step等待接收消息号 */
-    WORD32            m_dwWaitTick;   /* Step等待时长, 单位 : ms */
 };
 
 
-template <WORD32 SendMsgID, WORD32 RecvMsgID, WORD32 WaitTick>
+inline WORD32 CBaseTransStep::GetStepID()
+{
+    return m_dwStepID;
+}
+
+
+template <WORD32 SendMsgID, WORD32 RecvMsgID>
 class CBaseTransStepTpl : public CBaseTransStep
 {
 public :
@@ -140,8 +212,7 @@ public :
         : CBaseTransStep(pTrans,
                          dwStepID,
                          SendMsgID,
-                         RecvMsgID,
-                         WaitTick)
+                         RecvMsgID)
     {
     }
 
@@ -189,8 +260,13 @@ protected :
     using CBaseTrans::Initialize;
 
 public :
-    CTransTpl<Ts...>(CAppInterface *pApp, WORD64 lwTransID)
-        : CBaseTrans(pApp, lwTransID)
+    CTransTpl<Ts...> (CAppInterface *pApp,
+                      WORD32         dwUpperID,
+                      WORD32         dwExtendID,
+                      WORD64         lwTransID,
+                      CCBObject     *pObj,
+                      PCBFUNC        pFunc)
+        : CBaseTrans(pApp, dwUpperID, dwExtendID, lwTransID, pObj, pFunc)
     {
         CBaseTrans::Initialize();
         Constructor<0, Ts...>();

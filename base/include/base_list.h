@@ -1114,6 +1114,9 @@ public :
     /* 从链表中移除节点并释放节点 */
     WORD32 Remove(const K &rKey);
 
+    /* 从链表中移除节点并释放节点 */
+    WORD32 Remove(T *pInst);
+
     T * GetHead();
     T * GetTail();
     T * Next(T *pData);
@@ -1403,6 +1406,64 @@ inline WORD32 CBaseSequence<K, T, NODE_NUM>::Remove(const K &rKey)
     }
 
     return FAIL;
+}
+
+
+/* 从链表中移除节点并释放节点 */
+template <typename K, class T, WORD32 NODE_NUM>
+inline WORD32 CBaseSequence<K, T, NODE_NUM>::Remove(T *pInst)
+{
+    WORD64            lwAddr   = (WORD64)(pInst) - s_dwValueOffset;
+    WORD32            dwInstID = INVALID_DWORD;
+    CSequenceData    *pData    = NULL;
+    T_SequenceHeader *pPrev    = NULL;
+    T_SequenceHeader *pNext    = NULL;
+
+    if (FALSE == m_cList.IsValid((VOID *)lwAddr))
+    {
+        return FAIL;
+    }
+
+    T_SequenceHeader *pCurNode = (T_SequenceHeader *)(lwAddr - m_cList.s_dwDataOffset);
+    if (pCurNode->m_bFree)
+    {
+        return FAIL;
+    }
+
+    dwInstID = pCurNode->m_dwIndex;
+    pData    = *pCurNode;
+    pPrev    = pCurNode->m_pPrev;
+    pNext    = pCurNode->m_pNext;
+
+    if (NULL == pPrev)
+    {
+        /* 删除头节点 */
+        m_ptHeader = pNext;
+    }
+    else
+    {
+        pPrev->m_pNext = pNext;
+    }
+
+    if (NULL == pNext)
+    {
+        /* 删除尾节点 */
+        m_ptTailer = pPrev;
+    }
+    else
+    {
+        pNext->m_pPrev = pPrev;
+    }
+
+    pCurNode->m_pPrev = NULL;
+    pCurNode->m_pNext = NULL;
+
+    delete pData;
+    m_dwCount--;
+
+    m_cList.Free(dwInstID);
+
+    return SUCCESS;
 }
 
 
