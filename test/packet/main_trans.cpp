@@ -190,7 +190,7 @@ WORD32 CTestTrans1::Finish()
 }
 
 
-class CTestTrans2 : public CTransTpl<CTestStep1, CTestStep2>
+class CTestTrans2 : public CTransTpl<CTestStep2, CTestStep1>
 {
 public :
     CTestTrans2 (CAppInterface *pApp,
@@ -199,8 +199,8 @@ public :
                  WORD64         lwTransID,
                  CCBObject     *pObj,
                  PCBFUNC        pFunc)
-        : CTransTpl<CTestStep1,
-                    CTestStep2> (pApp, dwUpperID, dwExtendID, lwTransID, pObj, pFunc)
+        : CTransTpl<CTestStep2,
+                    CTestStep1> (pApp, dwUpperID, dwExtendID, lwTransID, pObj, pFunc)
     {
     }
 
@@ -222,7 +222,7 @@ public :
 };
 
 
-class CTestTrans3 : public CTransTpl<CTestStep1, CTestStep2, CTestStep3>
+class CTestTrans3 : public CTransTpl<CTestStep3, CTestStep2, CTestStep1>
 {
 public :
     CTestTrans3 (CAppInterface *pApp,
@@ -231,9 +231,9 @@ public :
                  WORD64         lwTransID,
                  CCBObject     *pObj,
                  PCBFUNC        pFunc)
-        : CTransTpl<CTestStep1,
+        : CTransTpl<CTestStep3,
                     CTestStep2,
-                    CTestStep3> (pApp, dwUpperID, dwExtendID, lwTransID, pObj, pFunc)
+                    CTestStep1> (pApp, dwUpperID, dwExtendID, lwTransID, pObj, pFunc)
     {
     }
 

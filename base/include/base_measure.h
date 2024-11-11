@@ -605,12 +605,14 @@ typedef struct tagT_SchAppCellAtomicMeasItem
 
 typedef struct tagT_SchAppCellMeasure
 {
+    WORD64                lwCcchReqNum;
     T_SchAppCellMeasItem  atMeas[SLOT_NUM_PER_HALF_SFN];
 }T_SchAppCellMeasure;
 
 
 typedef struct tagT_SchAppCellAtomicMeasure
 {
+    std::atomic<WORD64>         lwCcchReqNum;
     T_SchAppCellAtomicMeasItem  atMeas[SLOT_NUM_PER_HALF_SFN];
 }T_SchAppCellAtomicMeasure;
 

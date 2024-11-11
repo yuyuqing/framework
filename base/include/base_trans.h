@@ -252,6 +252,61 @@ protected :
 };
 
 
+template <typename... Ts> class CTransTpl;
+template <> class CTransTpl<> : public CBaseTrans
+{
+protected :
+    using CBaseTrans::Initialize;
+
+public :
+    CTransTpl (CAppInterface *pApp,
+               WORD32         dwUpperID,
+               WORD32         dwExtendID,
+               WORD64         lwTransID,
+               CCBObject     *pObj,
+               PCBFUNC        pFunc)
+        : CBaseTrans(pApp, dwUpperID, dwExtendID, lwTransID, pObj, pFunc)
+    {
+        CBaseTrans::Initialize();
+    }
+
+    virtual ~CTransTpl() {}
+};
+
+
+template <typename T, typename... Ts>
+class CTransTpl<T, Ts...> : public CTransTpl<Ts...>
+{
+protected :
+    using CBaseTrans::Initialize;
+
+public :
+    CTransTpl (CAppInterface *pApp,
+               WORD32         dwUpperID,
+               WORD32         dwExtendID,
+               WORD64         lwTransID,
+               CCBObject     *pObj,
+               PCBFUNC        pFunc)
+        : CTransTpl<Ts...>(pApp, dwUpperID, dwExtendID, lwTransID, pObj, pFunc)
+    {
+        Constructor<T> ();
+    }
+
+    virtual ~CTransTpl() {}
+
+protected :
+    template <typename CurType>
+    VOID Constructor()
+    {
+        using ValType = CTransStepTpl<CurType>;
+
+        CurType *pStep = ValType::CreateStep(this);
+        assert(NULL != pStep);
+    }
+};
+
+
+#if 0
 /* Ts : 具体的CBaseTransStepTpl派生类 */
 template <typename... Ts>
 class CTransTpl : public CBaseTrans
@@ -260,12 +315,12 @@ protected :
     using CBaseTrans::Initialize;
 
 public :
-    CTransTpl<Ts...> (CAppInterface *pApp,
-                      WORD32         dwUpperID,
-                      WORD32         dwExtendID,
-                      WORD64         lwTransID,
-                      CCBObject     *pObj,
-                      PCBFUNC        pFunc)
+    CTransTpl (CAppInterface *pApp,
+               WORD32         dwUpperID,
+               WORD32         dwExtendID,
+               WORD64         lwTransID,
+               CCBObject     *pObj,
+               PCBFUNC        pFunc)
         : CBaseTrans(pApp, dwUpperID, dwExtendID, lwTransID, pObj, pFunc)
     {
         CBaseTrans::Initialize();
@@ -275,19 +330,13 @@ public :
     virtual ~CTransTpl() {}
 
 protected :
-    template <WORD32 IDX, typename TVal>
-    VOID Create()
-    {
-        using ValType = CTransStepTpl<TVal>;
-
-        TVal *pStep = ValType::CreateStep(this);
-        assert(NULL != pStep);
-    }
-
-    template <WORD32 IDX, typename CurType, typename... Tails>
+    template <WORD32 IDX, typename T, typename... Tails>
     VOID Constructor()
     {
-        Create<IDX, CurType>();
+        using ValType = CTransStepTpl<T>;
+
+        T *pStep = ValType::CreateStep(this);
+        assert(NULL != pStep);
 
         if constexpr (IDX == (sizeof...(Ts) - 1))
         {
@@ -300,6 +349,7 @@ protected :
         }
     }
 };
+#endif
 
 
 #endif

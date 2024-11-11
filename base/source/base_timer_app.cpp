@@ -926,6 +926,8 @@ VOID CTimerApp::TimeOutDumpSchApp(const VOID *pIn, WORD32 dwLen)
         T_SchAppCellMeasure       *ptCell       = &(tMeasure.atCell[dwIndex]);
         T_SchAppCellAtomicMeasure *ptCellAtomic = &(rtMeasAtomic.atCell[dwIndex]);
 
+        ptCell->lwCcchReqNum = ptCellAtomic->lwCcchReqNum.load(std::memory_order_relaxed);
+
         for (WORD32 dwIndex1 = 0; dwIndex1 < SLOT_NUM_PER_HALF_SFN; dwIndex1++)
         {
             T_SchAppCellMeasItem       *ptItem       = &(ptCell->atMeas[dwIndex1]);
@@ -953,9 +955,12 @@ VOID CTimerApp::TimeOutDumpSchApp(const VOID *pIn, WORD32 dwLen)
 
     for (WORD32 dwIndex = 0; dwIndex < MAX_CELL_PER_GNB; dwIndex++)
     {
+        T_SchAppCellMeasure *ptCell = &(tMeasure.atCell[dwIndex]);
+
         LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
-                   "CellID : %d\n",
-                   dwIndex);
+                   "CellID : %d,  lwCcchReqNum : %lu\n",
+                   dwIndex,
+                   ptCell->lwCcchReqNum);
         TRACE_STACK("CurSlot    SlotIndNum     InvalidNum       "
                     "UciIndNum        "
                     "CrcIndNum        SrsIndNum         TtiDiff0         "
@@ -963,8 +968,6 @@ VOID CTimerApp::TimeOutDumpSchApp(const VOID *pIn, WORD32 dwLen)
                     "UciDiff7         UciDiff8         UciDiff9         "
                     "CrcDiff7         CrcDiff8         CrcDiff9         "
                     "SrsDiff7         SrsDiff8         SrsDiff9         ");
-
-        T_SchAppCellMeasure *ptCell = &(tMeasure.atCell[dwIndex]);
 
         for (WORD32 dwIndex1 = 0; dwIndex1 < SLOT_NUM_PER_HALF_SFN; dwIndex1++)
         {
