@@ -15,46 +15,6 @@ extern "C"{
 
 
 /******************************************************************************/
-/*******************************    OAM 消息    *******************************/
-/******************************************************************************/
-/* 起站后DuMgr向OamAgent发送启动消息 */
-typedef struct tagT_DuMgrOamStartRequest
-{
-    WORD32  dwMaxCellNum;
-}T_DuMgrOamStartRequest;
-
-
-/* SysRepo向OamAgent发送配置请求, 触发OamAgent发送DuConfigRequest消息 */
-typedef struct tagT_DuOamConfigRequest
-{
-}T_DuOamConfigRequest;
-
-
-/* OamAgent向DuMgr发送DU配置请求, 触发起站后的小区建立流程 */
-typedef struct tagT_OamDuMgrDuConfigRequest
-{
-}T_OamDuMgrDuConfigRequest;
-
-
-/* DuMgr向OamAgent返回DuConfigResponse */
-typedef struct tagT_DuMgrOamDuConfigResponse
-{
-}T_DuMgrOamDuConfigResponse;
-
-
-/* OamAgent向DuMgr发送Cell配置请求, 触发起站后的小区建立流程 */
-typedef struct tagT_OamDuMgrCellConfigRequest
-{
-}T_OamDuMgrCellConfigRequest;
-
-
-/* DuMgr向OamAgent返回CellConfigResponse */
-typedef struct tagT_DuMgrOamCellConfigResponse
-{
-}T_DuMgrOamCellConfigResponse;
-
-
-/******************************************************************************/
 /*******************************    RRU 消息    *******************************/
 /******************************************************************************/
 typedef struct tagT_RrcRruConfigRequest
@@ -69,80 +29,6 @@ typedef struct tagT_RruRrcConfigResponse
     WORD64    lwTransID;
     WORD32    dwCellID;
 }T_RruRrcConfigResponse;
-
-
-/******************************************************************************/
-/*******************************    SCTP消息    *******************************/
-/******************************************************************************/
-/* DuMgr向Sctp发送SCTP配置请求消息 */
-typedef struct tagT_SctpConfigRequest
-{
-}T_SctpConfigRequest;
-
-
-/* Sctp向DuMgr返回响应消息 */
-typedef struct tagT_SctpConfigResponse
-{
-}T_SctpConfigResponse;
-
-
-/* SCTP向DuMgr发送偶联通知 */
-typedef struct tagT_SctpAssocStatusNotify
-{
-    BYTE  ucStatus;
-}T_SctpAssocStatusNotify;
-
-
-/******************************************************************************/
-/*******************************    DBS 消息    *******************************/
-/******************************************************************************/
-/* 数据库触发小区建立请求(OamAgent发给DuMgr) */
-typedef struct tagT_DbsCellAddReq
-{
-    WORD32    dwCellID;
-}T_DbsCellAddReq;
-
-
-/* 数据库触发小区删除请求(OamAgent发给DuMgr) */
-typedef struct tagT_DbsCellDelReq
-{
-    WORD32    dwCellID;
-}T_DbsCellDelReq;
-
-
-/* 数据库触发小区Reset请求(OamAgent发给DuMgr) */
-typedef struct tagT_DbsCellResetReq
-{
-    WORD32    dwCellID;
-}T_DbsCellResetReq;
-
-
-/* 数据库触发小区重配请求(OamAgent发给DuMgr) */
-typedef struct tagT_DbsMibRecfgReq
-{
-    WORD32    dwCellID;
-}T_DbsMibRecfgReq;
-
-
-/* 数据库触发小区重配请求(OamAgent发给DuMgr) */
-typedef struct tagT_DbsAmcRecfgReq
-{
-    WORD32    dwCellID;
-}T_DbsAmcRecfgReq;
-
-
-/* 数据库触发小区重配请求(OamAgent发给DuMgr) */
-typedef struct tagT_DbsRankAdaptRecfgReq
-{
-    WORD32    dwCellID;
-}T_DbsRankAdaptRecfgReq;
-
-
-/* 数据库触发小区重配请求(OamAgent发给DuMgr) */
-typedef struct tagT_DbsTaRecfgReq
-{
-    WORD32    dwCellID;
-}T_DbsTaRecfgReq;
 
 
 /******************************************************************************/

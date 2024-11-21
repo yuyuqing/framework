@@ -31,7 +31,7 @@ extern "C" {
 #define EV_DBS_START                               ((WORD32)(EV_BASE_BEGIN + 0x0400))
 #define EV_DBS_END                                 ((WORD32)(EV_BASE_BEGIN + 0x05FF))
 
-/* 控制面Common消息号段(Cell/SCTP/...) */
+/* 控制面Common消息号段(Cell/...) */
 #define EV_RRC_COMMON_START                        ((WORD32)(EV_BASE_BEGIN + 0x0600))
 #define EV_RRC_COMMON_END                          ((WORD32)(EV_BASE_BEGIN + 0x07FF))
 
@@ -169,15 +169,11 @@ extern "C" {
 #define EV_DUMGR_DUMGR_START                       ((WORD32)(EV_RRC_COMMON_START + 0x080))
 #define EV_DUMGR_DUMGR_END                         ((WORD32)(EV_RRC_COMMON_START + 0x08F))
 
-/* SCTP->DUMGR消息号段    (144 ~ 159) 起始消息ID : 1680 */
-#define EV_SCTP_DUMGR_START                        ((WORD32)(EV_RRC_COMMON_START + 0x090))
-#define EV_SCTP_DUMGR_END                          ((WORD32)(EV_RRC_COMMON_START + 0x09F))
-
-/* F1AP->DUMGR消息号段    (160 ~ 223) 起始消息ID : 1696 */
-#define EV_F1AP_DUMGR_START                        ((WORD32)(EV_RRC_COMMON_START + 0x0A0))
+/* F1AP<->DUMGR消息号段   (144 ~ 223) 起始消息ID : 1680 */
+#define EV_F1AP_DUMGR_START                        ((WORD32)(EV_RRC_COMMON_START + 0x090))
 #define EV_F1AP_DUMGR_END                          ((WORD32)(EV_RRC_COMMON_START + 0x0DF))
 
-/* RRM->RRC消息号段       (224 ~ 287) 起始消息ID : 1760 */
+/* RRM<->RRC消息号段      (224 ~ 287) 起始消息ID : 1760 */
 #define EV_RRM_RRC_START                           ((WORD32)(EV_RRC_COMMON_START + 0x0E0))
 #define EV_RRM_RRC_END                             ((WORD32)(EV_RRC_COMMON_START + 0x11F))
 
@@ -186,14 +182,6 @@ extern "C" {
 #define EV_MAC_RRC_END                             ((WORD32)(EV_RRC_COMMON_START + 0x15F))
 
 /* xxx<->xxx消息号段      (352 ~ 415) 起始消息ID : 1888 */
-
-/* SCTP->F1AP消息号段     (416 ~ 431) 起始消息ID : 1952 */
-#define EV_SCTP_F1AP_START                         ((WORD32)(EV_RRC_COMMON_START + 0x1A0))
-#define EV_SCTP_F1AP_END                           ((WORD32)(EV_RRC_COMMON_START + 0x1AF))
-
-/* DUMGR->F1AP消息号段    (432 ~ 447) 起始消息ID : 1968 */
-#define EV_DUMGR_F1AP_START                        ((WORD32)(EV_RRC_COMMON_START + 0x1B0))
-#define EV_DUMGR_F1AP_END                          ((WORD32)(EV_RRC_COMMON_START + 0x1BF))
 
 
 /* OAM->RRC消息号段       (  0 ~ 111) 起始消息ID : 1536 */
@@ -213,13 +201,11 @@ extern "C" {
 /* DUMGR->DUMGR消息号段   (128 ~ 143) 起始消息ID : 1664 */
 #define EV_INIT_DU_MGR_APP_IND                     ((WORD32)(EV_DUMGR_DUMGR_START + 0))
 
-/* SCTP->DUMGR消息号段    (144 ~ 159) 起始消息ID : 1680 */
-#define EV_SCTP_DUMGR_CONFIG_RESPONSE              ((WORD32)(EV_SCTP_DUMGR_START + 0))
-#define EV_SCTP_DUMGR_ASSOC_SATUS                  ((WORD32)(EV_SCTP_DUMGR_START + 1))
-
-/* F1AP->DUMGR消息号段    (160 ~ 223) 起始消息ID : 1696 */
-#define EV_F1AP_DUMGR_MGMT_MSG_RX                  ((WORD32)(EV_F1AP_DUMGR_START + 0))
-#define EV_F1AP_DUMGR_UE_MSG_RX                    ((WORD32)(EV_F1AP_DUMGR_START + 1))
+/* F1AP<->DUMGR消息号段   (144 ~ 223) 起始消息ID : 1680 */
+#define EV_DUMGR_F1AP_MGMT_MSG_TX                  ((WORD32)(EV_F1AP_DUMGR_START + 0))
+#define EV_F1AP_DUMGR_MGMT_MSG_RX                  ((WORD32)(EV_F1AP_DUMGR_START + 1))
+#define EV_DUUE_F1AP_MSG_TX                        ((WORD32)(EV_F1AP_DUMGR_START + 2))
+#define EV_F1AP_DUUE_MSG_RX                        ((WORD32)(EV_F1AP_DUMGR_START + 3))
 
 /* RRM<->RRC消息号段      (224 ~ 287) 起始消息ID : 1760 */
 #define EV_RRC_RRM_CELL_CFG_REQ                    ((WORD32)(EV_RRM_RRC_START + 0))
@@ -249,16 +235,12 @@ extern "C" {
 #define EV_SCH_RRC_SYMBOL_OFF_NOTIFY               ((WORD32)(EV_MAC_RRC_START + 15))
 #define EV_SCH_RRC_SYMBOL_OFF_ENABLE_REQ           ((WORD32)(EV_MAC_RRC_START + 16))
 
-#define EVT_SCH_RRC_UE_CONFIG_CONFIRM              ((WORD32)(EV_RRC_TO_SCH_START + 17))
-#define EVT_SCH_RRC_UE_RECONFIG_CONFIRM            ((WORD32)(EV_RRC_TO_SCH_START + 18))
-#define EVT_SCH_RRC_UE_DELETE_CONFIRM              ((WORD32)(EV_RRC_TO_SCH_START + 19))
-#define EVT_SCH_RRC_LCH_CONFIG_CONFIRM             ((WORD32)(EV_RRC_TO_SCH_START + 20))
-#define EVT_SCH_RRC_LCH_RECONFIG_CONFIRM           ((WORD32)(EV_RRC_TO_SCH_START + 21))
-#define EVT_SCH_RRC_LCH_DELETE_CONFIRM             ((WORD32)(EV_RRC_TO_SCH_START + 22))
-
-
-/* SCTP->F1AP消息号段     (416 ~ 431) 起始消息ID : 1952 */
-#define EV_SCTP_F1AP_USER_PAYLOAD_INDICATION       ((WORD32)(EV_SCTP_F1AP_START + 0))
+#define EVT_SCH_RRC_UE_CONFIG_CONFIRM              ((WORD32)(EV_MAC_RRC_START + 17))
+#define EVT_SCH_RRC_UE_RECONFIG_CONFIRM            ((WORD32)(EV_MAC_RRC_START + 18))
+#define EVT_SCH_RRC_UE_DELETE_CONFIRM              ((WORD32)(EV_MAC_RRC_START + 19))
+#define EVT_SCH_RRC_LCH_CONFIG_CONFIRM             ((WORD32)(EV_MAC_RRC_START + 20))
+#define EVT_SCH_RRC_LCH_RECONFIG_CONFIRM           ((WORD32)(EV_MAC_RRC_START + 21))
+#define EVT_SCH_RRC_LCH_DELETE_CONFIRM             ((WORD32)(EV_MAC_RRC_START + 22))
 
 
 /******************************************************************************

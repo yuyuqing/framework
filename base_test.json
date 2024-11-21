@@ -1,0 +1,204 @@
+{
+    "memory"   :
+    {
+        "mem_type"        : 1,                 //0:ShareMem(暂不支持), 1:HugePage, 2:Heap
+        "page_num"        : 1,                 //页数量, 每页固定1G BYTE
+        "mem_size"        : 1024,              //内存类型为Heap时, 按照mem_size大小申请内存, 单位MB
+        "huge_dir"        : "/dev/hugepages",  //当mem_type为1时, 指定大页文件的路径(文件系统mount的位置)
+        "pools"           :
+        [
+            {
+                "pool_id"     : 0,
+                "blocks"      :
+                [
+                    //trunk_size : 每个trunk大小(包含header信息); power_num : 每个block的trunk数量(2^power_num指数次方)
+                    {
+                        "trunk_size"  : 262144,
+                        "power_num"   :      8
+                    }
+                ]
+            },
+
+            {
+                "pool_id"     : 1,
+                "blocks"      :
+                [
+                    {
+                        "trunk_size"  :    512,
+                        "power_num"   :     12
+                    },
+                    {
+                        "trunk_size"  :   2048,
+                        "power_num"   :     12
+                    },
+                    {
+                        "trunk_size"  :   4096,
+                        "power_num"   :     11
+                    },
+                    {
+                        "trunk_size"  : 163840,
+                        "power_num"   :      8
+                    }
+                ]
+            },
+
+            {
+                "pool_id"     : 2,
+                "blocks"      :
+                [
+                    {
+                        "trunk_size"  :    512,
+                        "power_num"   :     12
+                    },
+                    {
+                        "trunk_size"  :   2048,
+                        "power_num"   :     12
+                    },
+                    {
+                        "trunk_size"  :   4096,
+                        "power_num"   :     11
+                    },
+                    {
+                        "trunk_size"  : 163840,
+                        "power_num"   :      8
+                    }
+                ]
+            },
+
+            {
+                "pool_id"     : 3,
+                "blocks"      :
+                [
+                    {
+                        "trunk_size"  :    512,
+                        "power_num"   :     12
+                    },
+                    {
+                        "trunk_size"  :   2048,
+                        "power_num"   :     12
+                    },
+                    {
+                        "trunk_size"  :   4096,
+                        "power_num"   :     11
+                    },
+                    {
+                        "trunk_size"  : 163840,
+                        "power_num"   :      8
+                    }
+                ]
+            },
+
+            {
+                "pool_id"     : 4,
+                "blocks"      :
+                [
+                    {
+                        "trunk_size"  :    512,
+                        "power_num"   :     12
+                    },
+                    {
+                        "trunk_size"  :   2048,
+                        "power_num"   :     12
+                    },
+                    {
+                        "trunk_size"  :   4096,
+                        "power_num"   :     11
+                    },
+                    {
+                        "trunk_size"  : 163840,
+                        "power_num"   :      8
+                    }
+                ]
+            }
+        ]
+    },
+
+    "log"      : 
+    {
+        "thread_core"       : 15,             //日志线程绑定核号
+        "policy"            : 1,              //日志线程优先级策略; 1:FIFO
+        "priority"          : 20,             //日志线程优先级
+        "stack_size"        : 163840,         //日志线程的栈大小
+        "cb_num"            : 1,              //低优先级消息队列每次循环最大回调次数
+        "packet_num"        : 1,              //数据报文队列每次循环最大回调次数
+        "multi_cb_num"      : 32,             //MultiRing队列每次循环最大回调次数(针对每个STRing)
+        "timer_cb_num"      : 8,              //定时器队列每次循环最大回调次数
+        "path"              : "",             //日志生成路径
+        "measure_switch"    : true,           //用于控制日志维测的开关
+        "global_switch"     : true,           //全局开关
+        "enable_sync"       : 1,              //启动周期性同步系统时钟(有TTI中断时, 可以关闭)
+        "sem_period"        : 500,            //日志线程信号量超时等待周期(单位:毫秒)
+        "log_measure"       : 1,              //日志维测输出定时器时长(单位:分钟)
+        "write_file_period" : 0,              //日志文件切换周期; 0:5分钟, 1:10分钟, 2:15分钟, 3:30分钟, 4:60分钟, 5:120分钟, 6:240分钟
+        "wait_threshold"    : 80000,          //控制日志流控; 数值越大,主动丢弃日志数量越少
+        "lock_threshold"    : 80,             //控制日志流控; 数值越大,等待锁竞争时间越长, 因为加锁失败而丢弃的日志数量越少
+        "loop_threshold"    : 4,              //控制日志流控; 本参数作用不明显
+        "file_size"         : 128,            //单个文件最大长度, 单位:MB
+        "apps"              :                 //为了充分利用核资源, 日志线程下也可以绑定App(但不支持Polling接口)
+        [
+            {
+                "name"         : "COamApp",
+                "app_id"       : 0,
+                "event_begin"  : 3072,
+                "assoc_cell"   : [0]
+            },
+            {
+                "name"         : "CTimerApp",
+                "app_id"       : 1,
+                "event_begin"  : 3072,
+                "assoc_cell"   : [0]
+            }
+        ],
+        "modules"           : 
+        [
+            {
+                "name"   : "BASE",
+                "switch" : true,
+                "cell"   : [1, 2, 3, 4],
+                "level"  : [0, 1, 2, 3, 4, 5, 6]
+            }
+        ]
+    },
+
+    "shm" :
+    {
+        "create_flag"      : false,     //是否创建共享内存标志
+        "master_flag"      : false,     //是否共享内存主节点
+        "channel_num"      : 4,         //共享内存通道数目
+        "power_num"        : 14         //接收方队列&内存数量(取值范围[14,15,16,17,18], 2^P, 发送方 = 接收方+2)
+    },
+
+    "workers"  :
+    [
+    ],
+
+    "dpdk" :
+    {
+        "init_flag"        : false,                               //是否配置DPDK标志
+        "init_args"        :                                      //DPDK启动参数
+        [
+            {"cmd_line"    : "gnb_du"},                           //启动DPDK的第一个参数
+            {"cmd_line"    : "-c 0x42"},                          //DPDK核配置, 核配置bit掩码(01000010, 核1/6预分配给DPDK, 1号核预留给DPDK, 6号核预留给SCTP)
+            {"cmd_line"    : "-m 1024"},                          //DPDK启动时为每个Socket分配大页内存数量(若为双Socket系统, 1024,1024), 单位:MB
+            {"cmd_line"    : "-n 1"},                             //DPDK启动时为每个Socket设置的内存通道数
+            {"cmd_line"    : "--file-prefix=wls0"},               //DPDK设置共享内存文件前缀
+            {"cmd_line"    : "--proc-type=auto"},                 //DPDK设置进程类型(primary/secondary/auto)
+            {"cmd_line"    : "--iova-mode=pa"},                   //DPDK设置IOVA模式(pa/va)
+            {"cmd_line"    : "--vdev=net_tap0,iface=cm0"},        //DPDK设置虚拟网络设备
+            {"cmd_line"    : "--allow=0000:0b:00.0"},             //DPDK设置PCI列表
+            {"cmd_line"    : "--allow=0000:13:00.0"}              //DPDK设置PCI列表
+        ],
+        "interface"        :
+        [
+        ],
+        "bbdev"            :
+        [
+        ],
+        "ethdev"           :
+        [
+        ],
+        "route"            :
+        [
+        ]
+    }
+}

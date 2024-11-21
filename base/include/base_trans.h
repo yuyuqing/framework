@@ -11,7 +11,7 @@
 
 typedef struct tagT_TransStepValue
 {
-    BYTE  aucStep[QUATRA_CACHE_SIZE];
+    BYTE  aucStep[DOUBLE_CACHE_SIZE];
 }T_TransStepValue;
 
 

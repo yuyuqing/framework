@@ -27,7 +27,6 @@ typedef enum tagE_AppClass
     E_APP_OAM_AGENT,
     E_APP_DUMGR,
     E_APP_DUF1AP,
-    E_APP_DUCELL,
     E_APP_DURRM,
     E_APP_DUUE,
 

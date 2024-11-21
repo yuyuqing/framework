@@ -264,6 +264,8 @@ int main(int argc, char **argv)
     CTestTrans3    cTrans3(&cApp, 0, 0, 0, &cApp, (PCBFUNC)(&CTestTransApp::TimeOutTrans));
 
     cTrans1.Execute();
+    cTrans2.Execute();
+    cTrans3.Execute();
 
     return SUCCESS;
 }
