@@ -4,7 +4,7 @@
 #define _BASE_FACTORY_TPL_H_
 
 
-#include "base_data_container.h"
+#include "base_data.h"
 
 
 #define PRODUCT_NAME_LEN                 ((WORD32)(32))
@@ -12,7 +12,7 @@
 
 
 /* V : 具体的产品类, 必须是CCBObject派生类 */
-template <class V>
+template <typename V>
 class CProductTpl : public CBaseData
 {
 public :
@@ -56,7 +56,7 @@ typedef struct tagT_ProductDefInfo
 
 
 /* T : 具体的工厂类(CFactoryApp/CFactoryThread) */
-template <class T>
+template <typename T>
 class CFactoryTpl
 {
 public :
@@ -81,7 +81,7 @@ public :
         }
     }
 
-    template <class V>
+    template <typename V>
     static V * CreateProduct(BYTE *pMem)
     {
         memset(pMem, 0x00, sizeof(CProductTpl<V>));
@@ -90,7 +90,7 @@ public :
         return (*pValue);
     }
 
-    template <class V, class P>
+    template <typename V, typename P>
     static V * CreateProduct(BYTE *pMem, const P *pParam)
     {
         memset(pMem, 0x00, sizeof(CProductTpl<V>));
@@ -99,7 +99,7 @@ public :
         return (*pValue);
     }
 
-    template <class V>
+    template <typename V>
     static V * ResetProduct(BYTE *pMem)
     {
         CProductTpl<V> *pValue = (CProductTpl<V> *)(pMem);
@@ -111,7 +111,7 @@ public :
         return (*pValue);
     }
 
-    template <class V, class P>
+    template <typename V, typename P>
     static V * ResetProduct(BYTE *pMem, const P *pParam)
     {
         CProductTpl<V> *pValue = (CProductTpl<V> *)(pMem);
@@ -123,7 +123,7 @@ public :
         return (*pValue);
     }
 
-    template <class V>
+    template <typename V>
     static VOID DestroyProduct(BYTE *pMem)
     {
         CProductTpl<V> *pValue = (CProductTpl<V> *)(pMem);
@@ -131,7 +131,7 @@ public :
     }
 
     /* V : 具体的产品类(CAppXXX/CThreadXXX) */
-    template <class V>
+    template <typename V>
     static WORD32 DefineProduct(const CHAR *pName)
     {
         T *pFactory = CFactoryTpl<T>::GetInstance();
@@ -151,7 +151,7 @@ public :
     }
 
     /* V : 具体的产品类(CAppXXX/CThreadXXX) */
-    template <class V, class P>
+    template <typename V, typename P>
     static WORD32 DefineProduct(const CHAR *pName)
     {
         T *pFactory = CFactoryTpl<T>::GetInstance();
@@ -196,11 +196,11 @@ protected :
 };
 
 
-template <class T>
+template <typename T>
 T * CFactoryTpl<T>::s_pInstance = NULL;
 
 
-template <class T>
+template <typename T>
 T_ProductDefInfo * CFactoryTpl<T>::FindDef(const CHAR *pName)
 {
     if (NULL == pName)
@@ -231,7 +231,7 @@ T_ProductDefInfo * CFactoryTpl<T>::FindDef(const CHAR *pName)
 }
 
 
-template <class T>
+template <typename T>
 T_ProductDefInfo * CFactoryTpl<T>::Define(const CHAR *pName)
 {
     if ((m_dwDefNum >= PRODUCT_NUM) || (NULL == pName))

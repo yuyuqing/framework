@@ -59,7 +59,8 @@ VOID CFactoryThread::Dump()
     for (WORD32 dwIndex = 0; dwIndex < m_dwDefNum; dwIndex++)
     {
         LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_TRACE, TRUE, 
-                   "pCreateFunc : %p, pResetFunc : %p, pDestroyFunc : %p, aucName : %s\n",
+                   "pCreateFunc : %p, pResetFunc : %p, "
+                   "pDestroyFunc : %p, aucName : %s\n",
                    m_atDefInfo[dwIndex].pCreateFunc,
                    m_atDefInfo[dwIndex].pResetFunc,
                    m_atDefInfo[dwIndex].pDestroyFunc,
@@ -177,7 +178,7 @@ WORD32 CThreadCntrl::JoinThreads()
 
         pWorker->Join();
     }
-    
+
     return SUCCESS;
 }
 

@@ -4,52 +4,8 @@
 #define _BASE_SHM_MGR_H_
 
 
+#include "base_config_file.h"
 #include "base_shm_channel.h"
-#include "base_mem_interface.h"
-
-
-typedef enum tagE_ShmNodeSize
-{
-    E_ShmNodeSize_002K = 2048,
-    E_ShmNodeSize_004K = 4096,
-    E_ShmNodeSize_128K = 131072,
-}E_ShmNodeSize;
-
-
-typedef enum tagE_ShmPowerNum
-{
-    E_ShmPowerNum_10 = 10,
-    E_ShmPowerNum_14 = 14,
-    E_ShmPowerNum_15 = 15,
-    E_ShmPowerNum_16 = 16,
-    E_ShmPowerNum_17 = 17,
-    E_ShmPowerNum_18 = 18,
-    E_ShmPowerNum_19 = 19,
-    E_ShmPowerNum_20 = 20,
-}E_ShmPowerNum;
-
-
-typedef CShmChannel<TRUE,  E_ShmPowerNum_20, E_ShmPowerNum_18, E_ShmNodeSize_002K>    CShmChannelM20;
-typedef CShmChannel<TRUE,  E_ShmPowerNum_19, E_ShmPowerNum_17, E_ShmNodeSize_002K>    CShmChannelM19;
-typedef CShmChannel<TRUE,  E_ShmPowerNum_18, E_ShmPowerNum_16, E_ShmNodeSize_002K>    CShmChannelM18;
-typedef CShmChannel<TRUE,  E_ShmPowerNum_17, E_ShmPowerNum_15, E_ShmNodeSize_002K>    CShmChannelM17;
-typedef CShmChannel<TRUE,  E_ShmPowerNum_16, E_ShmPowerNum_14, E_ShmNodeSize_002K>    CShmChannelM16;
-
-typedef CShmChannel<FALSE, E_ShmPowerNum_20, E_ShmPowerNum_18, E_ShmNodeSize_002K>    CShmChannelS20;
-typedef CShmChannel<FALSE, E_ShmPowerNum_19, E_ShmPowerNum_17, E_ShmNodeSize_002K>    CShmChannelS19;
-typedef CShmChannel<FALSE, E_ShmPowerNum_18, E_ShmPowerNum_16, E_ShmNodeSize_002K>    CShmChannelS18;
-typedef CShmChannel<FALSE, E_ShmPowerNum_17, E_ShmPowerNum_15, E_ShmNodeSize_002K>    CShmChannelS17;
-typedef CShmChannel<FALSE, E_ShmPowerNum_16, E_ShmPowerNum_14, E_ShmNodeSize_002K>    CShmChannelS16;
-
-/* 用于控制面SCTP消息的共享内存 */
-typedef CShmChannel<TRUE,  E_ShmPowerNum_10, E_ShmPowerNum_10, E_ShmNodeSize_128K>    CShmCHannelMCtrl;
-typedef CShmChannel<FALSE, E_ShmPowerNum_10, E_ShmPowerNum_10, E_ShmNodeSize_128K>    CShmCHannelSCtrl;
-
-
-#define SHM_CHANNEL_SIZE    MAX(MAX(MAX(sizeof(CShmChannelM20), sizeof(CShmChannelS20)),       \
-                                    MAX(sizeof(CShmChannelM19), sizeof(CShmChannelS19))),      \
-                                MAX(MAX(sizeof(CShmChannelM18), sizeof(CShmChannelS18)),       \
-                                    MAX(sizeof(CShmCHannelMCtrl), sizeof(CShmCHannelSCtrl))))
 
 
 typedef struct tagT_ChannelSnapshot
@@ -59,29 +15,89 @@ typedef struct tagT_ChannelSnapshot
 }T_ChannelSnapshot;
 
 
-class CShmMgr : public CSingleton<CShmMgr>, public CBaseData
+typedef struct tagT_ShmMetaHead
+{
+    volatile WORD64  lwMagic;            /* 魔法数字 */
+    volatile WORD32  dwVersion;          /* 版本号 */
+    volatile WORD32  dwHeadSize;         /* 头信息size */
+    volatile WORD32  dwShmKey;           /* 创建共享内存Key值 */
+    volatile SWORD32 iShmID;             /* Master维护的共享内存ID */
+
+    volatile WORD64  lwMasterLock;       /* 主进程锁(只能有1个Master进程打开本共享内存) */
+    volatile SWORD32 iGlobalLock;        /* 全局锁, 用于初始化及全局访问 */
+    volatile BOOL    bInitFlag;          /* 初始化完成标志 */
+
+    volatile WORD64  lwMetaAddr;         /* 主进程共享内存元数据虚拟地址 */
+    volatile WORD64  lwMetaSize;         /* 共享内存元数据总大小 */
+
+    volatile SWORD32 iMLock;             /* 内存管理锁, 保留 */
+    volatile WORD32  dwChannelNum;       /* 通道数量(用户面) */
+
+    volatile BYTE    aucResved0[960];
+
+    /* F1-U用户面通道 */
+    T_ShmChannel     atChannel[MAX_CHANNEL_NUM];
+
+    T_ShmChannel     tCtrlChannel;       /* F1-C控制面通道 */
+    T_ShmChannel     tOamChannel;        /* F1-O管理面通道 */
+
+    volatile BYTE    aucResved1[QUARTER_PAGE_SIZE];
+
+    volatile BYTE    aucMaster[OCTA_PAGE_SIZE];
+    volatile BYTE    aucSlave[OCTA_PAGE_SIZE];
+    volatile BYTE    aucObserver[OCTA_PAGE_SIZE];
+
+    volatile BYTE    aucResved2[19 * QUARTER_PAGE_SIZE];
+    volatile BYTE    aucResved3[768];
+
+    /* 主进程实例化CCentralMemPool的数据区(128 + 64) */
+    volatile BYTE    aucMemPool[TRIPLE_CACHE_SIZE];
+    volatile BYTE    aucOriAddr[CACHE_SIZE];
+}T_ShmMetaHead;
+static_assert(sizeof(T_ShmMetaHead) == (32 * PAGE_SIZE), "unexpected T_ShmMetaHead layout");
+
+
+class CShmMgr : public CBaseData
 {
 public :
-    enum { MAX_CHANNEL_NUM = 16 };
+    enum { SHM_SLAVE_INIT_WAIT = 128 };
 
+    const static WORD64  s_lwMagicValue  = 0x0DE0B6B3A76409B1UL;  /* 大质数 */
+    const static WORD32  s_dwVersion     = 1;                     /* 版本号 */
+    const static WORD32  s_dwShmKey      = 0x05F5E505;
     const static WORD64  s_lwVirBassAddr = 0x4400000000UL;
-    const static WORD64  s_lwGranularity = 0x100000000UL;
-    const static WORD32  s_dwMasterKey   = 0x05F5E505;
-    const static WORD32  s_dwSlaveKey    = 0x05F5B665;
+    const static WORD64  s_lwGranularity = 0x40000000UL;
+
+    static CShmMgr * CreateShmMgr(WORD32 dwProcID, T_ShmJsonCfg &rtParam);
+
+    static CShmMgr * GetInstance();
+    static VOID Destroy();
+
+    static VOID LockGlobal(T_ShmMetaHead &rtHead);
+    static VOID UnLockGlobal(T_ShmMetaHead &rtHead);
+
+private :
+    static T_ShmMetaHead * Attach(E_ShmRole eRole, T_ShmJsonCfg &rtParam);
+    static WORD32 Detach(VOID *ptAddr, SWORD32 iShmID);
+
+    static WORD32 InitMetaHead(E_ShmRole      eRole,
+                               SWORD32        iShmID,
+                               T_ShmMetaHead *ptHead,
+                               T_ShmJsonCfg  &rtParam);
+
+    static CShmMgr * InitMaster(T_ShmMetaHead *ptHead, T_ShmJsonCfg &rtParam);
+    static CShmMgr * InitSlave(T_ShmMetaHead *ptHead, T_ShmJsonCfg &rtParam);
+    static CShmMgr * InitObserver(T_ShmMetaHead *ptHead, T_ShmJsonCfg &rtParam);
 
 public : 
     CShmMgr();
     virtual ~CShmMgr();
 
-    WORD32 Initialize(BOOL             bMaster,
-                      WORD32           dwChannelNum,
-                      WORD32           dwPowerNum,
-                      CCentralMemPool *pCentralMemPool);
+    WORD32 Initiaize(T_ShmMetaHead *ptHead, T_ShmJsonCfg &rtParam);
 
-    WORD32 GetChannelNum();
-
-    CChannelTpl * GetChannel(WORD32 dwIndex);
-    CChannelTpl * GetCtrlChannel();
+    CShmChannel * GetOamChannel();
+    CShmChannel * GetCtrlChannel();
+    CShmChannel * GetDataChannel(WORD32 dwChannelID);
 
     VOID Snapshot();
 
@@ -89,65 +105,65 @@ public :
     VOID Printf();
 
 protected :
-    CChannelTpl * CreateChannel(BOOL bMaster, WORD32 dwPowerNum, BYTE *pBuf, WORD32 dwKeyS, WORD32 dwKeyR);
-    CChannelTpl * CreateMaster(WORD32 dwPowerNum, BYTE *pBuf, WORD32 dwKeyS, WORD32 dwKeyR);
-    CChannelTpl * CreateSlave(WORD32 dwPowerNum, BYTE *pBuf, WORD32 dwKeyS, WORD32 dwKeyR);
-
-    CChannelTpl * CreateCtrlChannel(BOOL bMaster, BYTE *pBuf, WORD32 dwKeyS, WORD32 dwKeyR);
-    CChannelTpl * CreateCtrlMaster(BYTE *pBuf, WORD32 dwKeyS, WORD32 dwKeyR);
-    CChannelTpl * CreateCtrlSlave(BYTE *pBuf, WORD32 dwKeyS, WORD32 dwKeyR);
-
-private :
-    VOID * GetNextVirtAddr();
+    CShmChannel * InitOamChannel(T_ShmJsonCfg &rtCfg);
+    CShmChannel * InitCtrlChannel(T_ShmJsonCfg &rtCfg);
+    CShmChannel * InitDataChannel(WORD32 dwChannelID, T_ShmJsonCfg &rtCfg);
 
 protected :
-    WORD64               m_lwNextVirAddr;
-    BOOL                 m_bMaster;
-    WORD32               m_dwCtrlChannelID;
-    WORD32               m_dwChannelNum;
-    WORD32               m_dwPowerNum;
+    T_ShmMetaHead    *m_pMetaHead;     /* 共享内存元数据区 */
 
-    CCentralMemPool     *m_pMemPool;
-    CChannelTpl         *m_apChannel[MAX_CHANNEL_NUM];
+    E_ShmRole         m_eRole;
+    WORD32            m_dwChannelNum;  /* F1-U数据面通道数量 */
 
-    T_ChannelSnapshot    m_atChannel[MAX_CHANNEL_NUM];
+    CCentralMemPool  *m_pMemPool;      /* Master进程负责初始化并使用 */
+
+    CShmChannel      *m_pOamChannel;
+    CShmChannel      *m_pCtrlChannel;
+    CShmChannel      *m_apDataChannel[MAX_CHANNEL_NUM];
+
+    T_ChannelSnapshot  m_tOamChannel;
+    T_ChannelSnapshot  m_tCtrlChannel;
+    T_ChannelSnapshot  m_atDataChannel[MAX_CHANNEL_NUM];
+
+private :
+    static CShmMgr   *s_pInstance;
 };
+static_assert(sizeof(CShmMgr) < OCTA_PAGE_SIZE, "unexpected CShmMgr layout");
 
 
-inline WORD32 CShmMgr::GetChannelNum()
+inline CShmChannel * CShmMgr::GetOamChannel()
 {
-    return m_dwChannelNum;
+    return m_pOamChannel;
 }
 
 
-inline CChannelTpl * CShmMgr::GetChannel(WORD32 dwIndex)
+inline CShmChannel * CShmMgr::GetCtrlChannel()
 {
-    if (dwIndex >= MAX_CHANNEL_NUM)
+    return m_pCtrlChannel;
+}
+
+
+inline CShmChannel * CShmMgr::GetDataChannel(WORD32 dwChannelID)
+{
+    if (unlikely(dwChannelID >= MAX_CHANNEL_NUM))
     {
         return NULL;
     }
 
-    return m_apChannel[dwIndex];
-}
-
-
-inline CChannelTpl * CShmMgr::GetCtrlChannel()
-{
-    if (m_dwCtrlChannelID >= MAX_CHANNEL_NUM)
-    {
-        return NULL;
-    }
-
-    return m_apChannel[m_dwCtrlChannelID];
+    return m_apDataChannel[dwChannelID];
 }
 
 
 inline VOID CShmMgr::Snapshot()
 {
+    //m_pOamChannel->Snapshot(m_tOamChannel.tRecv, m_tOamChannel.tSend);
+    m_pCtrlChannel->Snapshot(m_tCtrlChannel.tRecv, m_tCtrlChannel.tSend);
+
     for (WORD32 dwIndex = 0; dwIndex < m_dwChannelNum; dwIndex++)
     {
-        m_apChannel[dwIndex]->Snapshot(m_atChannel[dwIndex].tRecv,
-                                       m_atChannel[dwIndex].tSend);
+        T_ChannelSnapshot &rDataChannel = m_atDataChannel[dwIndex];
+        m_apDataChannel[dwIndex]->Snapshot(rDataChannel.tRecv,
+                                           rDataChannel.tSend);
     }
 }
 

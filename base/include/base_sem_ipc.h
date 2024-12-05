@@ -38,8 +38,6 @@ public :
     WORD32 Wait();  /* P操作, 即Val-1操作, 用于消费者等待资源 */
 
 protected :
-
-protected :
     WORD32         m_dwKey;
     SWORD32        m_iSemID;
     BOOL           m_bMaster;

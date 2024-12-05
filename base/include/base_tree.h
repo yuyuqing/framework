@@ -10,6 +10,7 @@
 
 #include "base_util.h"
 #include "base_sort.h"
+#include "base_data_container.h"
 #include "base_numeral_generate.h"
 
 
@@ -95,7 +96,7 @@ public :
         T_TreeData     *apData[BTREE_MAX_NUM_ENTRY];     /* Leaf时有效 */
     }T_TreeNode;
 
-    typedef CNumeralArray<POWER_NUM>                  CIDGenerator;
+    typedef CNumeralGenerator<POWER_NUM>              CIDGenerator;
     typedef CBaseDataContainer<T_TreeNode, s_dwSize>  CTreeNodeList;
 
 public :
@@ -244,9 +245,9 @@ inline T * CBTreeTpl<T, VT, POWER_NUM>::Create(WORD32 &rdwInstID, VT &rKey)
         return NULL;
     }
 
-    pDNode->dwInstID = rdwInstID;
-    pDNode->tKey     = rKey;
-    pData            = new (pDNode->aucData) CTreeData();
+    pDNode->bFree = FALSE;
+    pDNode->tKey  = rKey;
+    pData         = new (pDNode->aucData) CTreeData();
 
     if (NULL == m_pRoot)
     {
@@ -409,7 +410,7 @@ template<typename T, typename VT, WORD32 POWER_NUM>
 inline typename CBTreeTpl<T, VT, POWER_NUM>::T_TreeNode * 
 CBTreeTpl<T, VT, POWER_NUM>::Malloc(BYTE ucType)
 {
-    T_TreeNode *pNode = m_cNodeList.Malloc();
+    T_TreeNode *pNode = (T_TreeNode *)(m_cNodeList.Malloc());
 
     /* 分配必然不会失败, 如出现失败, 则强制跑死 */
     memset(pNode, 0x00, sizeof(T_TreeNode));
@@ -589,7 +590,7 @@ WORD32 CBTreeTpl<T, VT, POWER_NUM>::Add(
             {
                 /* 需要修改子树节点的Key边界, 即待插入节点Key在该子树下最大 */
                 pNode->atKey[swPos] = rKey;
-            }            
+            }
         }
 
         /* 寻找到待插入子树已经满, 需要增加该子树的深度 */
@@ -606,7 +607,7 @@ WORD32 CBTreeTpl<T, VT, POWER_NUM>::Add(
 
         /* 递归子树插入节点 */
         return Add(pNode->apChild[swPos], rKey, rData);
-    }        
+    }
 }
 
 
@@ -735,7 +736,7 @@ WORD32 CBTreeTpl<T, VT, POWER_NUM>::Delete(
                 }
 
                 return dwResult;
-            }                
+            }
         }
     }
 }
@@ -869,7 +870,7 @@ WORD32 CBTreeTpl<T, VT, POWER_NUM>::Delete(
                 }
 
                 return dwResult;
-            }                
+            }
         }
     }
 }
@@ -917,7 +918,7 @@ T * CBTreeTpl<T, VT, POWER_NUM>::Search(
         }
 
         return NULL;
-    }    
+    }
 }
 
 

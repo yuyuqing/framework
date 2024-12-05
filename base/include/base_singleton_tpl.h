@@ -7,7 +7,7 @@
 #include "pub_typedef.h"
 
 
-template <class T>
+template <typename T>
 class CSingleton 
 {
 public :
@@ -59,7 +59,7 @@ private :
 };
 
 
-template <class T>
+template <typename T>
 T * CSingleton<T>::s_pInstance = NULL;
 
 

@@ -19,7 +19,7 @@
 
 #include "base_snprintf.h"
 #include "base_time.h"
-#include "base_mem_pool.h"
+#include "base_mem_pool_log.h"
 #include "base_config_file.h"
 #include "base_ring_message.h"
 #include "base_log_context.h"
@@ -293,7 +293,7 @@ inline CModuleLogInfo * CLogInfo::GetLogModule(WORD32 dwModuleID)
             return ;                                                                         \
         }                                                                                    \
     }                                                                                        \
-    pLogBuffer = pMemPool->Malloc(MAX_LOG_STR_LEN, pLogInfo->GetLockThreshold());            \
+    pLogBuffer = pMemPool->Malloc(MAX_LOG_STR_LEN);                                          \
     if (NULL == pLogBuffer)                                                                  \
     {                                                                                        \
         pModule->m_lwMallocFail++;                                                           \

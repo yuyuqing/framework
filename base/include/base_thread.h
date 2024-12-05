@@ -12,11 +12,9 @@
 #include "pub_message_logger.h"
 
 
-#include "base_mem_interface.h"
-#include "base_measure.h"
+#include "base_mem_pool_msg.h"
 #include "base_timer.h"
 #include "base_ring_message.h"
-#include "base_ring_packet.h"
 #include "base_log.h"
 #include "base_app_state.h"
 
@@ -203,7 +201,7 @@ public :
                           const VOID *ptMsg);
 
     WORD32 SchedulePriority();
-    
+
     SWORD32 SetAffinity(pthread_t &rtThreadID, cpu_set_t &rtCpuSet);
 
     /* 为线程设置名称, 方便ssh后台观察 */
@@ -248,7 +246,7 @@ public :
 
     virtual CTimerRepo * GetTimerRepo();
 
-    virtual CObjMemPoolInterface * CreateSTMemPool();
+    virtual CObjMemPoolInterface * CreateSTMemPool(WORD32 dwRingID);
 
     virtual WORD32 Notify();
 
@@ -525,7 +523,7 @@ inline WORD32 CBaseThread::SendSTMsgToApp(WORD32      dwDstAppID,
         memcpy(ptBaseMsg->aValue, ptMsg, wLen);
     }
 
-    WORD32 dwNum = pRing->Enqueue((VOID *)ptBaseMsg, INVALID_WORD);
+    WORD32 dwNum = pRing->Enqueue(m_dwSelfRingID, (VOID *)ptBaseMsg, INVALID_WORD);
     if (dwNum > 0)
     {
         Notify();
@@ -692,7 +690,7 @@ extern CLogInfo * InitLogInfo(CCentralMemPool &rCentralMemPool,
                               CHAR            *pFileName);
 
 extern CMultiMessageRing::CSTRing * InitLogRing(WORD32 dwRingID);
-extern CLogMemPool * InitLogMemPool();
+extern CLogMemPool * InitLogMemPool(WORD32 dwRingID);
 
 /* 主线程在创建日志线程实例时, 通过回调下述接口注册主线程专属数据区 */
 extern WORD32 RegistMainLog(T_DataZone &rtThreadZone, VOID *pThread);

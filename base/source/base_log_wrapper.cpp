@@ -44,7 +44,7 @@ static const CHAR s_aucFLine[LOG_FILE_LIN_PLACEHOLDER] =
 WORD32 RegistThreadZone(T_DataZone &rtThreadZone, VOID *pThread)
 {
     CMultiMessageRing::CSTRing *pLogRing = InitLogRing(m_dwSelfRingID);
-    CLogMemPool *pLogMemPool = InitLogMemPool();
+    CLogMemPool *pLogMemPool = InitLogMemPool(m_dwSelfRingID);
 
     rtThreadZone.pLogMemPool   = (VOID *)pLogMemPool;
     rtThreadZone.pLogRing      = (VOID *)pLogRing;
@@ -241,7 +241,7 @@ VOID FastLogPrintf(WORD32      dwModuleID,
 
     /* Ô¤È¡ptMsg->lwTotalCount + ptMsg->alwParams[0~6]Êý¾Ý */
     __builtin_prefetch((((CHAR *)pLogBuffer) + 64U), 1, 1);
-    
+
     ptMsg->lwSeconds  = lwMicroSec / 1000000;
     ptMsg->dwMicroSec = (WORD32)(lwMicroSec % 1000000);
     ptMsg->wModuleID  = (WORD16)dwModuleID;
@@ -256,7 +256,7 @@ VOID FastLogPrintf(WORD32      dwModuleID,
 
     ptMsg->lwTotalCount  = lwTotalCount;
     ptMsg->alwParams[0]  = dwLine;
-    
+
     va_list  tParamList;
     va_start(tParamList, pchPrtInfo);
 

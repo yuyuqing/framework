@@ -4,8 +4,7 @@
 #define _BASE_MEM_MGR_H_
 
 
-#include "base_mem_pool.h"
-#include "base_mem_trunk.h"
+#include "base_mem_pools.h"
 
 
 #define HUGE_MOUNTS_DIR           "/proc/mounts"
@@ -13,6 +12,7 @@
 
 
 #define DATA_ZONE_NUM             ((WORD32)(128))
+
 
 /* 线程初始化时回调, 用于向DataZone注册线程专属数据 */
 typedef WORD32 (*CB_RegistZone) (T_DataZone &rtThreadZone, VOID *pThread);
@@ -118,7 +118,7 @@ typedef struct tagT_MemMetaHead
 
 /*********************************************************************************
  ---------------------------------------------------------------------------------
- |     64 BYTE    |    24704 BYTE |    128 BYTE     |   64 BYTE    |  128 BYTE   |
+ |     64 BYTE    |    16512 BYTE |    128 BYTE     |   64 BYTE    |  128 BYTE   |
  |     CMemMgr    |    CDataZone  | CCentralMemPool |T_MemBufHeader|CGlobalClock |
  ---------------------------------------------------------------------------------
  ---------------------------------------------------------------------------------
@@ -150,8 +150,8 @@ public :
     const static WORD64  s_lwMagicValue   = 0x0DE0B6B3A76408A9UL;  /* 大质数 */
     const static WORD32  s_dwVersion      = 1;                     /* 版本号 */
     const static WORD32  s_dwKey          = 0x3B9ACB21;
-    static const WORD32  s_dwDataZoneSize = ROUND_UP(sizeof(CDataZone), CACHE_SIZE);
-    static const WORD32  s_dwMemPoolSize  = ROUND_UP(sizeof(CCentralMemPool), CACHE_SIZE);
+    const static WORD32  s_dwDataZoneSize = ROUND_UP(sizeof(CDataZone), CACHE_SIZE);
+    const static WORD32  s_dwMemPoolSize  = ROUND_UP(sizeof(CCentralMemPool), CACHE_SIZE);
 
     static CMemMgr * CreateMemMgr(WORD32      dwProcID,
                                   BYTE        ucMemType,
@@ -168,7 +168,7 @@ public :
 private :
     static WORD32 Clean(T_MemMetaHead *ptHead);
 
-    static VOID * GetVirtualArea(VOID *pAddr, WORD32 dwSize);
+    static VOID * GetVirtualArea(VOID *pAddr, WORD64 lwSize);
 
     static T_MemMetaHead * CreateMetaMemory(WORD32      dwProcID,
                                             BYTE        ucMemType,
@@ -177,15 +177,15 @@ private :
                                             const CHAR *pDir,
                                             BOOL        bMaster);
 
-    static T_MemMetaHead * Create(WORD32 dwSize, SWORD32 &rdwFileID);
-    static T_MemMetaHead * Attach(WORD32 dwSize, SWORD32 &rdwFileID);
+    static T_MemMetaHead * Create(WORD64 lwSize, SWORD32 &rdwFileID);
+    static T_MemMetaHead * Attach(WORD64 lwSize, SWORD32 &rdwFileID);
 
     static T_MemMetaHead * ReAttach(T_MemMetaHead *ptHead,
-                                    WORD32         dwSize,
+                                    WORD64         lwSize,
                                     SWORD32        iFileID);
 
     static WORD32 InitContext(BOOL           bMaster,
-                              WORD32         dwMetaSize,
+                              WORD64         lwMetaSize,
                               WORD64         lwMemSize,
                               BYTE           ucMemType,
                               BYTE           ucPageNum,

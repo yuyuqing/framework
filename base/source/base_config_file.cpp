@@ -346,27 +346,35 @@ WORD32 ParseLog(T_LogJsonCfg &tLogConfig, CJsonValue &rRoot)
 }
 
 
-WORD32 ParseTimer(T_TimerJsonCfg &tTimerConfig, CJsonValue &rRoot)
-{
-    tTimerConfig.bCreateFlag   = (BOOL)(rRoot["create_flag"].AsBOOL());
-    tTimerConfig.dwCoreID      = (WORD32)(rRoot["logical_id"].AsDWORD());
-    tTimerConfig.dwPolicy      = (WORD32)(rRoot["policy"].AsDWORD());
-    tTimerConfig.dwPriority    = (WORD32)(rRoot["priority"].AsDWORD());
-    tTimerConfig.dwStackSize   = (WORD32)(rRoot["stack_size"].AsDWORD());
-    tTimerConfig.dwServTimeLen = (WORD32)(rRoot["service_measure"].AsDWORD());
-    tTimerConfig.dwAppTimeLen  = (WORD32)(rRoot["app_measure"].AsDWORD());
-    tTimerConfig.bAloneLog     = (BOOL)(rRoot["alone_log"].AsBOOL());
-
-    return SUCCESS;
-}
-
-
 WORD32 ParseShm(T_ShmJsonCfg &tShmConfig, CJsonValue &rRoot)
 {
     tShmConfig.bCreateFlag  = (BOOL)(rRoot["create_flag"].AsBOOL());
-    tShmConfig.bMaster      = (BOOL)(rRoot["master_flag"].AsBOOL());
-    tShmConfig.dwChannelNum = (WORD32)(rRoot["channel_num"].AsDWORD());
-    tShmConfig.dwPowerNum   = (WORD32)(rRoot["power_num"].AsDWORD());
+    tShmConfig.dwRole       = (BOOL)(rRoot["role_flag"].AsBOOL());
+    tShmConfig.dwChannelNum = MIN(rRoot["data_channel"].size(), MAX_CHANNEL_NUM);
+
+    for (WORD32 dwIndex = 0; dwIndex < tShmConfig.dwChannelNum; dwIndex++)
+    {
+        CJsonValue        &rApp    = rRoot["data_channel"][dwIndex];
+        T_ShmChannelParam &rtParam = tShmConfig.atChannel[dwIndex];
+
+        rtParam.dwSendNodeNum  = (WORD32)(rApp["node_num_s"].AsDWORD());
+        rtParam.dwSendNodeSize = (WORD32)(rApp["node_size_s"].AsDWORD());
+        rtParam.dwRecvNodeNum  = (WORD32)(rApp["node_num_r"].AsDWORD());
+        rtParam.dwRecvNodeSize = (WORD32)(rApp["node_size_r"].AsDWORD());
+    }
+
+    CJsonValue &rCtrlChannel = rRoot["ctrl_channel"];
+    CJsonValue &rOamChannel  = rRoot["oam_channel"];
+
+    tShmConfig.tCtrlChannel.dwSendNodeNum  = (WORD32)(rCtrlChannel["node_num_s"].AsDWORD());
+    tShmConfig.tCtrlChannel.dwSendNodeSize = (WORD32)(rCtrlChannel["node_size_s"].AsDWORD());
+    tShmConfig.tCtrlChannel.dwRecvNodeNum  = (WORD32)(rCtrlChannel["node_num_r"].AsDWORD());
+    tShmConfig.tCtrlChannel.dwRecvNodeSize = (WORD32)(rCtrlChannel["node_size_r"].AsDWORD());
+
+    tShmConfig.tOamChannel.dwSendNodeNum  = (WORD32)(rOamChannel["node_num_s"].AsDWORD());
+    tShmConfig.tOamChannel.dwSendNodeSize = (WORD32)(rOamChannel["node_size_s"].AsDWORD());
+    tShmConfig.tOamChannel.dwRecvNodeNum  = (WORD32)(rOamChannel["node_num_r"].AsDWORD());
+    tShmConfig.tOamChannel.dwRecvNodeSize = (WORD32)(rOamChannel["node_size_r"].AsDWORD());
 
     return SUCCESS;
 }
@@ -625,7 +633,6 @@ WORD32 CBaseConfigFile::ParseFile()
 
     ParseMem(m_tRootConfig.tMemConfig, cRoot["memory"]);
     ParseLog(m_tRootConfig.tLogConfig, cRoot["log"]);
-    ParseTimer(m_tRootConfig.tTimerConfig, cRoot["timer"]);
     ParseShm(m_tRootConfig.tShmConfig, cRoot["shm"]);
     ParseWorker(m_tRootConfig.tWorkerConfig, cRoot["workers"]);
     ParseDpdk(m_tRootConfig.tDpdkConfig, cRoot["dpdk"]);
@@ -646,12 +653,6 @@ T_MemJsonCfg & CBaseConfigFile::GetMemJsonCfg()
 T_LogJsonCfg  & CBaseConfigFile::GetLogJsonCfg()
 {
     return m_tRootConfig.tLogConfig;
-}
-
-
-T_TimerJsonCfg & CBaseConfigFile::GetTimerJsonCfg()
-{
-    return m_tRootConfig.tTimerConfig;
 }
 
 

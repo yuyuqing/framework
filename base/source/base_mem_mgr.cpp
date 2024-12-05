@@ -294,7 +294,8 @@ CMemMgr * CMemMgr::GetInstance()
 
 VOID CMemMgr::Destroy()
 {
-    T_MemMetaHead *ptHead = NULL;
+    T_MemMetaHead *ptHead     = NULL;
+    WORD64         lwMetaSize = 0;
 
     if (NULL != s_pInstance)
     {
@@ -304,10 +305,10 @@ VOID CMemMgr::Destroy()
 
         if (NULL != ptHead)
         {
-            WORD32 dwMetaSize = (WORD32)(ptHead->lwMetaSize);
+            lwMetaSize = ptHead->lwMetaSize;
 
             CleanHuge(*ptHead);
-            munmap(ptHead, dwMetaSize);
+            munmap(ptHead, lwMetaSize);
         }
 
         s_pInstance = NULL;
@@ -345,14 +346,14 @@ VOID CMemMgr::UnLockGlobal(T_MemMetaHead &rtHead)
 }
 
 
-VOID * CMemMgr::GetVirtualArea(VOID *pAddr, WORD32 dwSize)
+VOID * CMemMgr::GetVirtualArea(VOID *pAddr, WORD64 lwSize)
 {
     if (NULL == pAddr)
     {
         return (VOID *)(s_lwVirBassAddr);
     }
 
-    WORD64 lwNextAddr = ((WORD64)pAddr) + dwSize;
+    WORD64 lwNextAddr = ((WORD64)pAddr) + lwSize;
 
     return (VOID *)(ROUND_UP(lwNextAddr, s_lwAlign1G));
 }
@@ -366,9 +367,9 @@ T_MemMetaHead * CMemMgr::CreateMetaMemory(WORD32      dwProcID,
                                           BOOL        bMaster)
 {
     WORD32         dwResult   = INVALID_DWORD;
-    WORD32         dwStartPos = ROUND_UP(sizeof(T_MemMetaHead), s_lwAlign2M);
-    WORD32         dwMetaSize = 0;
     SWORD32        iFileID    = -1;
+    WORD32         dwStartPos = ROUND_UP(sizeof(T_MemMetaHead), s_lwAlign2M);
+    WORD64         lwMetaSize = 0;
     WORD64         lwMemSize  = 0;
     T_MemMetaHead *ptMetaHead = NULL;
 
@@ -378,7 +379,7 @@ T_MemMetaHead * CMemMgr::CreateMetaMemory(WORD32      dwProcID,
         lwMemSize  = ucPageNum;
         lwMemSize  = lwMemSize * HUGEPAGE_FILE_SIZE;
 
-        dwMetaSize = dwStartPos;
+        lwMetaSize = dwStartPos;
     }
     else
     {
@@ -392,16 +393,16 @@ T_MemMetaHead * CMemMgr::CreateMetaMemory(WORD32      dwProcID,
             return NULL;
         }
 
-        dwMetaSize = (WORD32)(lwMemSize + dwStartPos);
+        lwMetaSize = lwMemSize + dwStartPos;
     }
 
     if (bMaster)
     {
-        ptMetaHead = Create(dwMetaSize, iFileID);
+        ptMetaHead = Create(lwMetaSize, iFileID);
     }
     else
     {
-        ptMetaHead = Attach(dwMetaSize, iFileID);
+        ptMetaHead = Attach(lwMetaSize, iFileID);
     }
 
     if (NULL == ptMetaHead)
@@ -410,7 +411,7 @@ T_MemMetaHead * CMemMgr::CreateMetaMemory(WORD32      dwProcID,
     }
 
     dwResult = InitContext(bMaster,
-                           dwMetaSize,
+                           lwMetaSize,
                            lwMemSize,
                            ucMemType,
                            ucPageNum,
@@ -422,11 +423,11 @@ T_MemMetaHead * CMemMgr::CreateMetaMemory(WORD32      dwProcID,
         return NULL;
     }
 
-    return ReAttach(ptMetaHead, dwMetaSize, iFileID);
+    return ReAttach(ptMetaHead, lwMetaSize, iFileID);
 }
 
 
-T_MemMetaHead * CMemMgr::Create(WORD32 dwSize, SWORD32 &rdwFileID)
+T_MemMetaHead * CMemMgr::Create(WORD64 lwSize, SWORD32 &rdwFileID)
 {
     SWORD32        iFileID    = rdwFileID;
     SWORD32        iResult    = -1;
@@ -442,7 +443,7 @@ T_MemMetaHead * CMemMgr::Create(WORD32 dwSize, SWORD32 &rdwFileID)
         }
     }
 
-    iResult = ftruncate(iFileID, dwSize);
+    iResult = ftruncate(iFileID, lwSize);
     if (iResult < 0)
     {
         close(iFileID);
@@ -457,7 +458,7 @@ T_MemMetaHead * CMemMgr::Create(WORD32 dwSize, SWORD32 &rdwFileID)
         return NULL;
     }
 
-    pMemAddr = GetVirtualArea(NULL, dwSize);
+    pMemAddr = GetVirtualArea(NULL, lwSize);
     if (NULL == pMemAddr)
     {
         close(iFileID);
@@ -465,7 +466,7 @@ T_MemMetaHead * CMemMgr::Create(WORD32 dwSize, SWORD32 &rdwFileID)
     }
 
     ptMetaHead = (T_MemMetaHead *)mmap(pMemAddr,
-                                       dwSize,
+                                       lwSize,
                                        PROT_READ | PROT_WRITE,
                                        MAP_SHARED | MAP_FIXED,
                                        iFileID,
@@ -482,7 +483,7 @@ T_MemMetaHead * CMemMgr::Create(WORD32 dwSize, SWORD32 &rdwFileID)
 }
 
 
-T_MemMetaHead * CMemMgr::Attach(WORD32 dwSize, SWORD32 &rdwFileID)
+T_MemMetaHead * CMemMgr::Attach(WORD64 lwSize, SWORD32 &rdwFileID)
 {
     SWORD32  iFileID = rdwFileID;
 
@@ -496,7 +497,7 @@ T_MemMetaHead * CMemMgr::Attach(WORD32 dwSize, SWORD32 &rdwFileID)
     }
 
     T_MemMetaHead *ptMetaHead = (T_MemMetaHead *)mmap(NULL,
-                                                      dwSize,
+                                                      lwSize,
                                                       PROT_READ | PROT_WRITE,
                                                       MAP_SHARED,
                                                       iFileID,
@@ -514,7 +515,7 @@ T_MemMetaHead * CMemMgr::Attach(WORD32 dwSize, SWORD32 &rdwFileID)
 
 
 T_MemMetaHead * CMemMgr::ReAttach(T_MemMetaHead *ptHead,
-                                  WORD32         dwSize,
+                                  WORD64         lwSize,
                                   SWORD32        iFileID)
 {
     if ((NULL == ptHead) || (iFileID < 0))
@@ -524,22 +525,21 @@ T_MemMetaHead * CMemMgr::ReAttach(T_MemMetaHead *ptHead,
 
     VOID *pMemAddr = (VOID *)(ptHead->lwMetaAddr);
 
-    munmap(ptHead, dwSize);
+    munmap(ptHead, lwSize);
 
     ptHead = (T_MemMetaHead *)mmap(pMemAddr,
-                                   dwSize,
+                                   lwSize,
                                    PROT_READ | PROT_WRITE,
                                    MAP_SHARED,
                                    iFileID,
                                    0);
     close(iFileID);
 
-    if ( (MAP_FAILED == ptHead)
-      || (pMemAddr != ptHead))
+    if ((MAP_FAILED == ptHead) || (pMemAddr != ptHead))
     {
         if (MAP_FAILED != ptHead)
         {
-            munmap(ptHead, dwSize);
+            munmap(ptHead, lwSize);
         }
 
         return NULL;
@@ -550,7 +550,7 @@ T_MemMetaHead * CMemMgr::ReAttach(T_MemMetaHead *ptHead,
 
 
 WORD32 CMemMgr::InitContext(BOOL           bMaster,
-                            WORD32         dwMetaSize,
+                            WORD64         lwMetaSize,
                             WORD64         lwMemSize,
                             BYTE           ucMemType,
                             BYTE           ucPageNum,
@@ -572,7 +572,7 @@ WORD32 CMemMgr::InitContext(BOOL           bMaster,
         ptHead->iMLock            = 0;
         ptHead->dwHugeNum         = 0;
         ptHead->lwMetaAddr        = 0;
-        ptHead->lwMetaSize        = dwMetaSize;
+        ptHead->lwMetaSize        = lwMetaSize;
         ptHead->lwHugeAddr        = 0;
         ptHead->lwShareMemSize    = lwMemSize;
         ptHead->lwAppCntrlAddr    = 0;

@@ -10,7 +10,7 @@
 
 #include <pthread.h>
 
-#include "base_data_container.h"
+#include "base_data.h"
 
 
 inline WORD32 AtomicCompareSet(volatile WORD32 *pdwDst, 
@@ -88,320 +88,6 @@ public :
 };
 
 
-template <WORD32 POWER_NUM>
-class CSimpleRing : public CBaseRingInterface
-{
-public :
-    static const WORD32 s_dwSize = (1 << POWER_NUM);
-    static const WORD32 s_dwMask = (s_dwSize - 1);
-
-public :
-    CSimpleRing ();
-    virtual ~CSimpleRing();
-
-    WORD32 Initialize();
-
-    virtual WORD32 Count();
-    virtual WORD32 FreeCount();
-
-    WORD32 Enqueue(VOID *pObj);
-
-    WORD32 Dequeue(VOID **pObj);
-
-    WORD32 Dequeue(VOID **pObj, WORD16 wThreshold);
-
-    /* 快照, 用于维测 */
-    virtual VOID SnapShot(T_RingHeadTail &rtProd, T_RingHeadTail &rtCons);
-
-protected :
-    WORD32 MoveProdHead(WORD32  dwNum,
-                        WORD32 &rdwOldHead,
-                        WORD32 &rdwNewHead,
-                        WORD32 &rdwFreeEntries);
-
-    WORD32 MoveConsHead(WORD32  dwNum,  
-                        WORD32 &rdwOldHead,
-                        WORD32 &rdwNewHead,
-                        WORD32 &rdwEntries);
-
-    VOID UpdateTail(T_RingHeadTail &rtTail, 
-                    WORD32          dwOldValue, 
-                    WORD32          dwNewValue, 
-                    WORD32          dwEnqueue);
-
-protected :
-    T_RingHeadTail   m_tProd;
-    T_RingHeadTail   m_tCons;
-    VOID            *m_pQueue[s_dwSize];
-};
-
-
-template <WORD32 POWER_NUM>
-CSimpleRing<POWER_NUM>::CSimpleRing ()
-{
-    m_tProd.dwHead = 0;
-    m_tProd.dwTail = 0;
-    m_tCons.dwHead = 0;
-    m_tCons.dwTail = 0;
-}
-
-
-template <WORD32 POWER_NUM>
-CSimpleRing<POWER_NUM>::~CSimpleRing()
-{
-    m_tProd.dwHead = 0;
-    m_tProd.dwTail = 0;
-    m_tCons.dwHead = 0;
-    m_tCons.dwTail = 0;
-    memset(m_pQueue, 0x00, (s_dwSize * sizeof(VOID *)));
-}
-
-
-template <WORD32 POWER_NUM>
-WORD32 CSimpleRing<POWER_NUM>::Initialize()
-{
-    memset(m_pQueue, 0x00, (s_dwSize * sizeof(VOID *)));
-
-    return SUCCESS;
-}
-
-
-template <WORD32 POWER_NUM>
-inline WORD32 CSimpleRing<POWER_NUM>::Count()
-{
-    WORD32 dwProdTail = m_tProd.dwTail;
-    WORD32 dwConsTail = m_tCons.dwTail;
-    WORD32 dwCount    = (dwProdTail - dwConsTail) & (s_dwMask);
-
-    return (dwCount > s_dwMask) ? s_dwMask : dwCount;
-}
-
-
-template <WORD32 POWER_NUM>
-inline WORD32 CSimpleRing<POWER_NUM>::FreeCount()
-{
-    return (s_dwMask - Count());
-}
-
-
-template <WORD32 POWER_NUM>
-inline WORD32 CSimpleRing<POWER_NUM>::Enqueue(VOID *pObj)
-{
-    WORD32 dwNum         = 0;
-    WORD32 dwProdHead    = 0;
-    WORD32 dwProdNext    = 0;
-    WORD32 dwFreeEntries = 0;
-
-    do
-    {
-        dwNum = MoveProdHead(1,
-                             dwProdHead,
-                             dwProdNext,
-                             dwFreeEntries);
-    } while(0 == dwNum);
-
-    WORD32 dwIndex = (dwProdHead & s_dwMask);
-
-    m_pQueue[dwIndex] = pObj;
-
-    UpdateTail(m_tProd, dwProdHead, dwProdNext, 1);
-
-    return dwNum;
-}
-
-
-template <WORD32 POWER_NUM>
-inline WORD32 CSimpleRing<POWER_NUM>::Dequeue(VOID **pObj)
-{
-    WORD32 dwNum      = 0;
-    WORD32 dwConsHead = 0;
-    WORD32 dwConsNext = 0;
-    WORD32 dwEntries  = 0;
-
-    dwNum = MoveConsHead(1,  
-                         dwConsHead,
-                         dwConsNext,
-                         dwEntries);
-    if (0 == dwNum)
-    {
-        return dwNum;
-    }
-
-    WORD32 dwIndex = (dwConsHead & s_dwMask);
-
-    *pObj = m_pQueue[dwIndex];
-
-    __builtin_prefetch(((CHAR *)pObj), 1, 2);
-
-    UpdateTail(m_tCons, dwConsHead, dwConsNext, 0);
-
-    return dwNum;
-}
-
-
-template <WORD32 POWER_NUM>
-inline WORD32 CSimpleRing<POWER_NUM>::Dequeue(VOID **pObj, WORD16 wThreshold)
-{
-    WORD32 dwNum      = 0;
-    WORD32 dwConsHead = 0;
-    WORD32 dwConsNext = 0;
-    WORD32 dwEntries  = 0;
-
-    do 
-    {
-        dwNum = MoveConsHead(1,  
-                             dwConsHead,
-                             dwConsNext,
-                             dwEntries);
-        if (0 == wThreshold)
-        {
-            break ;
-        }
-
-        wThreshold--;
-    } while(0 == dwNum);
-
-    if (0 == dwNum)
-    {
-        return dwNum;
-    }
-
-    WORD32 dwIndex = (dwConsHead & s_dwMask);
-
-    *pObj = m_pQueue[dwIndex];
-
-    __builtin_prefetch(((CHAR *)pObj), 1, 2);
-
-    UpdateTail(m_tCons, dwConsHead, dwConsNext, 0);
-
-    return dwNum;
-}
-
-
-template <WORD32 POWER_NUM>
-inline VOID CSimpleRing<POWER_NUM>::SnapShot(
-    T_RingHeadTail &rtProd,
-    T_RingHeadTail &rtCons)
-{
-    rtProd.dwHead = __atomic_load_n(&(m_tProd.dwHead), __ATOMIC_RELAXED);
-    rtProd.dwTail = __atomic_load_n(&(m_tProd.dwTail), __ATOMIC_RELAXED);
-    rtCons.dwHead = __atomic_load_n(&(m_tCons.dwHead), __ATOMIC_RELAXED);
-    rtCons.dwTail = __atomic_load_n(&(m_tCons.dwTail), __ATOMIC_RELAXED);
-}
-
-
-template <WORD32 POWER_NUM>
-inline WORD32 CSimpleRing<POWER_NUM>::MoveProdHead(WORD32  dwNum,
-                                                   WORD32 &rdwOldHead,
-                                                   WORD32 &rdwNewHead,
-                                                   WORD32 &rdwFreeEntries)
-{
-    WORD32 dwCapacity = s_dwMask;
-    WORD32 dwMax      = dwNum;
-    WORD32 dwSucces   = 0;
-    WORD32 dwConsTail = 0;
-
-    rdwOldHead = __atomic_load_n(&(m_tProd.dwHead), __ATOMIC_RELAXED);
-
-    do
-    {
-        dwNum = dwMax;
-        __atomic_thread_fence(__ATOMIC_ACQUIRE);
-        dwConsTail = __atomic_load_n(&(m_tCons.dwTail), __ATOMIC_ACQUIRE);
-
-        rdwFreeEntries = (dwCapacity + dwConsTail - rdwOldHead);
-
-        if (unlikely(dwNum > rdwFreeEntries))
-        {
-            dwNum = rdwFreeEntries;
-        }
-
-        if (0 == dwNum)
-        {
-            return 0;
-        }
-
-        rdwNewHead = rdwOldHead + dwNum;
-
-        /* 若dwHead取值与rdwOldHead相等, 则将rdwNewHead的值写入dwHead */
-        /* 若dwHead取值与rdwOldHead不等, 则将dwHead的值写入rdwOldHead */
-        dwSucces = __atomic_compare_exchange_n(&(m_tProd.dwHead),
-                                               &rdwOldHead,
-                                               rdwNewHead,
-                                               0,
-                                               __ATOMIC_RELAXED,
-                                               __ATOMIC_RELAXED);
-    }while (unlikely(dwSucces == 0));
-
-    return dwNum;
-}
-
-
-template <WORD32 POWER_NUM>
-inline WORD32 CSimpleRing<POWER_NUM>::MoveConsHead(WORD32  dwNum,
-                                                   WORD32 &rdwOldHead,
-                                                   WORD32 &rdwNewHead,
-                                                   WORD32 &rdwEntries)
-{
-    WORD32 dwMax      = dwNum;
-    WORD32 dwSucces   = 0;
-    WORD32 dwProdTail = 0;
-
-    rdwOldHead = __atomic_load_n(&(m_tCons.dwHead), __ATOMIC_RELAXED);
-
-    do
-    {
-        dwNum = dwMax;
-        __atomic_thread_fence(__ATOMIC_ACQUIRE);
-        dwProdTail = __atomic_load_n(&(m_tProd.dwTail), __ATOMIC_ACQUIRE);
-
-        rdwEntries = (dwProdTail - rdwOldHead);
-
-        if (dwNum > rdwEntries)
-        {
-            dwNum = rdwEntries;
-        }
-
-        if (unlikely(dwNum == 0))
-        {
-            return 0;
-        }
-
-        rdwNewHead = rdwOldHead + dwNum;
-
-        /* 若dwHead取值与rdwOldHead相等, 则将rdwNewHead的值写入dwHead */
-        /* 若dwHead取值与rdwOldHead不等, 则将dwHead的值写入rdwOldHead */
-        dwSucces = __atomic_compare_exchange_n(&(m_tCons.dwHead),
-                                               &rdwOldHead,
-                                               rdwNewHead,
-                                               0,
-                                               __ATOMIC_RELAXED,
-                                               __ATOMIC_RELAXED);
-    }while (unlikely(dwSucces == 0));
-
-    return dwNum;
-}
-
-
-template <WORD32 POWER_NUM>
-inline VOID CSimpleRing<POWER_NUM>::UpdateTail(T_RingHeadTail &rtTail, 
-                                               WORD32          dwOldValue, 
-                                               WORD32          dwNewValue, 
-                                               WORD32          dwEnqueue)
-{
-    while (__atomic_load_n(&(rtTail.dwTail), __ATOMIC_RELAXED) != dwOldValue)
-    {
-#ifdef ARCH_ARM64    
-        asm volatile("yield" ::: "memory");
-#else
-        _mm_pause();
-#endif
-    }
-
-    __atomic_store_n(&(rtTail.dwTail), dwNewValue, __ATOMIC_RELEASE);
-}
-
-
 template <WORD32 POWER_NUM = RING_POWER_NUM>
 class CBaseRingTpl : public CBaseRingInterface
 {
@@ -413,13 +99,7 @@ public :
     CBaseRingTpl ();
     virtual ~CBaseRingTpl();
 
-    VOID Reset();
-
     virtual WORD32 Initialize();
-
-    WORD32 Free();
-
-    VOID ** GetQueue();
 
     virtual WORD32 Count();
     virtual WORD32 FreeCount();
@@ -427,14 +107,13 @@ public :
     BOOL isFull();
     BOOL isEmpty();
 
-    WORD32 GetSize();
-    WORD32 GetCapacity();
-
     virtual WORD32 Enqueue(VOID *pObj);
 
     virtual WORD32 Enqueue(VOID *pObj, WORD16 wThreshold);
 
     WORD32 Dequeue(VOID **pObj);
+
+    WORD32 Dequeue(VOID **pObj, WORD16 wThreshold);
 
     /* 写入dwNum个Objs, 并返回空闲空间大小 */
     WORD32 EnqueueBurst(WORD32   dwNum, 
@@ -450,14 +129,6 @@ public :
     virtual VOID SnapShot(T_RingHeadTail &rtProd, T_RingHeadTail &rtCons);
 
 protected :
-    WORD32 DoEnqueue(WORD32   dwNum, 
-                     VOID   **pObjs, 
-                     WORD32  &rdwFreeSize);
-
-    WORD32 DoDequeue(WORD32   dwNum,
-                     VOID   **pObjs,
-                     WORD32  &rdwAvailable);
-
     WORD32 MoveProdHead(WORD32  dwNum,
                         WORD32 &rdwOldHead,
                         WORD32 &rdwNewHead,
@@ -477,9 +148,6 @@ protected :
     T_RingHeadTail   m_tProd;       /* 生产者游标 */
     T_RingHeadTail   m_tCons;       /* 消费者游标 */
 
-    WORD32           m_dwProdID;
-    WORD32           m_dwConsID;
-
     WORD32           m_dwCapacity;
 
     /* 队列指针 */
@@ -490,50 +158,37 @@ protected :
 template <WORD32 POWER_NUM>
 CBaseRingTpl<POWER_NUM>::CBaseRingTpl ()
 {
-    m_dwCapacity = s_dwMask;
-    Reset();
+    m_tProd.dwHead = 0;
+    m_tProd.dwTail = 0;
+    m_tCons.dwHead = 0;
+    m_tCons.dwTail = 0;
+    m_dwCapacity   = s_dwMask;
 }
 
 
 template <WORD32 POWER_NUM>
 CBaseRingTpl<POWER_NUM>::~CBaseRingTpl()
 {
-    m_dwCapacity = s_dwMask;
-    Free();
-}
-
-
-template <WORD32 POWER_NUM>
-inline VOID CBaseRingTpl<POWER_NUM>::Reset()
-{
     m_tProd.dwHead = 0;
     m_tProd.dwTail = 0;
     m_tCons.dwHead = 0;
     m_tCons.dwTail = 0;
+
+    memset(m_pQueue, 0x00, (s_dwSize * sizeof(VOID *)));
 }
 
 
 template <WORD32 POWER_NUM>
 WORD32 CBaseRingTpl<POWER_NUM>::Initialize()
 {
-    return Free();
-}
+    m_tProd.dwHead = 0;
+    m_tProd.dwTail = 0;
+    m_tCons.dwHead = 0;
+    m_tCons.dwTail = 0;
 
-
-template <WORD32 POWER_NUM>
-inline WORD32 CBaseRingTpl<POWER_NUM>::Free()
-{
-    Reset();    
     memset(m_pQueue, 0x00, (s_dwSize * sizeof(VOID *)));
 
     return SUCCESS;
-}
-
-
-template <WORD32 POWER_NUM>
-inline VOID ** CBaseRingTpl<POWER_NUM>::GetQueue()
-{
-    return m_pQueue;
 }
 
 
@@ -577,39 +232,62 @@ inline BOOL CBaseRingTpl<POWER_NUM>::isEmpty()
 
 
 template <WORD32 POWER_NUM>
-inline WORD32 CBaseRingTpl<POWER_NUM>::GetSize()
-{
-    return s_dwSize;
-}
-
-
-template <WORD32 POWER_NUM>
-inline WORD32 CBaseRingTpl<POWER_NUM>::GetCapacity()
-{
-    return m_dwCapacity;
-}
-
-
-template <WORD32 POWER_NUM>
 inline WORD32 CBaseRingTpl<POWER_NUM>::Enqueue(VOID *pObj)
 {
-    WORD32 dwFreeSize = 0;
-    return DoEnqueue(1, &pObj, dwFreeSize);
+    WORD32 dwNum         = 0;
+    WORD32 dwIndex       = 0;
+    WORD32 dwProdHead    = 0;
+    WORD32 dwProdNext    = 0;
+    WORD32 dwFreeEntries = 0;
+
+    dwNum = MoveProdHead(1,
+                         dwProdHead,
+                         dwProdNext,
+                         dwFreeEntries);
+    if (0 == dwNum)
+    {
+        return dwNum;
+    }
+
+    dwIndex = (dwProdHead & s_dwMask);
+
+    m_pQueue[dwIndex] = pObj;
+
+    UpdateTail(m_tProd, dwProdHead, dwProdNext, 1);
+
+    return dwNum;
 }
 
 
 template <WORD32 POWER_NUM>
 inline WORD32 CBaseRingTpl<POWER_NUM>::Enqueue(VOID *pObj, WORD16 wThreshold)
 {
-    WORD32 dwNum      = 0;
-    WORD32 dwLoop     = 0;
-    WORD32 dwFreeSize = 0;
+    WORD32 dwNum         = 0;
+    WORD32 dwLoop        = 0;
+    WORD32 dwIndex       = 0;
+    WORD32 dwProdHead    = 0;
+    WORD32 dwProdNext    = 0;
+    WORD32 dwFreeEntries = 0;
 
     do
     {
-        dwNum = DoEnqueue(1, &pObj, dwFreeSize);
+        dwNum = MoveProdHead(1,
+                             dwProdHead,
+                             dwProdNext,
+                             dwFreeEntries);
         dwLoop++;
     }while ((0 == dwNum) && (dwLoop < wThreshold));
+
+    if (0 == dwNum)
+    {
+        return dwNum;
+    }
+
+    dwIndex = (dwProdHead & s_dwMask);
+
+    m_pQueue[dwIndex] = pObj;
+
+    UpdateTail(m_tProd, dwProdHead, dwProdNext, 1);
 
     return dwNum;
 }
@@ -618,47 +296,76 @@ inline WORD32 CBaseRingTpl<POWER_NUM>::Enqueue(VOID *pObj, WORD16 wThreshold)
 template <WORD32 POWER_NUM>
 inline WORD32 CBaseRingTpl<POWER_NUM>::Dequeue(VOID **pObj)
 {
-    WORD32 dwAvailable = 0;
-    return DoDequeue(1, pObj, dwAvailable);
+    WORD32 dwNum      = 0;
+    WORD32 dwIndex    = 0;
+    WORD32 dwConsHead = 0;
+    WORD32 dwConsNext = 0;
+    WORD32 dwEntries  = 0;
+
+    dwNum = MoveConsHead(1,  
+                         dwConsHead,
+                         dwConsNext,
+                         dwEntries);
+    if (0 == dwNum)
+    {
+        return dwNum;
+    }
+
+    dwIndex = (dwConsHead & s_dwMask);
+
+    *pObj = m_pQueue[dwIndex];
+
+    __builtin_prefetch(((CHAR *)pObj), 1, 2);
+
+    UpdateTail(m_tCons, dwConsHead, dwConsNext, 0);
+
+    return dwNum;
+}
+
+
+template <WORD32 POWER_NUM>
+inline WORD32 CBaseRingTpl<POWER_NUM>::Dequeue(VOID **pObj, WORD16 wThreshold)
+{
+    WORD32 dwNum      = 0;
+    WORD32 dwIndex    = 0;
+    WORD32 dwConsHead = 0;
+    WORD32 dwConsNext = 0;
+    WORD32 dwEntries  = 0;
+
+    do
+    {
+        dwNum = MoveConsHead(1,  
+                             dwConsHead,
+                             dwConsNext,
+                             dwEntries);
+        if (0 == wThreshold)
+        {
+            break ;
+        }
+
+        wThreshold--;
+    }while (0 == dwNum);
+
+    if (0 == dwNum)
+    {
+        return dwNum;
+    }
+
+    dwIndex = (dwConsHead & s_dwMask);
+
+    *pObj = m_pQueue[dwIndex];
+
+    __builtin_prefetch(((CHAR *)pObj), 1, 2);
+
+    UpdateTail(m_tCons, dwConsHead, dwConsNext, 0);
+
+    return dwNum;
 }
 
 
 /* 写入dwNum个Objs, 并返回空闲空间大小rdwFreeSize */
 template <WORD32 POWER_NUM>
 inline WORD32 CBaseRingTpl<POWER_NUM>::EnqueueBurst(
-    WORD32   dwNum, 
-    VOID   **pObjs, 
-    WORD32  &rdwFreeSize)
-{
-    return DoEnqueue(dwNum, pObjs, rdwFreeSize);
-}
-
-
-/* 读出dwNum个Objs, 并返回剩余待读取数量 */
-template <WORD32 POWER_NUM>
-inline WORD32 CBaseRingTpl<POWER_NUM>::DequeueBurst(
-    WORD32   dwNum,
-    VOID   **pObjs,
-    WORD32  &rdwAvailable)
-{
-    return DoDequeue(dwNum, pObjs, rdwAvailable);
-}
-
-
-template <WORD32 POWER_NUM>
-inline VOID CBaseRingTpl<POWER_NUM>::SnapShot(
-    T_RingHeadTail &rtProd,
-    T_RingHeadTail &rtCons)
-{
-    rtProd.dwHead = __atomic_load_n(&(m_tProd.dwHead), __ATOMIC_RELAXED);
-    rtProd.dwTail = __atomic_load_n(&(m_tProd.dwTail), __ATOMIC_RELAXED);
-    rtCons.dwHead = __atomic_load_n(&(m_tCons.dwHead), __ATOMIC_RELAXED);
-    rtCons.dwTail = __atomic_load_n(&(m_tCons.dwTail), __ATOMIC_RELAXED);
-}
-
-
-template <WORD32 POWER_NUM>
-inline WORD32 CBaseRingTpl<POWER_NUM>::DoEnqueue(
     WORD32   dwNum, 
     VOID   **pObjs, 
     WORD32  &rdwFreeSize)
@@ -723,8 +430,9 @@ inline WORD32 CBaseRingTpl<POWER_NUM>::DoEnqueue(
 }
 
 
+/* 读出dwNum个Objs, 并返回剩余待读取数量 */
 template <WORD32 POWER_NUM>
-inline WORD32 CBaseRingTpl<POWER_NUM>::DoDequeue(
+inline WORD32 CBaseRingTpl<POWER_NUM>::DequeueBurst(
     WORD32   dwNum,
     VOID   **pObjs,
     WORD32  &rdwAvailable)
@@ -786,6 +494,18 @@ inline WORD32 CBaseRingTpl<POWER_NUM>::DoDequeue(
     rdwAvailable = dwEntries - dwNum;
 
     return dwNum;
+}
+
+
+template <WORD32 POWER_NUM>
+inline VOID CBaseRingTpl<POWER_NUM>::SnapShot(
+    T_RingHeadTail &rtProd,
+    T_RingHeadTail &rtCons)
+{
+    rtProd.dwHead = __atomic_load_n(&(m_tProd.dwHead), __ATOMIC_RELAXED);
+    rtProd.dwTail = __atomic_load_n(&(m_tProd.dwTail), __ATOMIC_RELAXED);
+    rtCons.dwHead = __atomic_load_n(&(m_tCons.dwHead), __ATOMIC_RELAXED);
+    rtCons.dwTail = __atomic_load_n(&(m_tCons.dwTail), __ATOMIC_RELAXED);
 }
 
 

@@ -4,6 +4,7 @@
 #define _DPDK_VLAN_TABLE_H_
 
 
+#include "base_data_sequence.h"
 #include "dpdk_net_ip_table.h"
 
 

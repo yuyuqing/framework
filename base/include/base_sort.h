@@ -8,46 +8,43 @@
 
 
 /* all compare */
-template <class T>
+template <typename T>
 using PCompareAFunc = BOOL (*)(T &rLeft, T &rRight);
 
 /* part compare */
-template <class T, typename VT>
+template <typename T, typename VT>
 using PComparePFunc = BOOL (*)(T &rLeft, T &rRight, VT T::* pValue);
 
 
-template <class T>
+template <typename T>
 inline BOOL Less(T &rLeft, T &rRight)
 {
     return rLeft < rRight;
 }
 
 
-template <class T>
+template <typename T>
 inline BOOL Greater(T &rLeft, T &rRight)
 {
     return rLeft > rRight;
 }
 
 
-template <class T, typename VT>
+template <typename T, typename VT>
 inline BOOL LessV(T &rLeft, T &rRight, VT T::* pValue)
 {
-    // VT vL = rLeft.*pValue;
-    // VT vR = rRight.*pValue;
-
     return (rLeft.*pValue) < (rRight.*pValue);
 }
 
 
-template <class T, typename VT>
+template <typename T, typename VT>
 inline BOOL GreaterV(T &rLeft, T &rRight, VT T::* pValue)
 {
     return (rLeft.*pValue) > (rRight.*pValue);
 }
 
 
-template <class T>
+template <typename T>
 inline VOID Swap(T &rLeft, T &rRight)
 {
     T tmp = rLeft;

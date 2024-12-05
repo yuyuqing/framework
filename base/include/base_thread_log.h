@@ -97,19 +97,19 @@ protected :
     T_LogFileInfo * Find(FILE *pFile);
 
 protected :
-    CSpinLock                      m_cLock;
-    WORD32                         m_dwFileNum;
-    T_LogFileInfo                  m_atLogFile[LOG_FILE_NUM];
+    CSpinLock            m_cLock;
+    WORD32               m_dwFileNum;
+    T_LogFileInfo        m_atLogFile[LOG_FILE_NUM];
     
-    CHAR                           m_aucAssemble[MAX_LOG_STR_LEN];
+    CHAR                 m_aucAssemble[MAX_LOG_STR_LEN];
 
-    std::atomic<WORD64>            m_lwEnqueCount;
+    std::atomic<WORD64>  m_lwEnqueCount;
 
-    BOOL                           m_bMeasSwitch;  /* 日志维测开关 */
-    WORD32                         m_dwSemPeriod;  /* 日志线程信号量超时等待周期(单位:微秒) */
-    WORD32                         m_dwFileSize;   /* 维测日志文件 */
+    BOOL                 m_bMeasSwitch;  /* 日志维测开关 */
+    WORD32               m_dwSemPeriod;  /* 日志线程信号量超时等待周期(单位:微秒) */
+    WORD32               m_dwFileSize;   /* 维测日志文件 */
 
-    T_FastLogMeasure               m_tFastMeasure; /* Fast日志接口维测信息 */
+    T_FastLogMeasure     m_tFastMeasure; /* Fast日志接口维测信息 */
 };
 
 

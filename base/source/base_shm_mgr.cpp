@@ -1,26 +1,18 @@
 
 
-#include <assert.h>
-
 #include "base_shm_mgr.h"
 #include "base_init_component.h"
-#include "base_variable.h"
 #include "base_log.h"
-#include "base_config_file.h"
+
+
+CShmMgr * CShmMgr::s_pInstance = NULL;
 
 
 WORD32 ExitShmMgr(VOID *pArg)
 {
-    T_InitFunc      *ptInitFunc      = (T_InitFunc *)pArg;
-    CCentralMemPool *pCentralMemPool = ptInitFunc->pMemInterface;
-
     CShmMgr::Destroy();
 
-    if (NULL != g_pShmMgr)
-    {
-        pCentralMemPool->Free((BYTE *)g_pShmMgr);
-        g_pShmMgr = NULL;
-    }
+    g_pShmMgr = NULL;
 
     return SUCCESS;
 }
@@ -39,25 +31,8 @@ WORD32 InitShmMgr(WORD32 dwProcID, VOID *pArg)
         return SUCCESS;
     }
 
-    CCentralMemPool *pCentralMemPool = ptInitFunc->pMemInterface;
-
-    BYTE *pMem = pCentralMemPool->Malloc(sizeof(CShmMgr));
-    if (NULL == pMem)
-    {
-        return FAIL;
-    }
-
-    g_pShmMgr = CShmMgr::GetInstance(pMem);
+    g_pShmMgr = CShmMgr::CreateShmMgr(dwProcID, rJsonCfg);
     if (NULL == g_pShmMgr)
-    {
-        assert(0);
-    }
-
-    WORD32 dwResult = g_pShmMgr->Initialize(rJsonCfg.bMaster,
-                                            rJsonCfg.dwChannelNum,
-                                            rJsonCfg.dwPowerNum,
-                                            pCentralMemPool);
-    if (SUCCESS != dwResult)
     {
         assert(0);
     }
@@ -67,228 +42,445 @@ WORD32 InitShmMgr(WORD32 dwProcID, VOID *pArg)
 INIT_EXPORT(InitShmMgr, 1);
 
 
-CShmMgr::CShmMgr ()
+CShmMgr * CShmMgr::CreateShmMgr(WORD32 dwProcID, T_ShmJsonCfg &rtParam)
 {
-    m_lwNextVirAddr   = 0;
-    m_bMaster         = FALSE;
-    m_dwCtrlChannelID = 0;
-    m_dwChannelNum    = 0;
-    m_dwPowerNum      = 0;
-    m_pMemPool        = NULL;
-
-    for (WORD32 dwIndex = 0; dwIndex < MAX_CHANNEL_NUM; dwIndex++)
+    if (NULL != s_pInstance)
     {
-        m_apChannel[dwIndex] = NULL;
+        return s_pInstance;
     }
 
-    memset(m_atChannel, 0x00, sizeof(m_atChannel));
+    WORD32 dwRole = rtParam.dwRole;
+    if (dwRole > E_SHM_OBSERVER)
+    {
+        assert(0);
+    }
+
+    T_ShmMetaHead *ptHead = Attach((E_ShmRole)(dwRole), rtParam);
+    if (NULL == ptHead)
+    {
+        assert(0);
+    }
+
+    return s_pInstance;
 }
 
 
-CShmMgr::~CShmMgr()
+CShmMgr * CShmMgr::GetInstance()
 {
-    for (WORD32 dwIndex = 0; dwIndex < m_dwChannelNum; dwIndex++)
-    {
-        if (NULL != m_apChannel[dwIndex])
-        {
-            delete m_apChannel[dwIndex];
-            m_pMemPool->Free((BYTE *)(m_apChannel[dwIndex]));
-            m_apChannel[dwIndex] = NULL;
-        }
-    }
-
-    m_lwNextVirAddr   = 0;
-    m_bMaster         = FALSE;
-    m_dwCtrlChannelID = 0;
-    m_dwChannelNum    = 0;
-    m_dwPowerNum      = 0;
-    m_pMemPool        = NULL;
-
-    memset(m_atChannel, 0x00, sizeof(m_atChannel));
+    return s_pInstance;
 }
 
 
-WORD32 CShmMgr::Initialize(BOOL             bMaster,
-                           WORD32           dwChannelNum,
-                           WORD32           dwPowerNum,
-                           CCentralMemPool *pCentralMemPool)
+VOID CShmMgr::Destroy()
 {
-    if ( ((dwChannelNum + 1) > MAX_CHANNEL_NUM)
-      || (dwPowerNum < E_ShmPowerNum_14)
-      || (dwPowerNum > E_ShmPowerNum_18)
-      || (NULL == pCentralMemPool))
-    {
-        return FAIL;
-    }
+    T_ShmMetaHead *ptHead = NULL;
+    E_ShmRole      eRole  = E_SHM_OBSERVER;
+    SWORD32        iShmID = -1;
 
-    BYTE   *pBuf    = NULL;
-    WORD32  dwIndex = 0;
-
-    for (dwIndex = 0; dwIndex < dwChannelNum; dwIndex++)
+    if (NULL != s_pInstance)
     {
-        pBuf = pCentralMemPool->Malloc(SHM_CHANNEL_SIZE);
-        if (NULL == pBuf)
+        ptHead = s_pInstance->m_pMetaHead;
+        eRole  = s_pInstance->m_eRole;
+
+        delete s_pInstance;
+
+        if (NULL != ptHead)
         {
-            return FAIL;
+            iShmID = ptHead->iShmID;
+
+            if (E_SHM_MASTER == eRole)
+            {
+                Detach((VOID *)ptHead, iShmID);
+            }
+            else
+            {
+                Detach((VOID *)ptHead, -1);
+            }
         }
 
-        m_apChannel[dwIndex] = CreateChannel(bMaster,
-                                             dwPowerNum,
-                                             pBuf,
-                                             s_dwMasterKey + dwIndex,
-                                             s_dwSlaveKey + dwIndex);
-        if (NULL == m_apChannel[dwIndex])
+        s_pInstance = NULL;
+    }
+}
+
+
+VOID CShmMgr::LockGlobal(T_ShmMetaHead &rtHead)
+{
+    SWORD32 iValue = 0;
+
+    while (!__atomic_compare_exchange_n(&(rtHead.iGlobalLock), 
+                                        &iValue, 
+                                        1, 0,
+                                        __ATOMIC_ACQUIRE, 
+                                        __ATOMIC_RELAXED))
+    {
+        while (__atomic_load_n(&(rtHead.iGlobalLock), __ATOMIC_RELAXED))
         {
-            return FAIL;
+    #ifdef ARCH_ARM64    
+            asm volatile("yield" ::: "memory");
+    #else
+            _mm_pause();
+    #endif
+        }
+
+        iValue = 0;
+    }
+}
+
+
+VOID CShmMgr::UnLockGlobal(T_ShmMetaHead &rtHead)
+{
+    __atomic_store_n(&(rtHead.iGlobalLock), 0, __ATOMIC_RELEASE);
+}
+
+
+T_ShmMetaHead * CShmMgr::Attach(E_ShmRole eRole, T_ShmJsonCfg &rtParam)
+{
+    key_t          tShmKey     = static_cast<key_t>(s_dwShmKey);
+    SWORD32        iShmgetFlag = 0666;
+    SWORD32        iShmID      = -1;
+    WORD32         dwResult    = 0;
+    WORD64         lwSize      = s_lwGranularity;
+    VOID          *pAddr       = NULL;
+    T_ShmMetaHead *ptShmHead   = NULL;
+    VOID          *pShmAddr    = (E_SHM_MASTER == eRole) 
+                               ? ((VOID *)(s_lwVirBassAddr)) : NULL;
+
+    struct shmid_ds tShmDS;
+
+    /* 创建共享内存 */
+    iShmID = shmget(tShmKey, lwSize, iShmgetFlag);
+    if ((iShmID < 0) && (ENOENT == errno))
+    {
+        iShmgetFlag = 0666 | IPC_CREAT | IPC_EXCL;
+        //iShmgetFlag = 0666 | SHM_HUGETLB | IPC_CREAT | IPC_EXCL;
+
+        iShmID = shmget(tShmKey, lwSize, iShmgetFlag);
+        if (iShmID < 0)
+        {
+            return NULL;
         }
     }
 
-    pBuf = pCentralMemPool->Malloc(SHM_CHANNEL_SIZE);
-    if (NULL == pBuf)
+    pAddr = shmat(iShmID, pShmAddr, 0);
+    if (((VOID *)-1) == pAddr)
     {
-        return FAIL;
+        return NULL;
     }
 
-    m_apChannel[dwIndex] = CreateCtrlChannel(bMaster,
-                                             pBuf,
-                                             s_dwMasterKey + dwIndex,
-                                             s_dwSlaveKey + dwIndex);
-    if (NULL == m_apChannel[dwIndex])
+    if (shmctl(iShmID, IPC_STAT, &tShmDS) < 0)
     {
-        return FAIL;
+        Detach(pAddr, iShmID);
+        return NULL;
     }
 
-    m_bMaster         = bMaster;
-    m_dwCtrlChannelID = dwIndex;
-    m_dwChannelNum    = dwChannelNum + 1;
-    m_dwPowerNum      = dwPowerNum;
-    m_pMemPool        = pCentralMemPool;
+    if (lwSize != tShmDS.shm_segsz)
+    {
+        Detach(pAddr, iShmID);
+        return NULL;
+    }
+
+    dwResult = InitMetaHead(eRole, iShmID, (T_ShmMetaHead *)pAddr, rtParam);
+    if (SUCCESS != dwResult)
+    {
+        Detach(pAddr, iShmID);
+        return NULL;
+    }
+
+    ptShmHead = (T_ShmMetaHead *)pAddr;
+    pShmAddr  = (VOID *)(ptShmHead->lwMetaAddr);
+
+    assert(((WORD64)pShmAddr) == s_lwVirBassAddr);
+
+    if (E_SHM_MASTER != eRole)
+    {
+        shmdt(pAddr);
+
+        pAddr = shmat(iShmID, pShmAddr, 0);
+        if (((VOID *)-1) == pAddr)
+        {
+            return NULL;
+        }
+
+        ptShmHead = (T_ShmMetaHead *)pAddr;
+
+        if (E_SHM_SLAVE == eRole)
+        {
+            s_pInstance = InitSlave(ptShmHead, rtParam);
+        }
+        else
+        {
+            s_pInstance = InitObserver(ptShmHead, rtParam);
+        }
+
+        assert(NULL != s_pInstance);
+    }
+
+    assert(((WORD64)pAddr) == s_lwVirBassAddr);
+
+    return ptShmHead;
+}
+
+
+WORD32 CShmMgr::Detach(VOID *ptAddr, SWORD32 iShmID)
+{
+    if (NULL != ptAddr)
+    {
+        shmdt(ptAddr);
+    }
+
+    if (iShmID >= 0)
+    {
+        shmctl(iShmID, IPC_RMID, 0);
+    }
 
     return SUCCESS;
 }
 
 
-VOID CShmMgr::Printf()
+WORD32 CShmMgr::InitMetaHead(E_ShmRole      eRole,
+                             SWORD32        iShmID,
+                             T_ShmMetaHead *ptHead,
+                             T_ShmJsonCfg  &rtParam)
 {
-    printf("m_dwChannelNum : %d, m_dwPowerNum : %d\n",
-           m_dwChannelNum,
-           m_dwPowerNum);
+    WORD32 dwWaitCount = 0;
 
-    Snapshot();
+    if (E_SHM_MASTER == eRole)
+    {
+        ptHead->lwMagic      = s_lwMagicValue;
+        ptHead->dwVersion    = s_dwVersion;
+        ptHead->dwHeadSize   = sizeof(T_ShmMetaHead);
+        ptHead->dwShmKey     = s_dwShmKey;
+        ptHead->iShmID       = iShmID;
+        ptHead->lwMasterLock = 0;
+        ptHead->iGlobalLock  = 0;
+        ptHead->bInitFlag    = FALSE;
+        ptHead->lwMetaAddr   = 0;
+        ptHead->lwMetaSize   = s_lwGranularity;
+        ptHead->iMLock       = 0;
+        ptHead->dwChannelNum = rtParam.dwChannelNum;
 
-    T_ChannelSnapshot *ptChannel = NULL;
+        LockGlobal(*ptHead);
+
+        s_pInstance = InitMaster(ptHead, rtParam);
+        if (NULL == s_pInstance)
+        {
+            UnLockGlobal(*ptHead);
+            return FAIL;
+        }
+
+        ptHead->lwMetaAddr = (WORD64)(ptHead);
+        ptHead->bInitFlag  = TRUE;
+
+        UnLockGlobal(*ptHead);
+    }
+    else
+    {
+        do
+        {
+            if ( (s_lwMagicValue        != ptHead->lwMagic)
+              || (s_dwVersion           != ptHead->dwVersion)
+              || (sizeof(T_ShmMetaHead) != ptHead->dwHeadSize)
+              || (s_dwShmKey            != ptHead->dwShmKey))
+            {
+                sleep(1);
+
+                dwWaitCount++;
+                if (dwWaitCount >= SHM_SLAVE_INIT_WAIT)
+                {
+                    return FAIL;
+                }
+            }
+            else
+            {
+                LockGlobal(*ptHead);
+
+                if (TRUE == ptHead->bInitFlag)
+                {
+                    UnLockGlobal(*ptHead);
+                    break ;
+                }
+                else
+                {
+                    UnLockGlobal(*ptHead);
+                    usleep(100);
+                }
+            }
+        } while(TRUE);
+    }
+
+    return SUCCESS;
+}
+
+
+CShmMgr * CShmMgr::InitMaster(T_ShmMetaHead *ptHead, T_ShmJsonCfg &rtParam)
+{
+    BYTE    *pMem    = (BYTE *)(&(ptHead->aucMaster[0]));
+    CShmMgr *pShmMgr = new (pMem) CShmMgr();
+
+    WORD32 dwResult = pShmMgr->Initiaize(ptHead, rtParam);
+    if (SUCCESS != dwResult)
+    {
+        return NULL;
+    }
+
+    return pShmMgr;
+}
+
+
+CShmMgr * CShmMgr::InitSlave(T_ShmMetaHead *ptHead, T_ShmJsonCfg &rtParam)
+{
+    BYTE    *pMem    = (BYTE *)(&(ptHead->aucSlave[0]));
+    CShmMgr *pShmMgr = new (pMem) CShmMgr();
+
+    WORD32 dwResult = pShmMgr->Initiaize(ptHead, rtParam);
+    if (SUCCESS != dwResult)
+    {
+        return NULL;
+    }
+
+    return pShmMgr;
+}
+
+
+CShmMgr * CShmMgr::InitObserver(T_ShmMetaHead *ptHead, T_ShmJsonCfg &rtParam)
+{
+    BYTE    *pMem    = (BYTE *)(&(ptHead->aucObserver[0]));
+    CShmMgr *pShmMgr = new (pMem) CShmMgr();
+
+    WORD32 dwResult = pShmMgr->Initiaize(ptHead, rtParam);
+    if (SUCCESS != dwResult)
+    {
+        return NULL;
+    }
+
+    return pShmMgr;
+}
+
+
+CShmMgr::CShmMgr()
+{
+    m_pMetaHead    = NULL;
+    m_eRole        = E_SHM_OBSERVER;
+    m_dwChannelNum = 0;
+    m_pMemPool     = NULL;
+    m_pOamChannel  = NULL;
+    m_pCtrlChannel = NULL;
+
+    for (WORD32 dwIndex = 0; dwIndex < MAX_CHANNEL_NUM; dwIndex++)
+    {
+        m_apDataChannel[dwIndex] = NULL;
+    }
+
+    memset(&m_tOamChannel,  0x00, sizeof(m_tOamChannel));
+    memset(&m_tCtrlChannel, 0x00, sizeof(m_tCtrlChannel));
+    memset(m_atDataChannel, 0x00, sizeof(m_atDataChannel));
+}
+
+
+CShmMgr::~CShmMgr()
+{
+    if (NULL != m_pOamChannel)
+    {
+        delete m_pOamChannel;
+    }
+
+    if (NULL != m_pCtrlChannel)
+    {
+        delete m_pCtrlChannel;
+    }
+
+    for (WORD32 dwIndex = 0; dwIndex < MAX_CHANNEL_NUM; dwIndex++)
+    {
+        if (NULL != m_apDataChannel[dwIndex])
+        {
+            delete m_apDataChannel[dwIndex];
+        }
+    }
+
+    if (NULL != m_pMemPool)
+    {
+        delete m_pMemPool;
+    }
+
+    m_pMetaHead    = NULL;
+    m_eRole        = E_SHM_OBSERVER;
+    m_dwChannelNum = 0;
+    m_pMemPool     = NULL;
+    m_pOamChannel  = NULL;
+    m_pCtrlChannel = NULL;
+
+    for (WORD32 dwIndex = 0; dwIndex < MAX_CHANNEL_NUM; dwIndex++)
+    {
+        m_apDataChannel[dwIndex] = NULL;
+    }
+
+    memset(&m_tOamChannel,  0x00, sizeof(m_tOamChannel));
+    memset(&m_tCtrlChannel, 0x00, sizeof(m_tCtrlChannel));
+    memset(m_atDataChannel, 0x00, sizeof(m_atDataChannel));
+}
+
+
+WORD32 CShmMgr::Initiaize(T_ShmMetaHead *ptHead, T_ShmJsonCfg &rtParam)
+{
+    m_pMetaHead     = ptHead;
+    m_eRole         = (E_ShmRole)(rtParam.dwRole);
+    m_dwChannelNum  = rtParam.dwChannelNum;
+
+    if (E_SHM_MASTER == m_eRole)
+    {
+        BYTE   *pMem     = (BYTE *)(&(ptHead->aucMemPool[0]));
+        VOID   *pOriAddr = (BYTE *)(&(ptHead->aucOriAddr[0]));
+        WORD64  lwSize   = ptHead->lwMetaSize - offsetof(T_ShmMetaHead, aucOriAddr);
+
+        m_pMemPool = new (pMem) CCentralMemPool();
+        m_pMemPool->Initialize(pOriAddr, lwSize);
+    }
+
+    m_pOamChannel = InitOamChannel(rtParam);
+    if (NULL == m_pOamChannel)
+    {
+        return FAIL;
+    }
+
+    m_pCtrlChannel = InitCtrlChannel(rtParam);
+    if (NULL == m_pCtrlChannel)
+    {
+        return FAIL;
+    }
 
     for (WORD32 dwIndex = 0; dwIndex < m_dwChannelNum; dwIndex++)
     {
-        printf("===========================================================\n");
-
-        printf("Channel : %d\n", dwIndex);
-
-        ptChannel = &(m_atChannel[dwIndex]);
-
-        printf("Recv : InitFlag : %d, GLock : %d, ULock : %d, Status : %d, "
-               "ProdM[%u, %u], ConsM[%u, %u], "
-               "ProdQ[%u, %u], ConsQ[%u, %u], "
-               "MallocCount : %lu, FreeCount : %lu, "
-               "EnqueueCount : %lu, DequeueCount : %lu\n",
-               ptChannel->tRecv.bInitFlag,
-               ptChannel->tRecv.iGlobalLock,
-               ptChannel->tRecv.iUserLock,
-               ptChannel->tRecv.bStatus,
-               ptChannel->tRecv.dwProdHeadM,
-               ptChannel->tRecv.dwProdTailM,
-               ptChannel->tRecv.dwConsHeadM,
-               ptChannel->tRecv.dwConsTailM,
-               ptChannel->tRecv.dwProdHeadQ,
-               ptChannel->tRecv.dwProdTailQ,
-               ptChannel->tRecv.dwConsHeadQ,
-               ptChannel->tRecv.dwConsTailQ,
-               ptChannel->tRecv.lwMallocCount,
-               ptChannel->tRecv.lwFreeCount,
-               ptChannel->tRecv.lwEnqueueCount,
-               ptChannel->tRecv.lwDequeueCount);
-
-        printf("Send : InitFlag : %d, GLock : %d, ULock : %d, Status : %d, "
-               "ProdM[%u, %u], ConsM[%u, %u], "
-               "ProdQ[%u, %u], ConsQ[%u, %u], "
-               "MallocCount : %lu, FreeCount : %lu, "
-               "EnqueueCount : %lu, DequeueCount : %lu\n",
-               ptChannel->tSend.bInitFlag,
-               ptChannel->tSend.iGlobalLock,
-               ptChannel->tSend.iUserLock,
-               ptChannel->tSend.bStatus,
-               ptChannel->tSend.dwProdHeadM,
-               ptChannel->tSend.dwProdTailM,
-               ptChannel->tSend.dwConsHeadM,
-               ptChannel->tSend.dwConsTailM,
-               ptChannel->tSend.dwProdHeadQ,
-               ptChannel->tSend.dwProdTailQ,
-               ptChannel->tSend.dwConsHeadQ,
-               ptChannel->tSend.dwConsTailQ,
-               ptChannel->tSend.lwMallocCount,
-               ptChannel->tSend.lwFreeCount,
-               ptChannel->tSend.lwEnqueueCount,
-               ptChannel->tSend.lwDequeueCount);
-
-        for (WORD32 dwIndex1 = 0; dwIndex1 < BIT_NUM_OF_WORD32; dwIndex1++)
+        m_apDataChannel[dwIndex] = InitDataChannel(dwIndex, rtParam);
+        if (NULL == m_apDataChannel[dwIndex])
         {
-            printf("%10u  %15lu  %15lu  %15lu  %15lu\n",
-                   (1 << dwIndex1),
-                   ptChannel->tRecv.alwStatM[dwIndex1],
-                   ptChannel->tRecv.alwStatQ[dwIndex1],
-                   ptChannel->tSend.alwStatM[dwIndex1],
-                   ptChannel->tSend.alwStatQ[dwIndex1]);
+            return FAIL;
         }
-
-        for (WORD32 dwIndex = 0; dwIndex < E_SHM_MALLOC_POINT_NUM; dwIndex++)
-        {
-            if (0 != ptChannel->tRecv.alwMallocPoint[dwIndex])
-            {
-                printf("SHM_RECV : Point = %2d, Malloc = %15lu, Free = %15lu\n",
-                       dwIndex,
-                       ptChannel->tRecv.alwMallocPoint[dwIndex],
-                       ptChannel->tRecv.alwFreePoint[dwIndex]);
-            }
-
-            if (0 != ptChannel->tSend.alwMallocPoint[dwIndex])
-            {
-                printf("SHM_SEND : Point = %2d, Malloc = %15lu, Free = %15lu\n",
-                       dwIndex,
-                       ptChannel->tSend.alwMallocPoint[dwIndex],
-                       ptChannel->tSend.alwFreePoint[dwIndex]);
-            }
-        }
-
-        printf("===========================================================\n");
     }
+
+    return SUCCESS;
 }
 
 
 VOID CShmMgr::Dump()
 {
+    TRACE_STACK("CShmMgr::Dump()");
+
     Snapshot();
 
     T_ChannelSnapshot *ptChannel = NULL;
 
-    for (WORD32 dwIndex = 0; dwIndex < m_dwChannelNum; dwIndex++)
     {
-        TRACE_STACK("CShmMgr::Dump()");
+        TRACE_STACK("CtrlChannel");
+
+        ptChannel = &m_tCtrlChannel;
 
         LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
-                   "Channel : %d\n",
-                   dwIndex);
-
-        ptChannel = &(m_atChannel[dwIndex]);
-
-        LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
-                   "Recv : InitFlag : %d, GLock : %d, ULock : %d, Status : %d, "
+                   "Recv : InitFlag : %d, Status : %d, "
                    "ProdM[%u, %u], ConsM[%u, %u], "
                    "ProdQ[%u, %u], ConsQ[%u, %u], "
                    "MallocCount : %lu, FreeCount : %lu, "
                    "EnqueueCount : %lu, DequeueCount : %lu\n",
                    ptChannel->tRecv.bInitFlag,
-                   ptChannel->tRecv.iGlobalLock,
-                   ptChannel->tRecv.iUserLock,
                    ptChannel->tRecv.bStatus,
                    ptChannel->tRecv.dwProdHeadM,
                    ptChannel->tRecv.dwProdTailM,
@@ -304,14 +496,97 @@ VOID CShmMgr::Dump()
                    ptChannel->tRecv.lwDequeueCount);
 
         LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
-                   "Send : InitFlag : %d, GLock : %d, ULock : %d, Status : %d, "
+                   "Send : InitFlag : %d, Status : %d, "
                    "ProdM[%u, %u], ConsM[%u, %u], "
                    "ProdQ[%u, %u], ConsQ[%u, %u], "
                    "MallocCount : %lu, FreeCount : %lu, "
                    "EnqueueCount : %lu, DequeueCount : %lu\n",
                    ptChannel->tSend.bInitFlag,
-                   ptChannel->tSend.iGlobalLock,
-                   ptChannel->tSend.iUserLock,
+                   ptChannel->tSend.bStatus,
+                   ptChannel->tSend.dwProdHeadM,
+                   ptChannel->tSend.dwProdTailM,
+                   ptChannel->tSend.dwConsHeadM,
+                   ptChannel->tSend.dwConsTailM,
+                   ptChannel->tSend.dwProdHeadQ,
+                   ptChannel->tSend.dwProdTailQ,
+                   ptChannel->tSend.dwConsHeadQ,
+                   ptChannel->tSend.dwConsTailQ,
+                   ptChannel->tSend.lwMallocCount,
+                   ptChannel->tSend.lwFreeCount,
+                   ptChannel->tSend.lwEnqueueCount,
+                   ptChannel->tSend.lwDequeueCount);
+
+        for (WORD32 dwIndex1 = 0; dwIndex1 < BIT_NUM_OF_WORD32; dwIndex1++)
+        {
+            LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+                       "%10d  %15lu  %15lu  %15lu  %15lu\n",
+                       (1 << dwIndex1),
+                       ptChannel->tRecv.alwStatM[dwIndex1],
+                       ptChannel->tRecv.alwStatQ[dwIndex1],
+                       ptChannel->tSend.alwStatM[dwIndex1],
+                       ptChannel->tSend.alwStatQ[dwIndex1]);
+        }
+
+        for (WORD32 dwIndex = 0; dwIndex < E_SHM_MALLOC_POINT_NUM; dwIndex++)
+        {
+            if (0 != ptChannel->tRecv.alwMallocPoint[dwIndex])
+            {
+                LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_TRACE, TRUE,
+                           "SHM_RECV : Point = %2d, Malloc = %15lu, Free = %15lu\n",
+                           dwIndex,
+                           ptChannel->tRecv.alwMallocPoint[dwIndex],
+                           ptChannel->tRecv.alwFreePoint[dwIndex]);
+            }
+
+            if (0 != ptChannel->tSend.alwMallocPoint[dwIndex])
+            {
+                LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_TRACE, TRUE,
+                           "SHM_SEND : Point = %2d, Malloc = %15lu, Free = %15lu\n",
+                           dwIndex,
+                           ptChannel->tSend.alwMallocPoint[dwIndex],
+                           ptChannel->tSend.alwFreePoint[dwIndex]);
+            }
+        }
+    }
+
+    for (WORD32 dwIndex = 0; dwIndex < m_dwChannelNum; dwIndex++)
+    {
+        TRACE_STACK("DataChannel");
+
+        LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+                   "Channel : %d\n",
+                   dwIndex);
+
+        ptChannel = &(m_atDataChannel[dwIndex]);
+
+        LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+                   "Recv : InitFlag : %d, Status : %d, "
+                   "ProdM[%u, %u], ConsM[%u, %u], "
+                   "ProdQ[%u, %u], ConsQ[%u, %u], "
+                   "MallocCount : %lu, FreeCount : %lu, "
+                   "EnqueueCount : %lu, DequeueCount : %lu\n",
+                   ptChannel->tRecv.bInitFlag,
+                   ptChannel->tRecv.bStatus,
+                   ptChannel->tRecv.dwProdHeadM,
+                   ptChannel->tRecv.dwProdTailM,
+                   ptChannel->tRecv.dwConsHeadM,
+                   ptChannel->tRecv.dwConsTailM,
+                   ptChannel->tRecv.dwProdHeadQ,
+                   ptChannel->tRecv.dwProdTailQ,
+                   ptChannel->tRecv.dwConsHeadQ,
+                   ptChannel->tRecv.dwConsTailQ,
+                   ptChannel->tRecv.lwMallocCount,
+                   ptChannel->tRecv.lwFreeCount,
+                   ptChannel->tRecv.lwEnqueueCount,
+                   ptChannel->tRecv.lwDequeueCount);
+
+        LOG_VPRINT(E_BASE_FRAMEWORK, 0xFFFF, E_LOG_LEVEL_INFO, TRUE,
+                   "Send : InitFlag : %d, Status : %d, "
+                   "ProdM[%u, %u], ConsM[%u, %u], "
+                   "ProdQ[%u, %u], ConsQ[%u, %u], "
+                   "MallocCount : %lu, FreeCount : %lu, "
+                   "EnqueueCount : %lu, DequeueCount : %lu\n",
+                   ptChannel->tSend.bInitFlag,
                    ptChannel->tSend.bStatus,
                    ptChannel->tSend.dwProdHeadM,
                    ptChannel->tSend.dwProdTailM,
@@ -361,77 +636,217 @@ VOID CShmMgr::Dump()
 }
 
 
-CChannelTpl * CShmMgr::CreateChannel(BOOL    bMaster,
-                                     WORD32  dwPowerNum,
-                                     BYTE   *pBuf,
-                                     WORD32  dwKeyS,
-                                     WORD32  dwKeyR)
+VOID CShmMgr::Printf()
 {
-    if (bMaster)
+    printf("m_eRole : %d, m_dwChannelNum : %d\n",
+           m_eRole,
+           m_dwChannelNum);
+
+    Snapshot();
+
+    T_ChannelSnapshot *ptChannel = NULL;
+
     {
-        return CreateMaster(dwPowerNum, pBuf, dwKeyS, dwKeyR);
+        printf("===========================================================\n");
+
+        printf("CtrlChannel : \n");
+
+        ptChannel = &m_tCtrlChannel;
+
+        printf("Recv : InitFlag : %d, Status : %d, "
+               "ProdM[%u, %u], ConsM[%u, %u], "
+               "ProdQ[%u, %u], ConsQ[%u, %u], "
+               "MallocCount : %lu, FreeCount : %lu, "
+               "EnqueueCount : %lu, DequeueCount : %lu\n",
+               ptChannel->tRecv.bInitFlag,
+               ptChannel->tRecv.bStatus,
+               ptChannel->tRecv.dwProdHeadM,
+               ptChannel->tRecv.dwProdTailM,
+               ptChannel->tRecv.dwConsHeadM,
+               ptChannel->tRecv.dwConsTailM,
+               ptChannel->tRecv.dwProdHeadQ,
+               ptChannel->tRecv.dwProdTailQ,
+               ptChannel->tRecv.dwConsHeadQ,
+               ptChannel->tRecv.dwConsTailQ,
+               ptChannel->tRecv.lwMallocCount,
+               ptChannel->tRecv.lwFreeCount,
+               ptChannel->tRecv.lwEnqueueCount,
+               ptChannel->tRecv.lwDequeueCount);
+
+        printf("Send : InitFlag : %d, Status : %d, "
+               "ProdM[%u, %u], ConsM[%u, %u], "
+               "ProdQ[%u, %u], ConsQ[%u, %u], "
+               "MallocCount : %lu, FreeCount : %lu, "
+               "EnqueueCount : %lu, DequeueCount : %lu\n",
+               ptChannel->tSend.bInitFlag,
+               ptChannel->tSend.bStatus,
+               ptChannel->tSend.dwProdHeadM,
+               ptChannel->tSend.dwProdTailM,
+               ptChannel->tSend.dwConsHeadM,
+               ptChannel->tSend.dwConsTailM,
+               ptChannel->tSend.dwProdHeadQ,
+               ptChannel->tSend.dwProdTailQ,
+               ptChannel->tSend.dwConsHeadQ,
+               ptChannel->tSend.dwConsTailQ,
+               ptChannel->tSend.lwMallocCount,
+               ptChannel->tSend.lwFreeCount,
+               ptChannel->tSend.lwEnqueueCount,
+               ptChannel->tSend.lwDequeueCount);
+
+        for (WORD32 dwIndex1 = 0; dwIndex1 < BIT_NUM_OF_WORD32; dwIndex1++)
+        {
+            printf("%10u  %15lu  %15lu  %15lu  %15lu\n",
+                   (1 << dwIndex1),
+                   ptChannel->tRecv.alwStatM[dwIndex1],
+                   ptChannel->tRecv.alwStatQ[dwIndex1],
+                   ptChannel->tSend.alwStatM[dwIndex1],
+                   ptChannel->tSend.alwStatQ[dwIndex1]);
+        }
+
+        for (WORD32 dwIndex = 0; dwIndex < E_SHM_MALLOC_POINT_NUM; dwIndex++)
+        {
+            if (0 != ptChannel->tRecv.alwMallocPoint[dwIndex])
+            {
+                printf("SHM_RECV : Point = %2d, Malloc = %15lu, Free = %15lu\n",
+                       dwIndex,
+                       ptChannel->tRecv.alwMallocPoint[dwIndex],
+                       ptChannel->tRecv.alwFreePoint[dwIndex]);
+            }
+
+            if (0 != ptChannel->tSend.alwMallocPoint[dwIndex])
+            {
+                printf("SHM_SEND : Point = %2d, Malloc = %15lu, Free = %15lu\n",
+                       dwIndex,
+                       ptChannel->tSend.alwMallocPoint[dwIndex],
+                       ptChannel->tSend.alwFreePoint[dwIndex]);
+            }
+        }
+
+        printf("===========================================================\n");
     }
-    else
+
+    for (WORD32 dwIndex = 0; dwIndex < m_dwChannelNum; dwIndex++)
     {
-        return CreateSlave(dwPowerNum, pBuf, dwKeyS, dwKeyR);
+        printf("===========================================================\n");
+
+        printf("DataChannel : %d\n", dwIndex);
+
+        ptChannel = &(m_atDataChannel[dwIndex]);
+
+        printf("Recv : InitFlag : %d, Status : %d, "
+               "ProdM[%u, %u], ConsM[%u, %u], "
+               "ProdQ[%u, %u], ConsQ[%u, %u], "
+               "MallocCount : %lu, FreeCount : %lu, "
+               "EnqueueCount : %lu, DequeueCount : %lu\n",
+               ptChannel->tRecv.bInitFlag,
+               ptChannel->tRecv.bStatus,
+               ptChannel->tRecv.dwProdHeadM,
+               ptChannel->tRecv.dwProdTailM,
+               ptChannel->tRecv.dwConsHeadM,
+               ptChannel->tRecv.dwConsTailM,
+               ptChannel->tRecv.dwProdHeadQ,
+               ptChannel->tRecv.dwProdTailQ,
+               ptChannel->tRecv.dwConsHeadQ,
+               ptChannel->tRecv.dwConsTailQ,
+               ptChannel->tRecv.lwMallocCount,
+               ptChannel->tRecv.lwFreeCount,
+               ptChannel->tRecv.lwEnqueueCount,
+               ptChannel->tRecv.lwDequeueCount);
+
+        printf("Send : InitFlag : %d, Status : %d, "
+               "ProdM[%u, %u], ConsM[%u, %u], "
+               "ProdQ[%u, %u], ConsQ[%u, %u], "
+               "MallocCount : %lu, FreeCount : %lu, "
+               "EnqueueCount : %lu, DequeueCount : %lu\n",
+               ptChannel->tSend.bInitFlag,
+               ptChannel->tSend.bStatus,
+               ptChannel->tSend.dwProdHeadM,
+               ptChannel->tSend.dwProdTailM,
+               ptChannel->tSend.dwConsHeadM,
+               ptChannel->tSend.dwConsTailM,
+               ptChannel->tSend.dwProdHeadQ,
+               ptChannel->tSend.dwProdTailQ,
+               ptChannel->tSend.dwConsHeadQ,
+               ptChannel->tSend.dwConsTailQ,
+               ptChannel->tSend.lwMallocCount,
+               ptChannel->tSend.lwFreeCount,
+               ptChannel->tSend.lwEnqueueCount,
+               ptChannel->tSend.lwDequeueCount);
+
+        for (WORD32 dwIndex1 = 0; dwIndex1 < BIT_NUM_OF_WORD32; dwIndex1++)
+        {
+            printf("%10u  %15lu  %15lu  %15lu  %15lu\n",
+                   (1 << dwIndex1),
+                   ptChannel->tRecv.alwStatM[dwIndex1],
+                   ptChannel->tRecv.alwStatQ[dwIndex1],
+                   ptChannel->tSend.alwStatM[dwIndex1],
+                   ptChannel->tSend.alwStatQ[dwIndex1]);
+        }
+
+        for (WORD32 dwIndex = 0; dwIndex < E_SHM_MALLOC_POINT_NUM; dwIndex++)
+        {
+            if (0 != ptChannel->tRecv.alwMallocPoint[dwIndex])
+            {
+                printf("SHM_RECV : Point = %2d, Malloc = %15lu, Free = %15lu\n",
+                       dwIndex,
+                       ptChannel->tRecv.alwMallocPoint[dwIndex],
+                       ptChannel->tRecv.alwFreePoint[dwIndex]);
+            }
+
+            if (0 != ptChannel->tSend.alwMallocPoint[dwIndex])
+            {
+                printf("SHM_SEND : Point = %2d, Malloc = %15lu, Free = %15lu\n",
+                       dwIndex,
+                       ptChannel->tSend.alwMallocPoint[dwIndex],
+                       ptChannel->tSend.alwFreePoint[dwIndex]);
+            }
+        }
+
+        printf("===========================================================\n");
     }
 }
 
 
-CChannelTpl * CShmMgr::CreateMaster(WORD32  dwPowerNum,
-                                    BYTE   *pBuf,
-                                    WORD32  dwKeyS,
-                                    WORD32  dwKeyR)
+CShmChannel * CShmMgr::InitOamChannel(T_ShmJsonCfg &rtCfg)
 {
-    CChannelTpl *pChannel = NULL;
+    T_ShmChannelParam &rtParam   = rtCfg.tOamChannel;
+    T_ShmChannel      &rtChannel = m_pMetaHead->tOamChannel;
+    CShmChannel       *pChannel  = NULL;
+    BYTE              *pMem      = NULL;
+    WORD32             dwResult  = INVALID_DWORD;
 
-    switch (dwPowerNum)
+    switch (m_eRole)
     {
-    case E_ShmPowerNum_14 :
+    case E_SHM_MASTER :
         {
-            pChannel = new (pBuf) CShmChannelM16();
+            pMem = (BYTE *)(&(rtChannel.aucMaster[0]));
         }
         break ;
 
-    case E_ShmPowerNum_15 :
+    case E_SHM_SLAVE :
         {
-            pChannel = new (pBuf) CShmChannelM17();
+            pMem = (BYTE *)(&(rtChannel.aucSlave[0]));
         }
         break ;
 
-    case E_ShmPowerNum_16 :
+    case E_SHM_OBSERVER :
         {
-            pChannel = new (pBuf) CShmChannelM18();
-        }
-        break ;
-
-    case E_ShmPowerNum_17 :
-        {
-            pChannel = new (pBuf) CShmChannelM19();
-        }
-        break ;
-
-    case E_ShmPowerNum_18 :
-        {
-            pChannel = new (pBuf) CShmChannelM20();
+            pMem = (BYTE *)(&(rtChannel.aucObserver[0]));
         }
         break ;
 
     default :
-        break ;
-    }
-
-    if (NULL == pChannel)
-    {
         return NULL;
     }
 
-    VOID   *pVirtAddrS = GetNextVirtAddr();
-    VOID   *pVirtAddrR = GetNextVirtAddr();
-    WORD32  dwResult   = pChannel->Initialize(dwKeyS,
-                                              dwKeyR,
-                                              pVirtAddrS,
-                                              pVirtAddrR);
+    pChannel = new (pMem) CShmChannel();
+    dwResult = pChannel->Initialize(m_eRole,
+                                    &rtChannel,
+                                    m_pMemPool,
+                                    rtParam.dwSendNodeNum,
+                                    rtParam.dwSendNodeSize,
+                                    rtParam.dwRecvNodeNum,
+                                    rtParam.dwRecvNodeSize);
     if (SUCCESS != dwResult)
     {
         return NULL;
@@ -441,147 +856,101 @@ CChannelTpl * CShmMgr::CreateMaster(WORD32  dwPowerNum,
 }
 
 
-CChannelTpl * CShmMgr::CreateSlave(WORD32  dwPowerNum,
-                                   BYTE   *pBuf,
-                                   WORD32  dwKeyS,
-                                   WORD32  dwKeyR)
+CShmChannel * CShmMgr::InitCtrlChannel(T_ShmJsonCfg &rtCfg)
 {
-    CChannelTpl *pChannel = NULL;
+    T_ShmChannelParam &rtParam   = rtCfg.tCtrlChannel;
+    T_ShmChannel      &rtChannel = m_pMetaHead->tCtrlChannel;
+    CShmChannel       *pChannel  = NULL;
+    BYTE              *pMem      = NULL;
+    WORD32             dwResult  = INVALID_DWORD;
 
-    switch (dwPowerNum)
+    switch (m_eRole)
     {
-    case E_ShmPowerNum_14 :
+    case E_SHM_MASTER :
         {
-            pChannel = new (pBuf) CShmChannelS16();
+            pMem = (BYTE *)(&(rtChannel.aucMaster[0]));
         }
         break ;
 
-    case E_ShmPowerNum_15 :
+    case E_SHM_SLAVE :
         {
-            pChannel = new (pBuf) CShmChannelS17();
+            pMem = (BYTE *)(&(rtChannel.aucSlave[0]));
         }
         break ;
 
-    case E_ShmPowerNum_16 :
+    case E_SHM_OBSERVER :
         {
-            pChannel = new (pBuf) CShmChannelS18();
-        }
-        break ;
-
-    case E_ShmPowerNum_17 :
-        {
-            pChannel = new (pBuf) CShmChannelS19();
-        }
-        break ;
-
-    case E_ShmPowerNum_18 :
-        {
-            pChannel = new (pBuf) CShmChannelS20();
+            pMem = (BYTE *)(&(rtChannel.aucObserver[0]));
         }
         break ;
 
     default :
+        return NULL;
+    }
+
+    pChannel = new (pMem) CShmChannel();
+    dwResult = pChannel->Initialize(m_eRole,
+                                    &rtChannel,
+                                    m_pMemPool,
+                                    rtParam.dwSendNodeNum,
+                                    rtParam.dwSendNodeSize,
+                                    rtParam.dwRecvNodeNum,
+                                    rtParam.dwRecvNodeSize);
+    if (SUCCESS != dwResult)
+    {
+        return NULL;
+    }
+
+    return pChannel;
+}
+
+
+CShmChannel * CShmMgr::InitDataChannel(WORD32 dwChannelID, T_ShmJsonCfg &rtCfg)
+{
+    T_ShmChannelParam &rtParam   = rtCfg.atChannel[dwChannelID];
+    T_ShmChannel      &rtChannel = m_pMetaHead->atChannel[dwChannelID];
+    CShmChannel       *pChannel  = NULL;
+    BYTE              *pMem      = NULL;
+    WORD32             dwResult  = INVALID_DWORD;
+
+    switch (m_eRole)
+    {
+    case E_SHM_MASTER :
+        {
+            pMem = (BYTE *)(&(rtChannel.aucMaster[0]));
+        }
         break ;
-    }
 
-    if (NULL == pChannel)
-    {
+    case E_SHM_SLAVE :
+        {
+            pMem = (BYTE *)(&(rtChannel.aucSlave[0]));
+        }
+        break ;
+
+    case E_SHM_OBSERVER :
+        {
+            pMem = (BYTE *)(&(rtChannel.aucObserver[0]));
+        }
+        break ;
+
+    default :
         return NULL;
     }
 
-    VOID   *pVirtAddrS = GetNextVirtAddr();
-    VOID   *pVirtAddrR = GetNextVirtAddr();
-    WORD32  dwResult   = pChannel->Initialize(dwKeyS,
-                                              dwKeyR,
-                                              pVirtAddrS,
-                                              pVirtAddrR);
+    pChannel = new (pMem) CShmChannel();
+    dwResult = pChannel->Initialize(m_eRole,
+                                    &rtChannel,
+                                    m_pMemPool,
+                                    rtParam.dwSendNodeNum,
+                                    rtParam.dwSendNodeSize,
+                                    rtParam.dwRecvNodeNum,
+                                    rtParam.dwRecvNodeSize);
     if (SUCCESS != dwResult)
     {
         return NULL;
     }
 
     return pChannel;
-}
-
-
-CChannelTpl * CShmMgr::CreateCtrlChannel(BOOL    bMaster,
-                                         BYTE   *pBuf,
-                                         WORD32  dwKeyS,
-                                         WORD32  dwKeyR)
-{
-    if (bMaster)
-    {
-        return CreateCtrlMaster(pBuf, dwKeyS, dwKeyR);
-    }
-    else
-    {
-        return CreateCtrlSlave(pBuf, dwKeyS, dwKeyR);
-    }
-}
-
-
-CChannelTpl * CShmMgr::CreateCtrlMaster(BYTE   *pBuf,
-                                        WORD32  dwKeyS,
-                                        WORD32  dwKeyR)
-{
-    CChannelTpl *pChannel = new (pBuf) CShmCHannelMCtrl();
-    if (NULL == pChannel)
-    {
-        return NULL;
-    }
-
-    VOID   *pVirtAddrS = GetNextVirtAddr();
-    VOID   *pVirtAddrR = GetNextVirtAddr();
-    WORD32  dwResult   = pChannel->Initialize(dwKeyS,
-                                              dwKeyR,
-                                              pVirtAddrS,
-                                              pVirtAddrR);
-    if (SUCCESS != dwResult)
-    {
-        return NULL;
-    }
-
-    return pChannel;
-}
-
-
-CChannelTpl * CShmMgr::CreateCtrlSlave(BYTE   *pBuf,
-                                       WORD32  dwKeyS,
-                                       WORD32  dwKeyR)
-{
-    CChannelTpl *pChannel = new (pBuf) CShmCHannelSCtrl();
-    if (NULL == pChannel)
-    {
-        return NULL;
-    }
-
-    VOID   *pVirtAddrS = GetNextVirtAddr();
-    VOID   *pVirtAddrR = GetNextVirtAddr();
-    WORD32  dwResult   = pChannel->Initialize(dwKeyS,
-                                              dwKeyR,
-                                              pVirtAddrS,
-                                              pVirtAddrR);
-    if (SUCCESS != dwResult)
-    {
-        return NULL;
-    }
-
-    return pChannel;
-}
-
-
-VOID * CShmMgr::GetNextVirtAddr()
-{
-    if (0 == m_lwNextVirAddr)
-    {
-        m_lwNextVirAddr = s_lwVirBassAddr;
-    }
-    else
-    {
-        m_lwNextVirAddr = m_lwNextVirAddr + s_lwGranularity;
-    }
-
-    return (VOID *)(m_lwNextVirAddr);
 }
 
 

@@ -4,6 +4,7 @@
 #define _BASE_THREAD_SINGLETON_H_
 
 
+#include "base_mem_pool.h"
 #include "base_thread_multi.h"
 #include "base_app_cntrl.h"
 
@@ -35,10 +36,7 @@ public :
     virtual WORD32 Initialize();
 
     /* 在RegistZone时调用(即, 在业务线程创建后, 在业务线程的栈空间调用) */
-    virtual CObjMemPoolInterface * CreateSTMemPool();
-
-    /* 通过线程专属内存池+线程专属Ring队列发送消息给线程 */
-    WORD32 SendExclusiveMsgToThread(WORD32 dwMsgID, WORD16 wLen, const VOID *ptMsg);
+    virtual CObjMemPoolInterface * CreateSTMemPool(WORD32 dwRingID);
 
 protected :
     WORD32 BindApp();
@@ -138,46 +136,9 @@ WORD32 CSingletonThread<TH, TM>::Initialize()
 
 /* 在RegistZone时调用(即, 在业务线程创建后, 在业务线程的栈空间调用) */
 template<class TH, class TM>
-CObjMemPoolInterface * CSingletonThread<TH, TM>::CreateSTMemPool()
+CObjMemPoolInterface * CSingletonThread<TH, TM>::CreateSTMemPool(WORD32 dwRingID)
 {
-    return m_cMemPools.CreateSTPool();
-}
-
-
-/* 通过线程专属内存池+线程专属Ring队列发送消息给线程(在业务线程栈空间调用) */
-template<class TH, class TM>
-WORD32 CSingletonThread<TH, TM>::SendExclusiveMsgToThread(WORD32      dwMsgID,
-                                                          WORD16      wLen,
-                                                          const VOID *ptMsg)
-{
-    CMultiMessageRing *pRing = GetMultiRing();
-    if (unlikely(NULL == pRing))
-    {
-        return 0;
-    }
-
-    BYTE *pBuffer = m_cMemPools.Malloc(wLen, INVALID_WORD);
-    if (NULL == pBuffer)
-    {
-        return 0;
-    }
-
-    if ((NULL != ptMsg) && (0 != wLen))
-    {
-        memcpy(pBuffer, ptMsg, wLen);
-    }
-
-    WORD32 dwNum = pRing->Enqueue((VOID *)pBuffer, INVALID_WORD);
-    if (dwNum > 0)
-    {
-        Notify();
-    }
-    else
-    {
-        m_cMemPools.Free(pBuffer);
-    }
-
-    return dwNum;
+    return m_cMemPools.CreateSTPool(dwRingID);
 }
 
 

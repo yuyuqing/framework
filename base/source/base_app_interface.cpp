@@ -85,8 +85,8 @@ WORD32 CAppInterface::Start()
 /* 注册用户面报文回调函数 */
 WORD32 CAppInterface::RegisterPacketFunc(PMsgCallBack pFunc)
 {
-    CDataPlaneRing                *pRing   = NULL;
-    CDataPlaneRing::CPacketObject *pCBItem = NULL;
+    CDataPlaneRing          *pRing   = NULL;
+    CDataPlaneRing::CSTRing *pSTRing = NULL;
 
     pRing = m_pOwner->GetMsgRingD();
     if (NULL == pRing)
@@ -94,8 +94,8 @@ WORD32 CAppInterface::RegisterPacketFunc(PMsgCallBack pFunc)
         return FAIL;
     }
 
-    pCBItem = pRing->CreatePacketRing((VOID *)this, pFunc, m_dwDataRingID);
-    if (NULL == pCBItem)
+    pSTRing = pRing->CreateSTRing((VOID *)this, pFunc, m_dwDataRingID);
+    if (NULL == pSTRing)
     {
         return FAIL;
     }
@@ -113,7 +113,7 @@ WORD32 CAppInterface::RemovePacketFunc()
         return FAIL;
     }
 
-    return pRing->DelPacketRing(m_dwDataRingID);
+    return pRing->DelSTRing(m_dwDataRingID);
 }
 
 

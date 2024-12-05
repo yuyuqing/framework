@@ -4,274 +4,19 @@
 #define _BASE_MEM_POOL_H_
 
 
-#include "base_lock.h"
-#include "base_variable.h"
-#include "base_ring_array.h"
 #include "base_mem_interface.h"
-#include "base_measure.h"
+#include "base_config_file.h"
 
 
-typedef enum tagE_MemSizeType
-{
-    E_MemSizeType_256  =   192,
-    E_MemSizeType_512  =   448,
-    E_MemSizeType_01K  =   960,
-    E_MemSizeType_04K  =  4032,
-    E_MemSizeType_16K  = 16320,
-    E_MemSizeType_64K  = 65472,
-}E_MemSizeType;
-
-
-typedef enum tagE_MemBufPowerNum
-{
-    E_MemBufPowerNum_256 = 12,  /* 2^12 = 4096   1M */
-    E_MemBufPowerNum_512 = 10,  /* 2^10 = 1024 512K */
-    E_MemBufPowerNum_01K =  9,  /* 2^9  =  512 512K */
-    E_MemBufPowerNum_04K =  8,  /* 2^8  =  256   1M */
-    E_MemBufPowerNum_16K =  6,  /* 2^6  =   64   1M */
-    E_MemBufPowerNum_64K =  5,  /* 2^5  =   32   2M */  
-}E_MemBufPowerNum;
-
-
-enum { MEM_POOL_NUM = 6 };
-
-
-typedef struct tagT_GroupMemPool
-{
-    E_MemSizeType          eType;
-    E_MemBufPowerNum       eNum;
-    BYTE                  *pBuf;
-    CObjMemPoolInterface  *pMemPool;
-}T_GroupMemPool;
-
-
-class CMsgMemPool : public CBaseData
-{
-public :
-    const static WORD32 s_adwBufSize[MEM_POOL_NUM];
-
-public :
-    CMsgMemPool (CCentralMemPool &rCentralMemPool);
-    virtual ~CMsgMemPool();
-    
-    virtual WORD32 Initialize();
-    
-    virtual BYTE * Malloc(WORD32 dwSize);
-
-    virtual WORD32 Free(BYTE *pAddr);
-    
-    virtual BOOL IsValid(BYTE *pAddr);
-
-    VOID GetMeasure(T_MsgMemMeasure &rtMeasure);
-
-    VOID Dump();
-
-protected :
-    WORD32 Calc(WORD32 dwSize);
-
-protected :
-    CCentralMemPool  &m_rCentralMemPool;
-    T_GroupMemPool    m_atPool[MEM_POOL_NUM];
-};
-
-
-inline BYTE * CMsgMemPool::Malloc(WORD32 dwSize)
-{
-    WORD32 dwPos = Calc(dwSize);
-    if (unlikely(dwPos >= MEM_POOL_NUM))
-    {
-        return NULL;
-    }
-
-    BYTE *pValue = NULL;
-
-    for (; dwPos < MEM_POOL_NUM; dwPos++)
-    {
-        pValue = m_atPool[dwPos].pMemPool->Malloc(dwSize);
-        if (NULL != pValue)
-        {
-            break;
-        }
-    }
-
-    return pValue;
-}
-
-
-inline WORD32 CMsgMemPool::Free(BYTE *pAddr)
-{
-    WORD32 dwPos  = 0;    
-    BOOL   bValid = FALSE;
-
-    for (; dwPos < MEM_POOL_NUM; dwPos++)
-    {
-        bValid = m_atPool[dwPos].pMemPool->IsValid(pAddr);
-        if (bValid)
-        {
-            break ;
-        }
-    }
-
-    if (unlikely(dwPos >= MEM_POOL_NUM))
-    {
-        return FAIL;
-    }
-
-    return m_atPool[dwPos].pMemPool->Free(pAddr);
-}
-
-
-inline BOOL CMsgMemPool::IsValid(BYTE *pAddr)
-{
-    BOOL bValid = FALSE;
-
-    for (WORD32 dwIndex = 0; dwIndex < MEM_POOL_NUM; dwIndex++)
-    {
-        bValid = m_atPool[dwIndex].pMemPool->IsValid(pAddr);
-        if (bValid)
-        {
-            break ;
-        }
-    }
-
-    return bValid;
-}
-
-
-inline WORD32 CMsgMemPool::Calc(WORD32 dwSize)
-{
-    WORD32 dwPos = 0;
-    for (; dwPos < MEM_POOL_NUM; dwPos++)
-    {
-        if (dwSize <= s_adwBufSize[dwPos])
-        {
-            break ;
-        }
-    }
-
-    return dwPos;
-}
-
-
-#define POWER_OF_MEMPOOL              ((WORD32)(10))
-#define LOG_MEM_BUF_SIZE              ((WORD32)(1024 - sizeof(T_MemBufHeader)))
-#define TIMER_MSG_SIZE                ((WORD32)(256  - sizeof(T_MemBufHeader)))
-
-
-typedef struct tagT_LogBufHeader
-{
-    WORD64   lwAddr;
-    WORD64   lwFile;
-    BYTE     ucLogType;     /* 0:普通接口日志, 1:Fast接口日志 */
-    BYTE     ucResved1;
-    BYTE     ucResved2;
-    BYTE     ucResved3;
-    WORD16   wModuleID;
-    WORD16   wMsgLen;
-}T_LogBufHeader;
-
-
-typedef struct tagT_TimerMsgHeader
-{
-    WORD64  lwAddr;
-    WORD64  lwStartCycle;
-    WORD64  lwEndCycle;
-    WORD32  dwMsgID;
-    WORD16  wResved;
-    WORD16  wMsgLen;
-}T_TimerMsgHeader;
-
-
-class CLogMemPool : public CObjectMemPool<POWER_OF_MEMPOOL>
-{
-public :
-    static const WORD32 s_dwLogSize = LOG_MEM_BUF_SIZE - sizeof(T_LogBufHeader);
-
-    typedef struct tagT_LogBuf
-    {
-        T_LogBufHeader  tLogHeader;
-        BYTE            aucData[s_dwLogSize];
-    }T_LogBuf;
-
-public :
-    CLogMemPool (CCentralMemPool &rCentralMemPool);
-    virtual ~CLogMemPool();
-
-    WORD32 Initialize();
-
-    BYTE * Malloc(WORD32 dwSize = s_dwLogSize, WORD16 wThreshold = INVALID_WORD);
-    WORD32 Free(BYTE *pAddr);
-};
-
-
-inline BYTE * CLogMemPool::Malloc(WORD32 dwSize, WORD16 wThreshold)
-{    
-    BYTE *pValue = CObjectMemPool<POWER_OF_MEMPOOL>::Malloc(dwSize, wThreshold, INVALID_DWORD);
-
-    return (pValue) ? (pValue + sizeof(T_LogBufHeader)) : NULL;
-}
-
-
-inline WORD32 CLogMemPool::Free(BYTE *pAddr)
-{
-    if (unlikely(NULL == pAddr))
-    {
-        return FAIL;
-    }
-
-    BYTE *pValue = (BYTE *)((WORD64)pAddr - sizeof(T_LogBufHeader));
-
-    return CObjectMemPool<POWER_OF_MEMPOOL>::Free(pValue);    
-}
-
-
-class CTimerMemPool : public CObjectMemPool<POWER_OF_MEMPOOL>
-{
-public :
-    static const WORD32 s_dwTimerSize = TIMER_MSG_SIZE - sizeof(T_TimerMsgHeader);
-
-public :
-    CTimerMemPool (CCentralMemPool &rCentralMemPool);
-    virtual ~CTimerMemPool();
-
-    WORD32 Initialize();
-
-    BYTE * Malloc(WORD32 dwSize = s_dwTimerSize, WORD16 wThreshold = INVALID_WORD);
-
-    WORD32 Free(BYTE *pAddr);
-};
-
-
-/* 备注 : 分配时未偏移头, 释放时也不作偏移处理 */
-inline BYTE * CTimerMemPool::Malloc(WORD32 dwSize, WORD16 wThreshold)
-{
-    BYTE *pValue = CObjectMemPool<POWER_OF_MEMPOOL>::Malloc(dwSize, wThreshold, INVALID_DWORD);
-
-    return pValue;
-}
-
-
-/* 备注 : 分配时未偏移头, 释放时也不作偏移处理 */
-inline WORD32 CTimerMemPool::Free(BYTE *pAddr)
-{
-    if (unlikely(NULL == pAddr))
-    {
-        return FAIL;
-    }
-
-    return CObjectMemPool<POWER_OF_MEMPOOL>::Free(pAddr);    
-}
+#define SINGLE_POOL_NUM              ((WORD32)(128))
 
 
 /* T的类型必须是CObjectMemPool<>的派生类, 例如: CLogMemPool/CTimerMemPool 
  * 用于多线程场景下的高并发处理(例如: 多个线程写日志, 多个线程启停定时器等)
  */
-template<class T>
+template<typename T, WORD32 POOL_NUM = SINGLE_POOL_NUM>
 class CMultiMemPool : public CBaseData
 {
-public :
-    enum { SINGLE_POOL_NUM = 128 };
-
 public :
     CMultiMemPool (CCentralMemPool &rCentralMemPool);
     virtual ~CMultiMemPool();
@@ -279,45 +24,44 @@ public :
     virtual WORD32 Initialize();
 
     /* 在RegistZone时调用(即, 在业务线程创建后, 在业务线程的栈空间调用) */
-    T * CreateSTPool();
+    T * CreateSTPool(WORD32 dwRingID);
 
-    BYTE * Malloc(WORD32 dwSize, WORD16 wThreshold);
-
-    WORD32 Free(BYTE *pAddr);
+    BYTE * Malloc(WORD32 dwRingID, WORD32 dwSize);
+    WORD32 Free(WORD32 dwRingID, BYTE *pAddr);
 
 protected :
     CCentralMemPool   &m_rCentralMemPool;
 
     CAtomicLock        m_cLock;
     volatile WORD32    m_dwRingNum;
-    T                 *m_apPool[SINGLE_POOL_NUM];
+    T                 *m_apPool[POOL_NUM];
 };
 
 
-template<class T>
-CMultiMemPool<T>::CMultiMemPool (CCentralMemPool &rCentralMemPool)
+template<typename T, WORD32 POOL_NUM>
+CMultiMemPool<T, POOL_NUM>::CMultiMemPool (CCentralMemPool &rCentralMemPool)
     : m_rCentralMemPool(rCentralMemPool)
 {
     m_dwRingNum = 0;
 
-    for (WORD32 dwIndex = 0; dwIndex < SINGLE_POOL_NUM; dwIndex++)
+    for (WORD32 dwIndex = 0; dwIndex < POOL_NUM; dwIndex++)
     {
         m_apPool[dwIndex] = NULL;
     }
 }
 
 
-template<class T>
-CMultiMemPool<T>::~CMultiMemPool()
+template<typename T, WORD32 POOL_NUM>
+CMultiMemPool<T, POOL_NUM>::~CMultiMemPool()
 {
     m_dwRingNum = 0;
 
-    for (WORD32 dwIndex = 0; dwIndex < SINGLE_POOL_NUM; dwIndex++)
+    for (WORD32 dwIndex = 0; dwIndex < POOL_NUM; dwIndex++)
     {
         if (NULL != m_apPool[dwIndex])
         {
             delete m_apPool[dwIndex];
-            m_rCentralMemPool.Free((BYTE *)m_apPool[dwIndex]);
+            m_rCentralMemPool.Free((VOID *)(m_apPool[dwIndex]));
         }
 
         m_apPool[dwIndex] = NULL;
@@ -325,19 +69,18 @@ CMultiMemPool<T>::~CMultiMemPool()
 }
 
 
-template<class T>
-WORD32 CMultiMemPool<T>::Initialize()
+template<typename T, WORD32 POOL_NUM>
+WORD32 CMultiMemPool<T, POOL_NUM>::Initialize()
 {
     return SUCCESS;
 }
 
 
 /* 在RegistZone时调用(即, 在业务线程创建后, 在业务线程的栈空间调用) */
-template<class T>
-T * CMultiMemPool<T>::CreateSTPool()
+template<typename T, WORD32 POOL_NUM>
+T * CMultiMemPool<T, POOL_NUM>::CreateSTPool(WORD32 dwRingID)
 {
-    WORD32 dwQueueID = m_dwSelfRingID % SINGLE_POOL_NUM;
-    if (m_dwRingNum >= SINGLE_POOL_NUM)
+    if (unlikely(dwRingID >= POOL_NUM))
     {
         assert(0);
     }
@@ -348,18 +91,18 @@ T * CMultiMemPool<T>::CreateSTPool()
         assert(0);
     }
 
-    T *pPool = new (pMem) T(m_rCentralMemPool);
-    pPool->Initialize();
-
     m_cLock.Lock();
 
-    if (NULL != m_apPool[dwQueueID])
+    if ((NULL != m_apPool[dwRingID]) || (m_dwRingNum >= POOL_NUM))
     {
-        /* 避免重复创建 */
+        /* 重复创建也会assert */
         assert(0);
     }
 
-    m_apPool[dwQueueID] = pPool;
+    T *pPool = new (pMem) T(m_rCentralMemPool);
+    pPool->Initialize();
+
+    m_apPool[dwRingID] = pPool;
 
     m_dwRingNum++;
 
@@ -369,29 +112,168 @@ T * CMultiMemPool<T>::CreateSTPool()
 }
 
 
-template<class T>
-inline BYTE * CMultiMemPool<T>::Malloc(WORD32 dwSize, WORD16 wThreshold)
+template<typename T, WORD32 POOL_NUM>
+inline BYTE * CMultiMemPool<T, POOL_NUM>::Malloc(
+    WORD32 dwRingID,
+    WORD32 dwSize)
 {
-    WORD32 dwQueueID = m_dwSelfRingID % SINGLE_POOL_NUM;
-    if (unlikely(NULL == m_apPool[dwQueueID]))
+    if (unlikely((dwRingID >= POOL_NUM) || (NULL == m_apPool[dwRingID])))
     {
         return NULL;
     }
 
-    return m_apPool[dwQueueID]->Malloc(dwSize, wThreshold);
+    return m_apPool[dwRingID]->Malloc(dwSize);
 }
 
 
-template<class T>
-inline WORD32 CMultiMemPool<T>::Free(BYTE *pAddr)
+template<typename T, WORD32 POOL_NUM>
+inline WORD32 CMultiMemPool<T, POOL_NUM>::Free(WORD32 dwRingID, BYTE *pAddr)
 {
-    WORD32 dwQueueID = m_dwSelfRingID % SINGLE_POOL_NUM;
-    if (unlikely(NULL == m_apPool[dwQueueID]))
+    if (unlikely((dwRingID >= POOL_NUM) || (NULL == m_apPool[dwRingID])))
     {
-        return FAIL;
+        return NULL;
     }
 
-    return m_apPool[dwQueueID]->Free(pAddr);
+    return m_apPool[dwRingID]->Free(pAddr);
+}
+
+
+class CBlockMemObject : public CBaseData
+{
+public :
+    CBlockMemObject (CCentralMemPool &rCentralMemPool);
+    virtual ~CBlockMemObject();
+
+    WORD32 Initialize(WORD32 dwPoolID, WORD32 dwBlockID, WORD32 dwPowerNum, WORD32 dwTrunkSize);
+
+    BYTE * Malloc(WORD32 dwSize, WORD32 dwPoint);
+
+    WORD32 Free(BYTE *pAddr);
+
+    BOOL IsValid(BYTE *pAddr);
+
+    WORD32 GetBufSize();
+
+    VOID Dump();
+
+protected :
+    CObjMemPoolInterface * CreateTrunPool();
+
+protected :
+    WORD32                 m_dwPoolID;
+    WORD32                 m_dwBlockID;
+
+    WORD32                 m_dwPowerNum;
+    WORD32                 m_dwBufSize;
+
+    CCentralMemPool       &m_rCentralMemPool;
+    CObjMemPoolInterface  *m_pTrunkPool;
+};
+
+
+inline BYTE * CBlockMemObject::Malloc(WORD32 dwSize, WORD32 dwPoint)
+{
+    return m_pTrunkPool->Malloc(dwSize, m_dwPoolID, dwPoint);
+}
+
+
+inline WORD32 CBlockMemObject::Free(BYTE *pAddr)
+{
+    return m_pTrunkPool->Free(pAddr);
+}
+
+
+inline BOOL CBlockMemObject::IsValid(BYTE *pAddr)
+{
+    return m_pTrunkPool->IsValid(pAddr);
+}
+
+
+inline WORD32 CBlockMemObject::GetBufSize()
+{
+    return m_dwBufSize;
+}
+
+
+typedef struct tagT_BlockObject
+{
+    WORD32            dwPowerNum;    /* 控制Ring的大小 */
+    WORD32            dwBufNum;      /* 2^PowerNum */
+    WORD32            dwTrunkSize;   /* 配置文件中指定的Trunk大小 */
+    WORD32            dwBufSize;     /* CACHE_SIZE对齐后的内存块大小 */
+    CBlockMemObject  *pMemObj;
+}T_BlockObject;
+
+
+class CBlockMemPool : public CBaseData
+{
+public :
+    CBlockMemPool (CCentralMemPool &rCentralMemPool);
+    virtual ~CBlockMemPool();
+
+    WORD32 Initialize(T_BlockParam &rtParam);
+
+    BYTE * Malloc(WORD32 dwBlockID, WORD32 dwSize, WORD32 dwPoint);
+
+    CBlockMemObject * FindBlock(WORD32 dwBlockID);
+
+    /* 根据内存块大小查找匹配的BlockID */
+    WORD32 GetBlockID(WORD32 dwSize);
+
+    VOID Dump();
+
+protected :    
+    CBlockMemObject * CreateBlock(WORD32 dwPoolID, WORD32 dwBlockID, T_BlockObject &rtBlock);
+
+protected :
+    CCentralMemPool  &m_rCentralMemPool;
+
+    WORD32            m_dwPoolID;
+    WORD32            m_dwBlockNum;
+    T_BlockObject     m_atBlock[MAX_BLOCK_NUM];
+};
+
+
+inline BYTE * CBlockMemPool::Malloc(WORD32 dwBlockID,
+                                    WORD32 dwSize,
+                                    WORD32 dwPoint)
+{
+    if (unlikely(dwBlockID >= m_dwBlockNum))
+    {
+        return NULL;
+    }
+
+    return m_atBlock[dwBlockID].pMemObj->Malloc(dwSize, dwPoint);
+}
+
+
+inline CBlockMemObject * CBlockMemPool::FindBlock(WORD32 dwBlockID)
+{
+    if (unlikely(dwBlockID >= m_dwBlockNum))
+    {
+        return NULL;
+    }
+
+    return m_atBlock[dwBlockID].pMemObj;
+}
+
+
+/* 根据内存块大小查找匹配的BlockID */
+inline WORD32 CBlockMemPool::GetBlockID(WORD32 dwSize)
+{
+    WORD32 dwBlockID = 0;
+
+    dwSize += sizeof(T_MemBufHeader);
+
+    for (; dwBlockID < m_dwBlockNum; dwBlockID++)
+    {
+        if (dwSize <= m_atBlock[dwBlockID].dwBufSize)
+        {
+            break ;
+        }
+    }
+
+    return dwBlockID;
 }
 
 

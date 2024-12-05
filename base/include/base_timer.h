@@ -5,6 +5,7 @@
 
 
 #include "base_call_back.h"
+#include "base_data_container.h"
 #include "base_time.h"
 #include "base_timer_wrapper.h"
 
@@ -256,7 +257,7 @@ WORD32 CTimerList<TIMER_NODE_NUM>::Clear()
 
 
 /* 定时器注册接口 : 超时后该定时器自动删除, 无需再调用KillTimer删除
- * dwTick : 超时时长, 单位(0.5ms, TTI中断)
+ * dwTick : 超时时长, 单位(1ms)
  * pObj   : 回调对象
  * pFunc  : 回调函数
  * 
@@ -279,7 +280,7 @@ inline WORD32 CTimerList<TIMER_NODE_NUM>::RegisterTimer(WORD32     dwTick,
 
     WORD32 dwTimerID = INVALID_DWORD;
 
-    CTimerNode *pTimer = m_List.Malloc(dwTimerID);
+    CTimerNode *pTimer = m_List.Malloc(&dwTimerID);
     if (unlikely(NULL == pTimer))
     {
         return INVALID_DWORD;
@@ -328,7 +329,7 @@ inline WORD32 CTimerList<TIMER_NODE_NUM>::RegisterTimer(WORD32       dwTick,
 
     WORD32 dwTimerID = INVALID_DWORD;
 
-    CTimerNode *pTimer = m_List.Malloc(dwTimerID);
+    CTimerNode *pTimer = m_List.Malloc(&dwTimerID);
     if (unlikely(NULL == pTimer))
     {
         return INVALID_DWORD;
@@ -376,7 +377,7 @@ inline WORD32 CTimerList<TIMER_NODE_NUM>::RegisterTimer(BYTE       ucHour,
 
     WORD32 dwTimerID = INVALID_DWORD;
 
-    CTimerNode *pNode = m_List.Malloc(dwTimerID);
+    CTimerNode *pNode = m_List.Malloc(&dwTimerID);
     if (unlikely(NULL == pNode))
     {
         return INVALID_DWORD;

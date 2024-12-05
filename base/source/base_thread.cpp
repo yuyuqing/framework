@@ -38,14 +38,14 @@ CMultiMessageRing::CSTRing * InitLogRing(WORD32 dwRingID)
 }
 
 
-CLogMemPool * InitLogMemPool()
+CLogMemPool * InitLogMemPool(WORD32 dwRingID)
 {
     if (NULL == g_pLogThread)
     {
         return NULL;
     }
 
-    return (CLogMemPool *)(g_pLogThread->CreateSTMemPool());
+    return (CLogMemPool *)(g_pLogThread->CreateSTMemPool(dwRingID));
 }
 
 
@@ -62,7 +62,7 @@ WORD32 RegistMainLog(T_DataZone &rtThreadZone, VOID *pThread)
         return FAIL;
     }
 
-    CLogMemPool *pMemPool = InitLogMemPool();
+    CLogMemPool *pMemPool = InitLogMemPool(m_dwSelfRingID);
     if (NULL == pMemPool)
     {
         return FAIL;
@@ -155,10 +155,10 @@ WORD32 CBaseThread::RegistThread(T_DataZone &rtThreadZone, VOID *pThread)
     /* 初始化线程日志 */
     pInst->InitLogger(pInst->m_dwProcID);
 
-    rtThreadZone.pLogMemPool   = (VOID *)(pInst->m_pLogMemPool);
-    rtThreadZone.pLogRing      = (VOID *)(pInst->m_pLogRing);
-    rtThreadZone.pLogger       = (VOID *)(pInst->m_pLogger);
-    rtThreadZone.pThread       = (VOID *)(pInst);
+    rtThreadZone.pLogMemPool = (VOID *)(pInst->m_pLogMemPool);
+    rtThreadZone.pLogRing    = (VOID *)(pInst->m_pLogRing);
+    rtThreadZone.pLogger     = (VOID *)(pInst->m_pLogger);
+    rtThreadZone.pThread     = (VOID *)(pInst);
 
     return SUCCESS;
 }
@@ -177,8 +177,8 @@ WORD32 CBaseThread::RemoveThread(T_DataZone &rtThreadZone, VOID *pThread)
         return FAIL;
     }
 
-    pInst->m_pLogMemPool   = NULL;
-    pInst->m_pLogRing      = NULL;
+    pInst->m_pLogMemPool = NULL;
+    pInst->m_pLogRing    = NULL;
 
     return SUCCESS;
 }
@@ -508,7 +508,7 @@ CTimerRepo * CBaseThread::GetTimerRepo()
 }
 
 
-CObjMemPoolInterface * CBaseThread::CreateSTMemPool()
+CObjMemPoolInterface * CBaseThread::CreateSTMemPool(WORD32 dwRingID)
 {
     return NULL;
 }
@@ -733,7 +733,7 @@ WORD32 CBaseThread::InitLogger(WORD32 dwProcID)
         assert(0);
     }
 
-    m_pLogMemPool = InitLogMemPool();
+    m_pLogMemPool = InitLogMemPool(m_dwSelfRingID);
     if (NULL == m_pLogMemPool)
     {
         assert(0);

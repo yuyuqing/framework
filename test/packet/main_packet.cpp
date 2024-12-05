@@ -12,7 +12,7 @@
 #include <pthread.h>
 #include <fstream>
 
-#include "base_list.h"
+#include "base_data_list.h"
 #include "base_init_component.h"
 #include "base_app_cntrl.h"
 #include "base_oam_app.h"
@@ -248,8 +248,8 @@ WORD32 CTestEgtpApp::Polling()
     T_TestPacketBuffer *pBuf  = NULL;
 
     pBuf = (T_TestPacketBuffer *)(CMemPools::GetInstance()->Malloc(
-                                      (m_dwCellIdx + 1),
                                       sizeof(T_TestPacketBuffer),
+                                      (m_dwCellIdx + 1),
                                       E_MP_MALLOC_POINT_00));
     if (NULL == pBuf)
     {

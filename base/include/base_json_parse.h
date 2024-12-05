@@ -12,8 +12,6 @@
 #include <map>
 
 #include "base_string.h"
-#include "base_data_container.h"
-#include "base_snprintf.h"
 
 
 #define JSON_MAX_STRING_LENGTH      ((WORD16)(128))

@@ -137,7 +137,7 @@ inline BOOL CBaseTrans::IsFinish()
 /* 分配内存用于实例化Step; 无需考虑内存回收(伴随Trans销毁自动回收) */
 inline BYTE * CBaseTrans::Mallc()
 {
-    T_TransStepValue *ptValue = m_cList.Malloc();
+    T_TransStepValue *ptValue = (T_TransStepValue *)(m_cList.Malloc());
     if (NULL == ptValue)
     {
         return NULL;

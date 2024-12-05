@@ -131,8 +131,8 @@
         "log_measure"       : 1,              //日志维测输出定时器时长(单位:分钟)
         "write_file_period" : 0,              //日志文件切换周期; 0:5分钟, 1:10分钟, 2:15分钟, 3:30分钟, 4:60分钟, 5:120分钟, 6:240分钟
         "wait_threshold"    : 80000,          //控制日志流控; 数值越大,主动丢弃日志数量越少
-        "lock_threshold"    : 80,             //控制日志流控; 数值越大,等待锁竞争时间越长, 因为加锁失败而丢弃的日志数量越少
-        "loop_threshold"    : 4,              //控制日志流控; 本参数作用不明显
+        "lock_threshold"    : 80,             //控制日志流控; 用于控制内存分配(日志内存调整为线程专属后, 此参数废弃)
+        "loop_threshold"    : 4,              //控制日志流控; 用于控制消息入Ring(日志Ring调整为线程专属后, 此参数作用不大)
         "file_size"         : 128,            //单个文件最大长度, 单位:MB
         "apps"              :                 //为了充分利用核资源, 日志线程下也可以绑定App(但不支持Polling接口)
         [
@@ -162,10 +162,49 @@
 
     "shm" :
     {
-        "create_flag"      : false,     //是否创建共享内存标志
-        "master_flag"      : false,     //是否共享内存主节点
-        "channel_num"      : 4,         //共享内存通道数目
-        "power_num"        : 14         //接收方队列&内存数量(取值范围[14,15,16,17,18], 2^P, 发送方 = 接收方+2)
+        "create_flag"      : false,       //是否创建共享内存标志
+        "role_flag"        : 0,           //共享内存节点类型(0:Master; 1:Slave; 2:Observer)
+        "data_channel"     :              //共享内存F1-U数据面通道数目(与小区数量保持一致)
+        [
+            {
+                "node_num_s"   : 80000,
+                "node_size_s"  : 2048,
+                "node_num_r"   : 20000,
+                "node_size_r"  : 2048
+            },
+            {
+                "node_num_s"   : 80000,
+                "node_size_s"  : 2048,
+                "node_num_r"   : 20000,
+                "node_size_r"  : 2048
+            },
+            {
+                "node_num_s"   : 80000,
+                "node_size_s"  : 2048,
+                "node_num_r"   : 20000,
+                "node_size_r"  : 2048
+            },
+            {
+                "node_num_s"   : 80000,
+                "node_size_s"  : 2048,
+                "node_num_r"   : 20000,
+                "node_size_r"  : 2048
+            }
+        ],
+        "ctrl_channel"     :
+        {
+            "node_num_s"   : 256,
+            "node_size_s"  : 131072,
+            "node_num_r"   : 256,
+            "node_size_r"  : 131072
+        },
+        "oam_channel"      :
+        {
+            "node_num_s"   : 128,
+            "node_size_s"  : 131072,
+            "node_num_r"   : 128,
+            "node_size_r"  : 131072
+        }
     },
 
     "workers"  :

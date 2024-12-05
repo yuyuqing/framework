@@ -68,7 +68,7 @@ WORD32 CPollingThread::LoadApp(T_AppInfo *ptAppInfo)
                ptAppInfo->dwThreadID,
                ptAppInfo->dwStartEventID);
 
-    m_atAppCtx[m_dwAppNum].pAppInfo   = ptAppInfo;        
+    m_atAppCtx[m_dwAppNum].pAppInfo   = ptAppInfo;
     m_atAppCtx[m_dwAppNum].bTimerFlag = FALSE;
 
     m_dwAppNum++;

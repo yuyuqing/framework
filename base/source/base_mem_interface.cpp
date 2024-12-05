@@ -55,10 +55,11 @@ WORD32 CMemInterface::Initialize(VOID *pOriAddr, WORD64 lwSize)
     m_pFreeHeader = (T_MemBufHeader *)m_pOriAddr;
 
     /* dwSize不包含MemBuf头, 因此在申请时需要在lwSize的基础上 + sizeof(T_MemBufHeader) */
-    m_pFreeHeader->dwSize     = (WORD32)((lwSize - sizeof(T_MemBufHeader)) / CACHE_SIZE);
-    m_pFreeHeader->dwRefCount = INVALID_DWORD;
-    m_pFreeHeader->lwOffset   = 0;
     m_pFreeHeader->pNext      = NULL;
+    m_pFreeHeader->lwOffset   = 0;
+    m_pFreeHeader->dwRefCount = INVALID_DWORD;
+    m_pFreeHeader->dwIndex    = 0;
+    m_pFreeHeader->dwSize     = (WORD32)((lwSize - sizeof(T_MemBufHeader)) / CACHE_SIZE);
 
     return SUCCESS;
 }
@@ -99,9 +100,7 @@ CCentralMemPool::~CCentralMemPool()
 /* 分配dwSize大小内存块, 在分配的内存块前面额外申请一个T_MemBufHeader头
  * 在T_MemBufHeader头信息中记录所分配内存块信息
  */
-BYTE * CCentralMemPool::Malloc(WORD32 dwSize,
-                               WORD16 wThreshold,
-                               WORD32 dwPoint)
+BYTE * CCentralMemPool::Malloc(WORD32 dwSize)
 {
     WORD32 dwRoundSize = ROUND_UP((dwSize + sizeof(T_MemBufHeader)), CACHE_SIZE) / CACHE_SIZE;
     WORD32 dwRealSize  = dwRoundSize * CACHE_SIZE;
@@ -135,16 +134,16 @@ BYTE * CCentralMemPool::Malloc(WORD32 dwSize,
                 pPrev = pPrev->pNext;
             }
 
-            pPrev->dwSize     = pCur->dwSize - dwRoundSize;
-            pPrev->dwRefCount = INVALID_DWORD;
+            pPrev->pNext      = pCur->pNext;
             pPrev->lwOffset   = pCur->lwOffset + dwRealSize;
-            pPrev->pNext      = pCur->pNext;                
+            pPrev->dwRefCount = INVALID_DWORD;
+            pPrev->dwSize     = pCur->dwSize - dwRoundSize;
 
             m_cLock.UnLock();
 
-            pCur->dwSize     = dwRoundSize;
-            pCur->dwRefCount = 0;                
             pCur->pNext      = NULL;
+            pCur->dwRefCount = 0;
+            pCur->dwSize     = dwRoundSize;
 
             break ;
         }
@@ -164,8 +163,8 @@ BYTE * CCentralMemPool::Malloc(WORD32 dwSize,
 
             m_cLock.UnLock();
 
-            pCur->dwRefCount = 0;                
             pCur->pNext      = NULL;
+            pCur->dwRefCount = 0;                
 
             break ;
         }
@@ -178,7 +177,8 @@ BYTE * CCentralMemPool::Malloc(WORD32 dwSize,
 
     if (NULL != pCur)
     {
-        m_lwUsedSize += dwRealSize;
+        m_lwUsedSize    += dwRealSize;
+        pCur->lwMemPool  = (WORD64)this;
 
         pValue = (BYTE *)((WORD64)(pCur) + sizeof(T_MemBufHeader));
     }
@@ -191,7 +191,7 @@ BYTE * CCentralMemPool::Malloc(WORD32 dwSize,
 }
 
 
-WORD32 CCentralMemPool::Free(BYTE *pAddr)
+WORD32 CCentralMemPool::Free(VOID *pAddr)
 {
     if (!IsValid(pAddr))
     {
@@ -217,8 +217,8 @@ WORD32 CCentralMemPool::Free(BYTE *pAddr)
 
     WORD64 lwBegin    = 0;
     WORD64 lwEnd      = 0;
-    WORD64 lwRealSize = pBuf->dwSize * CACHE_SIZE;
     WORD64 lwBufBegin = pBuf->lwOffset;
+    WORD64 lwRealSize = pBuf->dwSize * CACHE_SIZE;
     WORD64 lwBufEnd   = lwBufBegin + lwRealSize;
 
     m_lwFreeSize += lwRealSize;
@@ -240,7 +240,7 @@ WORD32 CCentralMemPool::Free(BYTE *pAddr)
     while (pCur)
     {
         if (lwBufBegin < pCur->lwOffset)    /* pBuf应挂在pPrev和pCur之间 */
-        {        
+        {
             lwBegin = pCur->lwOffset;
             if (lwBegin < lwBufEnd)
             {
@@ -254,8 +254,8 @@ WORD32 CCentralMemPool::Free(BYTE *pAddr)
                 /* 更新头指针 */
                 m_pFreeHeader = pPrev;
 
-                pBuf->dwRefCount = INVALID_DWORD;
                 pBuf->pNext      = pCur;
+                pBuf->dwRefCount = INVALID_DWORD;
             }
             else
             {
@@ -275,15 +275,15 @@ WORD32 CCentralMemPool::Free(BYTE *pAddr)
                 {
                     pPrev->pNext = pBuf;
 
-                    pBuf->dwRefCount = INVALID_DWORD;
                     pBuf->pNext      = pCur;
+                    pBuf->dwRefCount = INVALID_DWORD;
                 }
             }
 
             if (lwBegin == lwBufEnd)     /* pBuf需要和其后的pCur衔接 */
             {
-                pBuf->dwSize += pCur->dwSize;
                 pBuf->pNext   = pCur->pNext;
+                pBuf->dwSize += pCur->dwSize;
             }
 
             break ;
@@ -301,8 +301,8 @@ WORD32 CCentralMemPool::Free(BYTE *pAddr)
             {
                 pPrev->pNext = pBuf;
 
-                pBuf->dwRefCount = INVALID_DWORD;
                 pBuf->pNext      = NULL;
+                pBuf->dwRefCount = INVALID_DWORD;
 
                 break ;
             }
@@ -322,6 +322,7 @@ CObjMemPoolInterface::CObjMemPoolInterface (CCentralMemPool &rCentralMemPool)
     m_dwPowerNum = 0;
     m_dwBufNum   = 0;
     m_dwBufSize  = 0;
+    m_wThreshold = MEMPOOL_THRESHOLD;
 }
 
 
@@ -329,34 +330,13 @@ CObjMemPoolInterface::~CObjMemPoolInterface()
 {
     if (NULL != m_pOriAddr)
     {
-        m_rCentralMemPool.Free((BYTE *)m_pOriAddr);
+        m_rCentralMemPool.Free(m_pOriAddr);
     }
 
     m_dwPowerNum = 0;
     m_dwBufNum   = 0;
     m_dwBufSize  = 0;
-}
-
-
-/* dwPowerNum : 内存块数量(2^N); dwBufSize : 每个内存块大小 */
-WORD32 CObjMemPoolInterface::Initialize(WORD32 dwPowerNum, WORD32 dwBufSize)
-{
-    m_dwPowerNum = dwPowerNum;
-    m_dwBufNum   = (1 << dwPowerNum);
-    m_dwBufSize  = ROUND_UP((dwBufSize + sizeof(T_MemBufHeader)), CACHE_SIZE);
-
-    WORD32 dwSize = (m_dwBufSize * m_dwBufNum) + sizeof(T_MemBufHeader);
-
-    /* 需要预留一个T_MemBufHeader头部节点 */
-    BYTE *pBuf = m_rCentralMemPool.Malloc(dwSize);
-    if (NULL == pBuf)
-    {
-        return FAIL;
-    }
-
-    CMemInterface::Initialize(pBuf, (WORD64)(dwSize));
-
-    return SUCCESS;
+    m_wThreshold = MEMPOOL_THRESHOLD;
 }
 
 
@@ -382,6 +362,28 @@ VOID CObjMemPoolInterface::Dump()
                m_dwPowerNum,
                m_dwBufNum,
                m_dwBufSize);
+}
+
+
+/* dwPowerNum : 内存块数量(2^N); dwBufSize : 每个内存块大小 */
+WORD32 CObjMemPoolInterface::Initialize(WORD32 dwPowerNum, WORD32 dwBufSize)
+{
+    m_dwPowerNum = dwPowerNum;
+    m_dwBufNum   = (1 << dwPowerNum);
+    m_dwBufSize  = ROUND_UP((dwBufSize + sizeof(T_MemBufHeader)), CACHE_SIZE);
+
+    WORD32 dwSize = (m_dwBufSize * m_dwBufNum) + sizeof(T_MemBufHeader);
+
+    /* 需要预留一个T_MemBufHeader头部节点 */
+    BYTE *pBuf = m_rCentralMemPool.Malloc(dwSize);
+    if (NULL == pBuf)
+    {
+        return FAIL;
+    }
+
+    CMemInterface::Initialize(pBuf, (WORD64)(dwSize));
+
+    return SUCCESS;
 }
 
 

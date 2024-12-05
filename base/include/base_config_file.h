@@ -19,12 +19,13 @@
 
 #define MAX_HUGE_DIR_LEN             ((WORD32)(56))
 #define MAX_BLOCK_NUM                ((WORD32)(32))
-#define MAX_POOL_NUM                 ((WORD32)(8))
+#define MAX_POOL_NUM                 ((WORD32)(16))
+#define MAX_CHANNEL_NUM              ((WORD32)(8))
 #define MAX_WORKER_NUM               ((WORD32)(16))
 #define MAX_APP_NUM                  ((WORD32)(64))
 #define WORKER_NAME_LEN              ((WORD32)(32))
 #define APP_NAME_LEN                 ((WORD32)(32))
-#define MAX_APP_NUM_PER_THREAD       ((WORD32)(12))
+#define MAX_APP_NUM_PER_THREAD       ((WORD32)(16))
 #define MAX_ASSOCIATE_NUM_PER_APP    ((WORD32)(16))
 
 
@@ -44,19 +45,19 @@
 extern const BYTE s_aucModule[E_LOG_MODULE_NUM][LOG_MODULE_LEN];
 
 
-typedef struct tagT_MemJsonBlock
+typedef struct tagT_TrunkParam
 {
     WORD32    dwTrunkSize;
     WORD32    dwPowerNum;
-}T_MemJsonBlock;
+}T_TrunkParam;
 
 
-typedef struct tagT_MemJsonPool
+typedef struct tagT_BlockParam
 {
-    WORD32          dwPoolID;
-    WORD32          dwBlockNum;
-    T_MemJsonBlock  atBlock[MAX_BLOCK_NUM];
-}T_MemJsonPool;
+    WORD32        dwPoolID;
+    WORD32        dwBlockNum;
+    T_TrunkParam  atBlock[MAX_BLOCK_NUM];
+}T_BlockParam;
 
 
 typedef struct tagT_MemJsonCfg
@@ -67,7 +68,7 @@ typedef struct tagT_MemJsonCfg
     BYTE              ucResved;
     WORD32            dwMemSize;
     CHAR              aucHugeDir[MAX_HUGE_DIR_LEN];
-    T_MemJsonPool     atPool[MAX_POOL_NUM];
+    T_BlockParam      atPool[MAX_POOL_NUM];
 }T_MemJsonCfg;
 
 
@@ -122,25 +123,23 @@ typedef struct tagT_LogJsonCfg
 }T_LogJsonCfg;
 
 
-typedef struct tagT_TimerJsonCfg
+typedef struct tagT_ShmChannelParam
 {
-    BOOL             bCreateFlag;
-    WORD32           dwCoreID;
-    WORD32           dwPolicy;
-    WORD32           dwPriority;
-    WORD32           dwStackSize;
-    WORD32           dwServTimeLen;
-    WORD32           dwAppTimeLen;
-    BOOL             bAloneLog;
-}T_TimerJsonCfg;
+    WORD32    dwSendNodeNum;
+    WORD32    dwSendNodeSize;
+    WORD32    dwRecvNodeNum;
+    WORD32    dwRecvNodeSize;
+}T_ShmChannelParam;
 
 
 typedef struct tagT_ShmJsonCfg
 {
-    BOOL             bCreateFlag;
-    BOOL             bMaster;
-    WORD32           dwChannelNum;
-    WORD32           dwPowerNum;
+    BOOL               bCreateFlag;   /* 是否创建共享内存标志 */
+    WORD32             dwRole;        /* 0 : Master; 1 : Slave; 2 : Observer */
+    WORD32             dwChannelNum;  /* F1-U数据面通道数量(与小区数量保持一致) */
+    T_ShmChannelParam  atChannel[MAX_CHANNEL_NUM];
+    T_ShmChannelParam  tCtrlChannel;
+    T_ShmChannelParam  tOamChannel;
 }T_ShmJsonCfg;
 
 
@@ -251,7 +250,6 @@ typedef struct tagT_RootJsonCfg
 {
     T_MemJsonCfg         tMemConfig;
     T_LogJsonCfg         tLogConfig;
-    T_TimerJsonCfg       tTimerConfig;
     T_ShmJsonCfg         tShmConfig;
     T_ThreadPoolJsonCfg  tWorkerConfig;
     T_DpdkJsonCfg        tDpdkConfig;
@@ -268,7 +266,6 @@ public :
 
     T_MemJsonCfg        & GetMemJsonCfg();
     T_LogJsonCfg        & GetLogJsonCfg();
-    T_TimerJsonCfg      & GetTimerJsonCfg();
     T_ShmJsonCfg        & GetShmJsonCfg();
     T_ThreadPoolJsonCfg & GetWorkerJsonCfg();
     T_DpdkJsonCfg       & GetDpdkJsonCfg();

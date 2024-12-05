@@ -20,7 +20,7 @@
 #include "pub_typedef.h"
 
 
-template<class T>
+template<typename T>
 class CBaseLock
 {
 public :
@@ -55,7 +55,7 @@ protected :
 };
 
 
-template <class Lock>
+template <typename Lock>
 class CGuardLock 
 {
 public :

@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <sched.h>
 #include <pthread.h>
+#include <iostream>
 
 #include "pub_global_def.h"
 
@@ -19,7 +20,7 @@
 
 WORD32 TestRecvClient(VOID *pArg, const VOID *ptMsg, WORD32 dwLen)
 {
-    CChannelTpl *pChannel = (CChannelTpl *)pArg;
+    CShmChannel *pChannel = (CShmChannel *)pArg;
 
     WORD32 dwStrLen = strlen((CHAR *)(ptMsg));
 
@@ -49,68 +50,71 @@ WORD32 TestRecvClient(VOID *pArg, const VOID *ptMsg, WORD32 dwLen)
 
 int main(int argc, char **argv)
 {
-    CMemMgr *pMemMgr = CMemMgr::CreateMemMgr((WORD32)E_PROC_CU,
-                                             (BYTE)E_MEM_HUGEPAGE_TYPE,
-                                             1,
-                                             1024 * 1024 * 1024,
-                                             "/dev/hugepages",
-                                             TRUE);
+    T_ShmJsonCfg tParam;
+    tParam.bCreateFlag  = TRUE;
+    tParam.dwRole       = 0;
+    tParam.dwChannelNum = 4;
+    tParam.atChannel[0].dwSendNodeNum  = 200;
+    tParam.atChannel[0].dwSendNodeSize = 2048;
+    tParam.atChannel[0].dwRecvNodeNum  = 200;
+    tParam.atChannel[0].dwRecvNodeSize = 2048;
+    tParam.atChannel[1].dwSendNodeNum  = 200;
+    tParam.atChannel[1].dwSendNodeSize = 2048;
+    tParam.atChannel[1].dwRecvNodeNum  = 200;
+    tParam.atChannel[1].dwRecvNodeSize = 2048;
+    tParam.atChannel[2].dwSendNodeNum  = 200;
+    tParam.atChannel[2].dwSendNodeSize = 2048;
+    tParam.atChannel[2].dwRecvNodeNum  = 200;
+    tParam.atChannel[2].dwRecvNodeSize = 2048;
+    tParam.atChannel[3].dwSendNodeNum  = 200;
+    tParam.atChannel[3].dwSendNodeSize = 2048;
+    tParam.atChannel[3].dwRecvNodeNum  = 200;
+    tParam.atChannel[3].dwRecvNodeSize = 2048;
+    tParam.tCtrlChannel.dwSendNodeNum  = 100;
+    tParam.tCtrlChannel.dwSendNodeSize = 4096;
+    tParam.tCtrlChannel.dwRecvNodeNum  = 100;
+    tParam.tCtrlChannel.dwRecvNodeSize = 4096;
+    tParam.tOamChannel.dwSendNodeNum   = 1000;
+    tParam.tOamChannel.dwSendNodeSize  = 1024;
+    tParam.tOamChannel.dwRecvNodeNum   = 2000;
+    tParam.tOamChannel.dwRecvNodeSize  = 4096;
 
-    T_MemMetaHead   *pMetaHead       = pMemMgr->GetMetaHead();
-    CDataZone       *pDataZone       = pMemMgr->GetDataZone();
-    CCentralMemPool *pCentralMemPool = pMemMgr->GetCentralMemPool();
+    g_pShmMgr = CShmMgr::CreateShmMgr((WORD32)E_PROC_CU, tParam);
 
-    printf("pMetaHead = %lu, pMemMgr = %lu, pDataZone = %lu, pCentralMemPool = %lu\n",
-               (WORD64)pMetaHead,
-               (WORD64)pMemMgr,
-               (WORD64)pDataZone,
-               (WORD64)pCentralMemPool);
+    WORD32 dwOptions = 0;
+    BOOL   bRun      = TRUE;
 
-    printf("lwMagic : %lu, dwVersion : %u, dwHeadSize : %u, "
-           "lwMasterLock : %lu, iGlobalLock : %d, bInitFlag : %d, "
-           "iMLock : %d, dwHugeNum : %d, iPrimaryFileID : %d, "
-           "iSecondaryFileID : %d, lwHugeAddr : %lu, aucHugePath : %s, "
-           "lwMetaAddr : %lu, lwMetaSize : %lu, lwHugeAddr : %lu, "
-           "lwShareMemSize : %lu\n",
-           pMetaHead->lwMagic,
-           pMetaHead->dwVersion,
-           pMetaHead->dwHeadSize,
-           pMetaHead->lwMasterLock,
-           pMetaHead->iGlobalLock,
-           pMetaHead->bInitFlag,
-           pMetaHead->iMLock,
-           pMetaHead->dwHugeNum,
-           pMetaHead->atHugeInfo[0].iPrimaryFileID,
-           pMetaHead->atHugeInfo[0].iSecondaryFileID,
-           pMetaHead->atHugeInfo[0].lwHugeAddr,
-           pMetaHead->atHugeInfo[0].aucHugePath,
-           pMetaHead->lwMetaAddr,
-           pMetaHead->lwMetaSize,
-           pMetaHead->lwHugeAddr,
-           pMetaHead->lwShareMemSize);
+    while (bRun)
+    {
+        printf("Options[ 0 : Exit, 1 : run ]\n");
+        printf("Input[0/1] : ");
+        std::cin >> dwOptions;
 
-    WORD32 *pdwValue = (WORD32 *)(pCentralMemPool->Malloc(sizeof(WORD32)));
-    *pdwValue = 123456789;
+        switch (dwOptions)
+        {
+        case 0 :
+            {
+                CShmMgr::Destroy();
+                g_pShmMgr = NULL;
+            }
+            return SUCCESS;
 
-    printf("pdwValue address is %lu\n", (WORD64)pdwValue);
+        case 1 :
+            bRun = FALSE;
+            break ;
 
-    BYTE   *pMem     = pCentralMemPool->Malloc(sizeof(CShmMgr));
-    WORD32  dwResult = INVALID_DWORD;
+        default :
+            break ;
+        }
+    }
 
-    assert(NULL != pMem);
-
-    g_pShmMgr = CShmMgr::GetInstance(pMem);
-    dwResult  = g_pShmMgr->Initialize(TRUE, 4, 14, pCentralMemPool);
-
-    assert(SUCCESS == dwResult);
-
-    CChannelTpl *pChannel = NULL;
+    CShmChannel *pChannel = NULL;
 
     while (TRUE)
     {
-        for (WORD32 dwIndex = 0; dwIndex <= 4; dwIndex++)
+        for (WORD32 dwIndex = 0; dwIndex < 4; dwIndex++)
         {
-            pChannel = g_pShmMgr->GetChannel(dwIndex);
+            pChannel = g_pShmMgr->GetDataChannel(dwIndex);
 
             pChannel->Wait();
             pChannel->RecvMessage((VOID *)pChannel, (PSyncRecvMsg)(&TestRecvClient));
@@ -119,6 +123,9 @@ int main(int argc, char **argv)
     }
 
     sleep(1800);
+
+    CShmMgr::Destroy();
+    g_pShmMgr = NULL;
 
     return SUCCESS;
 }
